@@ -1,12 +1,12 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces;
-using HomeNet.Network.Network.ApiClient; // 🔥 Подключаем наши API-клиенты
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Local;
 using HomeNetServices.Identity;
 using HomeNetServices.Services.Identity;
+using HomeNet.Network.Api;
 
 namespace HomeNet.DI.Modules
 {

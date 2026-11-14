@@ -1,9 +1,10 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Api;
 using System.Net.Http.Json;
 
-namespace HomeNet.Network.Network.ApiClient
+namespace HomeNet.Network.ApiClient
 {
     public class UserApiClient : BaseApiClient, IUserApiClient
     {

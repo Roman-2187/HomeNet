@@ -1,11 +1,11 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network.Network.ApiClient;
-using HomeNet.Network.SignalRListeners;
+using HomeNet.Network.Api;
+using HomeNet.Network.ApiClient;
+using HomeNet.Network.Handlers; // 🔥 Не забудь подключить namespace твоего хендлера
 using HomeNet.Synchronization;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Sinc;
-using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
@@ -26,10 +26,11 @@ namespace HomeNet.DI.Modules
         public Guid CurrentDeviceId { get; private set; }
         public SyncEngine OrmEngine { get; }
 
+        public ServerHealthMonitor HealthMonitor { get; }
+
         public UserSignalRListener UserListener { get; }
         public MessageSignalRListener MessageListener { get; }
 
-        // 🔥 ДОБАВЛЯЕМ СВОЙСТВА ДЛЯ API-КЛИЕНТОВ
         public IUserApiClient UserApiClient { get; }
         public IMessageApiClient MessageApiClient { get; }
 
@@ -51,21 +52,29 @@ namespace HomeNet.DI.Modules
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
             DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientDeviceSettingsRepository>();
 
-            // 2. HttpClient
-            var httpClient = new HttpClient
+            // 2. HttpClient с перехватчиком состояния сети
+            var statusHandler = new ConnectionStatusHandler(eventBus)
+            {
+                InnerHandler = new HttpClientHandler()
+            };
+
+            var httpClient = new HttpClient(statusHandler)
             {
                 BaseAddress = new Uri(apiBaseUrl),
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-            // 3. API-клиенты (и сохраняем их в свойства!)
+
+            HealthMonitor = new ServerHealthMonitor(httpClient, logger, eventBus);
+
+            // 3. API-клиенты (теперь оба работают через перехватчик!)
             UserApiClient = new UserApiClient(httpClient, logger, eventBus);
             MessageApiClient = new MessageApiClient(httpClient, logger, eventBus);
 
-            // 4. Контейнер хаба
-            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
+            // 4. Контейнер хаба (чистый, только для SQLite)
+            DbContextContainer = new DbContextContainer(DbEngine, eventBus, logger);
 
-            // 🔥 5. Создаем SyncService
+            // 5. Создаем SyncService
             UserSyncService = new UserSyncService(UserRepository, UserApiClient, eventBus, logger);
             MessageSyncService = new MessageSyncService(MessageRepository, MessageApiClient, eventBus, logger);
 
@@ -82,6 +91,12 @@ namespace HomeNet.DI.Modules
         {
             CurrentDeviceId = await DeviceSettingsRepository.GetOrCreateDeviceIdAsync();
         }
+
+
+       
+
+
+
     }
 
     public class CompositeSyncCoordinator : ISyncCoordinator

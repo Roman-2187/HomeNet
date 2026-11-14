@@ -1,6 +1,7 @@
 ﻿using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.ApiClient;
 
-namespace HomeNet.Network.Network.ApiClient
+namespace HomeNet.Network.Api
 {
     public interface IUserApiClient : IApiClientBase
     {

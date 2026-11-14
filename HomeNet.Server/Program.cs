@@ -56,6 +56,21 @@ namespace HomeNet.Server
             app.MapUserEndpoints(userRepository, serverLogger);
             app.MapSyncEndpoints(deviceSyncRepository, serverLogger);
 
+
+            app.MapGet("/api/health", () =>
+            {
+                serverLogger.LogInfo("[HealthCheck] Клиент проверил доступность сервера.");
+
+                return Results.Ok(new
+                {
+                    Status = "Healthy",
+                    ServerTime = DateTimeOffset.UtcNow,
+                    Message = "HomeNet Server is running"
+                });
+            }).AllowAnonymous();
+
+
+
             // Сетевой автобус SignalR
             app.MapHub<ServerChatHub>("/chatHub");
 

@@ -3,11 +3,14 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetPresentation.Services;
+using static HomeNet.Network.Handlers.ConnectionStatusHandler;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class StatusBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
+
+        private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
         [ObservableProperty]
         private string _statusText = "Готов к работе";
 
@@ -28,10 +31,41 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
-           
+            _eventBus.Subscribe<ServerStatusChangedEvent>(OnServerStatusChanged);
+
         }
 
-       
+
+        private void OnServerStatusChanged(ServerStatusChangedEvent msg)
+        {
+            if (msg == null) return;
+
+            void UpdateUi()
+            {
+                if (msg.IsOnline)
+                {
+                    CombinedStatusText = "ONLINE";
+                    StatusColor = "#FF4CAF50";
+                }
+                else
+                {
+                    CombinedStatusText = "OFFLINE";
+                    StatusColor = "#FFF5546F";
+                }
+            }
+
+            // Если ViewModel создана в UI-потоке — маршалим вызов туда через стандартный .NET
+            // Если в юнит-тесте (_uiContext == null) — выполняем напрямую
+            if (_uiContext != null)
+            {
+                _uiContext.Post(_ => UpdateUi(), null);
+            }
+            else
+            {
+                UpdateUi();
+            }
+        }
+
 
         private async void OnTextChanged(IStatusBarViewModel.TextChanged msg)
         {

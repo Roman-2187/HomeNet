@@ -4,7 +4,7 @@
     {
         Task InitializeAllDatabasesAsync();
        
-        bool IsServerAvailable { get; }
+       
 
         /// <summary>
         /// Вложенный рекорд сигнала готовности Хаба

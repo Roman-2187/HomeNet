@@ -4,46 +4,25 @@ using HomeNetOrm.Interfaces.Builders;
 
 namespace HomeNetOrm.Infrastructure
 {
-    public class DbContextContainer : IDbContextContainer
+    public class DbContextContainer(
+        IDbEngine localEngine,
+        IEventBus eventBus,
+        ICastomLogger logger) : IDbContextContainer
     {
-        private readonly IDbEngine _localEngine;
-        private readonly IEventBus _eventBus;
-        private readonly ICastomLogger _logger;
-        private readonly string _remoteServerUrl;
-        private readonly HttpClient _pingClient;
+        private readonly IDbEngine _localEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
+        private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        private readonly ICastomLogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // Чистая абстракция состояний подключения
+        // Чистая абстракция состояния локального подключения
         public bool IsLocalAvailable { get; private set; }
-        public bool IsRemoteAvailable { get; private set; }
-
-        // Связываем интерфейсные свойства напрямую с переменными
-        public bool IsServerAvailable => IsRemoteAvailable;
-        public bool IsPostgresAvailable => IsRemoteAvailable;
-
-        // Конструктор принимает строго локальный абстрактный движок и адрес сервера
-        public DbContextContainer(
-            IDbEngine localEngine,
-            string remoteServerUrl,
-            IEventBus eventBus,
-            ICastomLogger logger)
-        {
-            _localEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _remoteServerUrl = remoteServerUrl ?? throw new ArgumentNullException(nameof(remoteServerUrl));
-
-            _pingClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-        }
 
         public async Task InitializeAllDatabasesAsync()
         {
             _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ИНИЦИАЛИЗАЦИИ ЛОКАЛЬНОГО ХРАНИЛИЩА ===");
 
-            // Запускаем локальный движок данных и проверяем сервер последовательно
             await InitializeLocalChannelInternalAsync();
-            await CheckRemoteServerAvailabilityInternalAsync();
 
-            _logger.LogInfo("=== [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ  ЗАВЕРШЕНА ===");
+            _logger.LogInfo("=== [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ===");
             _eventBus.Publish(this, new IDbContextContainer.InfrastructureReady());
         }
 
@@ -59,22 +38,6 @@ namespace HomeNetOrm.Infrastructure
             {
                 IsLocalAvailable = false;
                 _logger.LogError($"[СУБД СТАТУС] Локальный движок недоступен: {ex.Message}");
-            }
-        }
-
-        private async Task CheckRemoteServerAvailabilityInternalAsync()
-        {
-            try
-            {
-                // Проверяем доступность удаленного API сервера
-                var response = await _pingClient.GetAsync($"{_remoteServerUrl}/api/messages");
-                IsRemoteAvailable = true;
-                _logger.LogInfo($"[СЕТЬ СТАТУС] Удаленный сервер успешно обнаружен по адресу: {_remoteServerUrl}");
-            }
-            catch (Exception ex)
-            {
-                IsRemoteAvailable = false;
-                _logger.LogError($"[СЕТЬ СТАТУС] Удаленный сервер недоступен: {ex.Message}");
             }
         }
     }

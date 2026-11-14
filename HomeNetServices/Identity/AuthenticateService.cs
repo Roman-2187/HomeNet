@@ -2,7 +2,7 @@
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Validation;
-using HomeNet.Network.Network.ApiClient; // 🔥
+using HomeNet.Network.Api; // 🔥
 
 namespace HomeNetServices.Identity
 {

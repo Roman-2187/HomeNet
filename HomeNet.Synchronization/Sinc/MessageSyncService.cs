@@ -1,10 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetOrm.Exeptions; // Для DuplicateMessageException
 using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Synchronization.Sinc

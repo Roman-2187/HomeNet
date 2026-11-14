@@ -1,6 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network.Network.ApiClient;
+using HomeNet.Network.Api;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Exeptions;

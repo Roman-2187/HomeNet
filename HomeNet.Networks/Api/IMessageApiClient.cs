@@ -1,5 +1,5 @@
 ﻿using HomeNet.Models.Shared.Entity;
-using HomeNet.Network.Network.ApiClient;
+using HomeNet.Network.ApiClient;
 
 public interface IMessageApiClient : IApiClientBase
 {

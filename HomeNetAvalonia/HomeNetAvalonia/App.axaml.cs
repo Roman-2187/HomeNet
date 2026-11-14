@@ -31,22 +31,30 @@ namespace HomeNetAvalonia
 
             try
             {
-                // 1. Читаем конфиг (appsettings.json + appsettings.{ENV}.json)
-                var config = new ConfigurationBuilder()
-                    .SetBasePath(AppContext.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: false)
-                    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true)
-                    .Build();
+                // 1. Читаем конфиг строго по конфигурации сборки (Debug / Release)
+                var configBuilder = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory);
+
+#if DEBUG
+                // В режиме Debug грузим ТОЛЬКО локальный конфиг (localhost:5210)
+                // optional: false сразу предупредит, если файл не скопировался в папку bin/Debug
+                configBuilder.AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
+#else
+                // В режиме Release грузим ТОЛЬКО боевой конфиг (VPS)
+                configBuilder.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+#endif
+
+                var config = configBuilder.Build();
 
                 // 2. Берём значения (если нет — кидаем исключение, чтобы не было "молчаливого" хардкода)
                 string apiBaseUrl = config["ApiBaseUrl"]
-                    ?? throw new InvalidOperationException("В appsettings.json отсутствует ApiBaseUrl");
+                    ?? throw new InvalidOperationException("В конфиге отсутствует ApiBaseUrl");
 
                 string databaseName = config["DatabaseName"]
-                    ?? throw new InvalidOperationException("В appsettings.json отсутствует DatabaseName");
+                    ?? throw new InvalidOperationException("В конфиге отсутствует DatabaseName");
 
                 string backendModeStr = config["BackendMode"]
-                    ?? throw new InvalidOperationException("В appsettings.json отсутствует BackendMode");
+                    ?? throw new InvalidOperationException("В конфиге отсутствует BackendMode");
 
                 BackendMode currentMode = Enum.Parse<BackendMode>(backendModeStr);
 
@@ -61,6 +69,9 @@ namespace HomeNetAvalonia
                     sqliteConnectionString);
 
                 EventBus = _compositionRoot.EventBus;
+
+                // Сразу пишем в лог, какой сервер выбран на этом запуске
+                _compositionRoot.Logger.LogInfo($"[Конфиг] Активный сервер: {apiBaseUrl} | База: {dbPath}");
 
                 // 5. Инициализируем окно и даём ему ViewModel
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

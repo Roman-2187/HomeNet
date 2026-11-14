@@ -3,11 +3,11 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-using HomeNet.Network.Network.ApiClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HomeNet.Network.Api;
 
 namespace HomeNetServices.Services.Identity
 {
