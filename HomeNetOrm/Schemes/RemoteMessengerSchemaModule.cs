@@ -1,7 +1,7 @@
 ﻿using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Builders;
 
-namespace HomeNet.DI.Modules
+namespace HomeNetOrm.Schemes
 {
     /// <summary>
     /// 🌐 УДАЛЕННЫЙ МОДУЛЬ СХЕМ (Для PostgreSQL): Общие таблицы с триггерами версий + составной ключ девайсов

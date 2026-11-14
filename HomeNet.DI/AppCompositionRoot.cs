@@ -2,9 +2,9 @@
 using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization;
 using HomeNetCore.Enums;
+using HomeNetOrm.Schemes;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
@@ -49,13 +49,13 @@ namespace HomeNet.DI
                 Infrastructure.EventBus);
 
             Services = new BusinessServicesModule(
-      DataAccess.UserRepository,          // Для чтения из кэша
-      DataAccess.MessageRepository,       // Для чтения из кэша
-      DataAccess.DeviceSettingsRepository,// Локальные настройки
-      DataAccess.UserApiClient,           // 🔥 ДЛЯ РЕГИСТРАЦИИ И АУТЕНТИФИКАЦИИ
-      DataAccess.MessageApiClient,        // 🔥 ДЛЯ ОТПРАВКИ СООБЩЕНИЙ
-      Infrastructure.Logger,
-      Infrastructure.EventBus);
+                  DataAccess.UserRepository,          // Для чтения из кэша
+                  DataAccess.MessageRepository,       // Для чтения из кэша
+                  DataAccess.DeviceSettingsRepository,// Локальные настройки
+                  DataAccess.UserApiClient,           // 🔥 ДЛЯ РЕГИСТРАЦИИ И АУТЕНТИФИКАЦИИ
+                  DataAccess.MessageApiClient,        // 🔥 ДЛЯ ОТПРАВКИ СООБЩЕНИЙ
+                  Infrastructure.Logger,
+                  Infrastructure.EventBus);
 
             Ui = new PresentationUiModule(
                 Infrastructure.EventBus,

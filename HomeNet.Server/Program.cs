@@ -1,10 +1,9 @@
-using HomeNet.DI.Modules;
-using HomeNet.Infrastructure.Shared.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Server.Endpoints;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Remote;
+using HomeNetOrm.Schemes;
 using Microsoft.AspNetCore.SignalR;
 
 

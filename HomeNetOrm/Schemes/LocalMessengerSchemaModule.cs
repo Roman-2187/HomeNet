@@ -2,7 +2,7 @@
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
 
-namespace HomeNet.DI.Modules
+namespace HomeNetOrm.Schemes
 {
     /// <summary>
     /// 📱 ЛОКАЛЬНЫЙ МОДУЛЬ СХЕМ (Для SQLite): Общие таблицы + флаги синхронизации + сессия автовхода

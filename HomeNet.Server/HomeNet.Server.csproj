@@ -5,8 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HomeNet.DI\HomeNet.DI.csproj" />
     <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
+    <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

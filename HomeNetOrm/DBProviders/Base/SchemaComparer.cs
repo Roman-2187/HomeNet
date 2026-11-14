@@ -1,6 +1,6 @@
 ﻿using HomeNetOrm.Models;
 
-namespace HomeNetOrm.Schemes
+namespace HomeNetOrm.DBProviders.Base
 {
     internal static class SchemaComparer
     {

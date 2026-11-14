@@ -2,7 +2,7 @@
 using HomeNetOrm.Builders;
 using HomeNetOrm.Models;
 
-namespace HomeNet.DI.Modules
+namespace HomeNetOrm.Schemes
 {
     /// <summary>
     /// 🏗️ БАЗОВЫЙ МОДУЛЬ СХЕМ: Содержит только общие поля для обеих СУБД
