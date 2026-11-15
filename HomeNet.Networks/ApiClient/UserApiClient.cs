@@ -1,5 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
 using System.Net.Http.Json;
@@ -69,19 +70,20 @@ namespace HomeNet.Network.ApiClient
             }
         }
 
-        public async Task<IReadOnlyCollection<UserEntity>> FetchFreshUsersAsync(Guid deviceId, DateTimeOffset lastSyncedAt)
+        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(Guid deviceId, long lastVersion)
         {
             try
             {
-                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с метки {lastSyncedAt:HH:mm:ss}...");
-                string url = $"/api/users/sync?deviceId={deviceId}&lastSyncedAt={Uri.EscapeDataString(lastSyncedAt.ToString("o"))}";
-                var response = await HttpClient.GetFromJsonAsync<List<UserEntity>>(url);
-                return response ?? new List<UserEntity>();
+                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с версии {lastVersion}...");
+                string url = $"/api/sync/users?deviceId={deviceId}&lastVersion={lastVersion}";
+
+                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>(url);
+                return response ?? new SyncBatchResponse<UserEntity> { LatestVersion = lastVersion };
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[UserApiClient] Не удалось скачать обновления пользователей: {ex.Message}");
-                return Array.Empty<UserEntity>();
+                return new SyncBatchResponse<UserEntity> { LatestVersion = lastVersion };
             }
         }
 

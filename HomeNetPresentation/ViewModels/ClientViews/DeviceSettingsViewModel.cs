@@ -151,6 +151,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 CurrentSessionEmail = user.Email ?? "Авторизован";
 
                 Guid appDeviceId = await _deviceSettingsService.GetDeviceIdAsync();
+                _eventBus.Publish(this, new IDeviceSettingsVM.SessionPersisted(user.DeviceId, user.Id));
                 _logger.LogInfo($"[Сессия -> VM] Связываем пользователя {user.Email} с девайсом {appDeviceId}");
 
                 user.DeviceId = appDeviceId;

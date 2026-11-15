@@ -48,5 +48,16 @@ namespace HomeNetOrm.Generators.Local
                 .UpsertExcludedFields()
                 .Build();
         }
+
+
+        /// <summary>
+        /// Удаляет запись сессии из локальной БД по UserId (при срабатывании надгробия с сервера).
+        /// </summary>
+        public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>
+            CreateQuery()
+                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where).Col(d => d.UserId).Emit(OpType.Equal).Param("UserId", userId)
+                .Build();
+
     }
 }

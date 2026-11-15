@@ -3,10 +3,6 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using HomeNet.Network.Api;
 
 namespace HomeNetServices.Services.Identity
@@ -24,10 +20,11 @@ namespace HomeNetServices.Services.Identity
 
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
-            // 🔥 Выгружаем юзеров с сервера (API)
-            var users = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+            // 🔥 Выгружаем актуальный список всех юзеров с сервера (API)
+            var users = await _apiClient.GetAllUsersAsync();
             return users ?? Enumerable.Empty<UserEntity>();
         }
+
 
         public async Task<IDeleteService.SearchVerdict> SearchUserAsync(string targetUserId)
         {
@@ -89,7 +86,7 @@ namespace HomeNetServices.Services.Identity
                 }
 
                 // 🔥 После удаления запрашиваем актуальный список с сервера
-                var allUsers = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+                var allUsers = await _apiClient.GetAllUsersAsync();
                 _logger.LogDebug($"В системе {allUsers.Count()} пользователей (после удаления)");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");

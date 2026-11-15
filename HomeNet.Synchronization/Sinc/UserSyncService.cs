@@ -5,13 +5,15 @@ using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
-using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
+using HomeNetOrm.Repositories.Local;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IDeviceSettingsVM;
 
 namespace HomeNet.Synchronization.Sinc
 {
     public class UserSyncService : ISyncCoordinator, IDisposable
     {
         private readonly IUserRepo _userRepository;
+        private readonly ClientDeviceSettingsRepository _deviceSettingsRepo;
         private readonly IUserApiClient _apiClient;
         private readonly IEventBus _eventBus;
         private readonly ICastomLogger _logger;
@@ -19,11 +21,13 @@ namespace HomeNet.Synchronization.Sinc
 
         public UserSyncService(
             IUserRepo userRepository,
+            ClientDeviceSettingsRepository deviceSettingsRepo,
             IUserApiClient apiClient,
             IEventBus eventBus,
             ICastomLogger logger)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _deviceSettingsRepo = deviceSettingsRepo ?? throw new ArgumentNullException(nameof(deviceSettingsRepo));
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -46,21 +50,27 @@ namespace HomeNet.Synchronization.Sinc
         {
             try
             {
-                // 🔥 Передаем реальный ID устройства (если нужно) или Guid.Empty
-                var freshUsers = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+                // 1. Читаем активную сессию напрямую из репозитория (строго по иерархии слоёв!)
+                var activeSession = await _deviceSettingsRepo.GetActiveSessionAsync();
+                Guid deviceId = activeSession?.DeviceId ?? Guid.Empty;
+                long lastVersion = activeSession?.LastSyncVersion ?? 0;
 
-                foreach (var user in freshUsers)
+                _logger.LogInfo($"[UserSyncService] Запрос PULL с версии {lastVersion} (DeviceId: {deviceId})...");
+
+                // 2. Забираем пакет с сервера: живые изменения + надгробия + новая версия
+                var batch = await _apiClient.FetchFreshUsersAsync(deviceId, lastVersion);
+
+                // 3. Вставляем или обновляем живых пользователей
+                foreach (var user in batch.UpdatedItems)
                 {
-                    user.IsSynced = 1; // Помечаем как синхронизированного
+                    user.IsSynced = 1;
 
                     try
                     {
-                        // Пытаемся вставить
                         await _userRepository.InsertAsync(user);
                     }
                     catch (DuplicateEmailException)
                     {
-                        // 🔥 Если юзер уже есть — обновляем его (ставим IsSynced = 1)
                         var existing = await _userRepository.GetByEmailAsync(user.Email!);
                         if (existing != null)
                         {
@@ -69,16 +79,34 @@ namespace HomeNet.Synchronization.Sinc
                             existing.FirstName = user.FirstName;
                             existing.LastName = user.LastName;
                             existing.PhoneNumber = user.PhoneNumber;
-                            // и другие поля, которые нужно обновить
 
                             await _userRepository.UpdateAsync(existing);
                             _logger.LogDebug($"[UserSyncService] Юзер {user.Email} обновлен (IsSynced=1).");
                         }
-                        else
-                        {
-                            _logger.LogWarning($"[UserSyncService] Не удалось найти юзера {user.Email} для обновления.");
-                        }
                     }
+                }
+
+                // 4. Вычищаем из SQLite всех пользователей по надгробиям с сервера (и из users, и из device_settings)
+                foreach (var deletedId in batch.DeletedIds)
+                {
+                    await _userRepository.DeleteByIdAsync(deletedId);
+                    await _deviceSettingsRepo.DeleteByUserIdAsync(deletedId);
+
+                    _logger.LogInfo($"[UserSyncService] Надгробие применено: юзер {deletedId} вычищен из users и device_settings.");
+
+                    if (activeSession != null && activeSession.UserId == deletedId)
+                    {
+                        activeSession = null;
+                        _logger.LogWarning($"[UserSyncService] Текущий активный аккаунт ({deletedId}) был удалён на сервере!");
+                    }
+                }
+
+                // 5. Обновляем закладку версии напрямую через репозиторий
+                if (activeSession != null && batch.LatestVersion > lastVersion)
+                {
+                    activeSession.LastSyncVersion = batch.LatestVersion;
+                    await _deviceSettingsRepo.SaveSettingsAsync(activeSession);
+                    _logger.LogInfo($"[UserSyncService] Закладка версии обновлена: {lastVersion} -> {batch.LatestVersion}");
                 }
             }
             catch (Exception ex)
@@ -86,6 +114,9 @@ namespace HomeNet.Synchronization.Sinc
                 _logger.LogError($"[UserSyncService] Ошибка PULL: {ex.Message}");
             }
         }
+
+
+
 
         private async Task PushAsync()
         {
@@ -116,29 +147,13 @@ namespace HomeNet.Synchronization.Sinc
             _eventBus.SubscribeAsync<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
             _eventBus.SubscribeAsync<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
             _eventBus.SubscribeAsync<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
-            _eventBus.SubscribeAsync<IUserVm.UserSignedIn>(OnUserSignedIn);
-            _eventBus.SubscribeAsync<IUserVm.UserSignedUp>(OnUserSignedUp);
+            _eventBus.Subscribe<SessionPersisted>(OnSessionPersisted);
         }
 
-        private async Task OnUserSignedIn(IUserVm.UserSignedIn msg)
+        private async void OnSessionPersisted( SessionPersisted e)
         {
-            if (msg?.User?.Id == null) return;
-
-            _logger.LogInfo($"[UserSyncService] Пользователь авторизован ({msg.User.Id}). Начинаем синхронизацию.");
-
-            // Вместо StartAsync (который проверяет флаг) вызываем Pull/Push напрямую
+            _logger.LogInfo($"[UserSyncService] Сессия готова в SQLite (DeviceId: {e.DeviceId}, UserId: {e.UserId}). Начинаем синхронизацию...");
             await PullAsync();
-            await PushAsync();
-        }
-
-        private async Task OnUserSignedUp(IUserVm.UserSignedUp msg)
-        {
-            if (msg?.User?.Id == null) return;
-
-            _logger.LogInfo($"[UserSyncService] Пользователь зарегистрирован ({msg.User.Id}). Начинаем синхронизацию.");
-
-            await PullAsync();
-            await PushAsync();
         }
 
         // 🔥 Возвращаем Task, а не void

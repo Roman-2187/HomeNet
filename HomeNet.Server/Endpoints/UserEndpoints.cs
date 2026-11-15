@@ -2,10 +2,8 @@
 using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using System.Data.Common;
 
 namespace HomeNet.Server.Endpoints
 {
@@ -13,45 +11,22 @@ namespace HomeNet.Server.Endpoints
     {
         public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepo userRepository, ICastomLogger serverLogger)
         {
-            // === [📥 PULL ОБНОВЛЕНИЯ ПРОФИЛЕЙ] ===
-            endpoints.MapGet("/api/users/sync", async (Guid deviceId, string lastSyncedAt) =>
-            {
-                try
-                {
-                    if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
-                        clientCheckpoint = DateTimeOffset.MinValue;
-
-                    serverLogger.LogInfo($"[API PULL] Запрос обновлений профилей с метки {clientCheckpoint:HH:mm:ss}...");
-
-                    var freshUsers = await userRepository.GetUsersForSyncAsync(clientCheckpoint);
-                    return Results.Ok(freshUsers.ToList());
-                }
-                catch (Exception ex)
-                {
-                    serverLogger.LogError($"[API Ошибка] Сбой PULL ОРМ пользователей: {ex.Message}");
-                    return Results.Problem("Ошибка сервера");
-                }
-            });
-
-
             // === [🔐 АУТЕНТИФИКАЦИЯ] ===
             endpoints.MapPost("/api/users/auth", async (LoginRequest request) =>
             {
                 try
                 {
                     serverLogger.LogInfo($"[API AUTH] Попытка входа для {request.Email}...");
-
-                    // Ищем юзера по Email в Postgres
                     var user = await userRepository.GetByEmailAsync(request.Email);
 
                     if (user == null || user.Password != request.Password)
                     {
                         serverLogger.LogWarning($"[API AUTH] Неверный email или пароль для {request.Email}");
-                        return Results.Unauthorized(); // Вернет 401
+                        return Results.Unauthorized();
                     }
 
                     serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email}");
-                    return Results.Ok(user); // Вернет 200 и JSON с юзером
+                    return Results.Ok(user);
                 }
                 catch (Exception ex)
                 {
@@ -65,26 +40,13 @@ namespace HomeNet.Server.Endpoints
             {
                 try
                 {
-                    // 🔥 Ищем пользователя в базе
                     var user = await userRepository.GetByIdAsync(userId);
-                    if (user == null)
-                    {
-                        serverLogger.LogWarning($"[API] Пользователь {userId} не найден.");
-                        return Results.Unauthorized();
-                    }
+                    if (user == null) return Results.Unauthorized();
 
-                    // 🔥 Проверяем, что это админ (по email)
                     const string ADMIN_EMAIL = "ohagow.r@gmail.com";
-                    if (user.Email != ADMIN_EMAIL)
+                    if (user.Email != ADMIN_EMAIL || user.DeviceId != deviceId)
                     {
-                        serverLogger.LogWarning($"[API] Пользователь {user.Email} не админ.");
-                        return Results.Unauthorized();
-                    }
-
-                    // 🔥 (Опционально) Проверяем deviceId
-                    if (user.DeviceId != deviceId)
-                    {
-                        serverLogger.LogWarning($"[API] DeviceId не совпадает для {user.Email}.");
+                        serverLogger.LogWarning($"[API] Доступ запрещён для {user.Email}.");
                         return Results.Unauthorized();
                     }
 
@@ -99,18 +61,16 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            // === [📥 GET ПОЛЬЗОВАТЕЛЯ ПО ID (для поиска)] ===
+            // === [📥 GET ПОЛЬЗОВАТЕЛЯ ПО ID] ===
             endpoints.MapGet("/api/users/{id:guid}", async (Guid id) =>
             {
                 try
                 {
                     serverLogger.LogInfo($"[API] Запрос пользователя по ID: {id}");
                     var user = await userRepository.GetByIdAsync(id);
-
-                    if (user == null)
-                        return Results.NotFound(new { Error = "Пользователь не найден" });
-
-                    return Results.Ok(user);
+                    return user == null
+                        ? Results.NotFound(new { Error = "Пользователь не найден" })
+                        : Results.Ok(user);
                 }
                 catch (Exception ex)
                 {
@@ -119,21 +79,16 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            // === [📤 PUSH РЕГИСТРАЦИЯ И БИЗНЕС-UPSERT] ===
+            // === [📤 PUSH РЕГИСТРАЦИЯ И ОБНОВЛЕНИЕ ПРОФИЛЯ] ===
             endpoints.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
             {
                 try
                 {
                     serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
-
-                    // 🔥 Ищем по ID (это единственный правильный способ проверить, есть ли такой юзер)
                     var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
 
                     if (existingServerUser != null)
                     {
-                        // Юзер существует по ID — обновляем (это нормальный PUSH)
-                        serverLogger.LogInfo($"[API Чек] Пользователь найден по ID. Обновляем профиль...");
-
                         existingServerUser.DeviceId = incomingUser.DeviceId;
                         existingServerUser.FirstName = incomingUser.FirstName;
                         existingServerUser.LastName = incomingUser.LastName;
@@ -144,21 +99,18 @@ namespace HomeNet.Server.Endpoints
                     }
                     else
                     {
-                        // Юзера по ID нет — это новый. Пытаемся вставить.
-                        // Если Email занят — репозиторий кинет DuplicateEmailException.
-                        serverLogger.LogInfo($"[API Новый] Юзера нет по ID. Пытаемся создать...");
                         await userRepository.InsertAsync(incomingUser);
                         serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан.");
                     }
 
                     return Results.Ok(new { Success = true });
                 }
-                catch (DuplicateEmailException ex) // 🔥 Ловим доменное исключение от репозитория!
+                catch (DuplicateEmailException ex)
                 {
                     serverLogger.LogWarning($"[API Конфликт] {ex.Message}");
                     return Results.Conflict(new { Error = ex.Message });
                 }
-                catch (DatabaseException ex) // 🔥 Ловим ошибку БД (упала база, синтаксис и т.д.)
+                catch (DatabaseException ex)
                 {
                     serverLogger.LogError($"[API Ошибка БД] {ex.Message}");
                     return Results.Problem("Ошибка сервера");
@@ -170,8 +122,6 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-
-
             // === [📥 ПРОВЕРКА СУЩЕСТВОВАНИЯ EMAIL] ===
             endpoints.MapGet("/api/users/check-email", async ([FromServices] IUserRepo repo, [FromQuery] string email) =>
             {
@@ -181,7 +131,6 @@ namespace HomeNet.Server.Endpoints
 
                     var exists = await repo.EmailExistsAsync(email);
                     serverLogger.LogInfo($"[API] Проверка Email '{email}': {(exists ? "Занят" : "Свободен")}");
-
                     return Results.Ok(new { Exists = exists });
                 }
                 catch (Exception ex)
@@ -197,14 +146,12 @@ namespace HomeNet.Server.Endpoints
                 try
                 {
                     serverLogger.LogInfo($"[API DELETE] Запрос на удаление пользователя: {id}");
-
                     var user = await userRepository.GetByIdAsync(id);
                     if (user == null)
                         return Results.NotFound(new { Error = "Пользователь не найден" });
 
                     await userRepository.DeleteByIdAsync(id);
                     serverLogger.LogInfo($"[API DELETE] Пользователь {id} успешно удалён.");
-
                     return Results.Ok(new { Success = true });
                 }
                 catch (Exception ex)
@@ -213,8 +160,8 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
-
         }
+
         public record LoginRequest(string Email, string Password);
     }
 }

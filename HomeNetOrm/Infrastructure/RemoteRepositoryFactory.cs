@@ -31,6 +31,13 @@ namespace HomeNetOrm.Infrastructure
         {
             var deviceSyncGen = new DeviceSyncSqlGenerator(Schemas, Translator, Logger);
             Repositories[typeof(DeviceSyncRepository)] = new DeviceSyncRepository(ConnectionFactory, deviceSyncGen);
+
+            var deletedRecordGen = new DeletedRecordSqlGenerator(Schemas, Translator, Logger);
+            Repositories[typeof(DeletedRecordRepository)] = new DeletedRecordRepository(ConnectionFactory, deletedRecordGen);
         }
+
+
+
+
     }
 }

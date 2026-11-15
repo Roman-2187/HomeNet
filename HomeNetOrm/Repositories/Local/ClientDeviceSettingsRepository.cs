@@ -29,6 +29,17 @@ namespace HomeNetOrm.Repositories.Local
             return await db.QueryFirstOrDefaultAsync<DeviceSettingsEntity>(sql);
         }
 
+
+        public async Task DeleteByUserIdAsync(Guid userId)
+        {
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+
+            var cmd = _sqlGenerator.GenerateDeleteByUserId(userId);
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
+        }
+
+
         /// <summary>
         /// Находит сохранённую запись конкретного аккаунта по детерминированному SessionId.
         /// </summary>

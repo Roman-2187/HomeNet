@@ -1,4 +1,5 @@
-﻿using HomeNet.Models.Shared.Entity;
+﻿using HomeNet.Models.Shared.Dto;
+using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.ApiClient;
 
 namespace HomeNet.Network.Api
@@ -7,7 +8,8 @@ namespace HomeNet.Network.Api
     {
         Task<bool> PushUserAsync(UserEntity user);
         Task<bool> DeleteUserAsync(Guid userId);
-        Task<IReadOnlyCollection<UserEntity>> FetchFreshUsersAsync(Guid deviceId, DateTimeOffset lastSyncedAt);
+        Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(Guid deviceId, long lastVersion);
+
 
         // 🔥 Новые методы для работы с сервером (чтение и поиск)
         Task<UserEntity?> GetUserByIdAsync(Guid id);

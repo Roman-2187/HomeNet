@@ -2,7 +2,7 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.Api;
 using HomeNet.Network.ApiClient;
-using HomeNet.Network.Handlers; // 🔥 Не забудь подключить namespace твоего хендлера
+using HomeNet.Network.Handlers; 
 using HomeNet.Synchronization;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Sinc;
@@ -75,7 +75,7 @@ namespace HomeNet.DI.Modules
             DbContextContainer = new DbContextContainer(DbEngine, eventBus, logger);
 
             // 5. Создаем SyncService
-            UserSyncService = new UserSyncService(UserRepository, UserApiClient, eventBus, logger);
+            UserSyncService = new UserSyncService(UserRepository, DeviceSettingsRepository, UserApiClient, eventBus, logger);
             MessageSyncService = new MessageSyncService(MessageRepository, MessageApiClient, eventBus, logger);
 
             // 6. Запускаем стартовую синхронизацию

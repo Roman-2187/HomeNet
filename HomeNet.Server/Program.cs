@@ -14,12 +14,10 @@ namespace HomeNet.Server
         private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-          //  const string serverLogName = "server_debug";
 
             // 1. 🪐 СОБИРАЕМ МНОГОСТВОЛЬНЫЙ ЛОГГЕР
             ICastomLogger serverLogger = new AggregateLogger(
-                new ConsoleLogger()/* ,
-                new HtmlLogger(serverLogName)*/
+                new ConsoleLogger()
             );
 
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
@@ -30,32 +28,31 @@ namespace HomeNet.Server
             builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
             string postgresConn = builder.Configuration["PostgresConnection"]
-            ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
+                ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
 
             // 2. Создаем движок для PostgreSQL
             var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
 
             // 🔥 3. Инициализируем фабрику репозиториев БЕЗ шины событий (null)
-            // Серверу не нужны факты, он просто пишет в базу.
             postgresEngine.InitializeRepositories(null);
 
             // 🔥 4. Достаем готовые репозитории из фабрики
-                IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
-                IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
-                DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
+            IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
+            IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
+            DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
+            DeletedRecordRepository deletedRecordRepository = postgresEngine.Repositories.GetRepository<DeletedRecordRepository>();
 
-                // 🔥 РЕГИСТРИРУЕМ В DI-КОНТЕЙНЕРЕ ASP.NET CORE:
-                builder.Services.AddSingleton(userRepository);
-               
+            // 🔥 РЕГИСТРИРУЕМ В DI-КОНТЕЙНЕРЕ ASP.NET CORE:
+            builder.Services.AddSingleton(userRepository);
+            builder.Services.AddSingleton(deletedRecordRepository);
 
-                builder.Services.AddSignalR();
-                var app = builder.Build();
+            builder.Services.AddSignalR();
+            var app = builder.Build();
 
             // --- МАППИНГ РАЗДЕЛЕННЫХ СЛОЕВ ЭНДПОИНТОВ ---
             app.MapMessageEndpoints(messageRepository, serverLogger);
-            app.MapUserEndpoints(userRepository, serverLogger);
-            app.MapSyncEndpoints(deviceSyncRepository, serverLogger);
-
+            app.MapUserEndpoints(userRepository,  serverLogger);
+            app.MapSyncEndpoints(deviceSyncRepository, userRepository,deletedRecordRepository,serverLogger);
 
             app.MapGet("/api/health", () =>
             {
@@ -68,8 +65,6 @@ namespace HomeNet.Server
                     Message = "HomeNet Server is running"
                 });
             }).AllowAnonymous();
-
-
 
             // Сетевой автобус SignalR
             app.MapHub<ServerChatHub>("/chatHub");
