@@ -4,8 +4,10 @@ namespace HomeNetCore.Interfaces.ViewModels.UserZone
 {
     public interface IContactsVm
     {
+        void Dispose();
+
         /// <summary> Клик по другу в левом списке </summary>
-       
+
 
         // Было: public record FriendSelected(UserEntity Friend);
         // Надо сделать:

@@ -8,8 +8,7 @@ using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Remote
 {
-    // 🔥 Наследуемся строго от CoreSqlGenerator! Никакого лишнего CRUD-мусора
-    internal class DeviceSyncSqlGenerator :BaseSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
+    internal class DeviceSyncSqlGenerator : BaseSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
     {
         public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
@@ -22,13 +21,11 @@ namespace HomeNetOrm.Generators.Remote
                 .Emit(PhraseType.Values)
                 .InsertParameters()
                 .Emit(PhraseType.On).Emit(PhraseType.Conflict)
-                .Emit(OpType.OpenBracket)
-                    .Col(d => d.UserId)
-                    .Emit(OpType.Comma) 
-                    .Col(d => d.DeviceId)
-                .Emit(OpType.CloseBracket)
+                    .Emit(OpType.OpenBracket).Col(d => d.Id).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow()) 
+                    .Col(d => d.LastVersion).Emit(OpType.Equal).Raw("EXCLUDED.last_version")
+                    .Emit(OpType.Comma)
+                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
                 .Build();
         }
 
@@ -46,7 +43,7 @@ namespace HomeNetOrm.Generators.Remote
                 .Emit(PhraseType.Where)
                     .Col(d => d.DeviceId).Emit(OpType.Equal)
                     .Param(d => d.DeviceId, deviceId)
-                .Raw(Translator.FormatLimit(1)) 
+                .Raw(Translator.FormatLimit(1))
                 .Build();
     }
 }

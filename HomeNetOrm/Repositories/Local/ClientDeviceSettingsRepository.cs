@@ -6,13 +6,10 @@ using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Local
 {
-    /// <summary>
-    /// Чистый репозиторий настроек. Работает напрямую с классом генератора! 🧼🦾
-    /// </summary>
     public class ClientDeviceSettingsRepository
     {
         private readonly Func<DbConnection> _connectionFactory;
-        private readonly DeviceSettingsSqlGenerator _sqlGenerator; // Твой конкретный класс генератора!
+        private readonly DeviceSettingsSqlGenerator _sqlGenerator;
 
         internal ClientDeviceSettingsRepository(Func<DbConnection> connectionFactory, DeviceSettingsSqlGenerator sqlGenerator)
         {
@@ -20,58 +17,57 @@ namespace HomeNetOrm.Repositories.Local
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
         }
 
-        public async Task<Guid> GetOrCreateDeviceIdAsync()
+        /// <summary>
+        /// Ищет текущую активную сессию на устройстве (для автовхода при запуске).
+        /// </summary>
+        public async Task<DeviceSettingsEntity?> GetActiveSessionAsync()
         {
-            SqlQueryCommand selectCmd = _sqlGenerator.GenerateSelectByKey();
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
 
-            using (var db = _connectionFactory())
-            {
-                if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
-
-                var settings = await db.QueryFirstOrDefaultAsync<DeviceSettingsEntity>(selectCmd.Sql, selectCmd.Params);
-
-                if (settings != null && settings.DeviceId != Guid.Empty)
-                {
-                    return settings.DeviceId;
-                }
-
-                Guid newDeviceId = Guid.NewGuid();
-                var newSettings = new DeviceSettingsEntity
-                {
-                    DeviceId = newDeviceId,
-                    UserId = Guid.Empty,
-                    Email = string.Empty,
-                    Password = string.Empty,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                };
-
-                await SaveSettingsInternalAsync(db, newSettings);
-                return newDeviceId;
-            }
+            const string sql = "SELECT * FROM device_settings WHERE is_active = 1 LIMIT 1;";
+            return await db.QueryFirstOrDefaultAsync<DeviceSettingsEntity>(sql);
         }
 
-        public async Task<DeviceSettingsEntity?> GetSettingsAsync()
+        /// <summary>
+        /// Находит сохранённую запись конкретного аккаунта по детерминированному SessionId.
+        /// </summary>
+        public async Task<DeviceSettingsEntity?> GetBySessionIdAsync(Guid sessionId)
         {
-            SqlQueryCommand selectCmd = _sqlGenerator.GenerateSelectByKey();
-            using (var db = _connectionFactory())
-            {
-                if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
-                return await db.QueryFirstOrDefaultAsync<DeviceSettingsEntity>(selectCmd.Sql, selectCmd.Params);
-            }
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+
+            const string sql = "SELECT * FROM device_settings WHERE id = @Id LIMIT 1;";
+            return await db.QueryFirstOrDefaultAsync<DeviceSettingsEntity>(sql, new { Id = sessionId });
         }
 
+        /// <summary>
+        /// Возвращает количество уникальных аккаунтов, когда-либо заходивших с этого устройства.
+        /// </summary>
+        public async Task<int> GetKnownAccountsCountAsync()
+        {
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+
+            const string sql = "SELECT COUNT(*) FROM device_settings;";
+            return await db.ExecuteScalarAsync<int>(sql);
+        }
+
+        /// <summary>
+        /// Сохраняет/обновляет запись аккаунта через твой родной UPSERT-генератор.
+        /// </summary>
         public async Task SaveSettingsAsync(DeviceSettingsEntity settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            using (var db = _connectionFactory())
-            {
-                if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
-                await SaveSettingsInternalAsync(db, settings);
-            }
-        }
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
 
-        private async Task SaveSettingsInternalAsync(DbConnection db, DeviceSettingsEntity settings)
-        {
+            // Если эта сессия становится активной — деактивируем остальные на этом устройстве
+            if (settings.IsActive)
+            {
+                await db.ExecuteAsync("UPDATE device_settings SET is_active = 0 WHERE id != @Id;", new { settings.Id });
+            }
+
             settings.UpdatedAt = DateTimeOffset.UtcNow;
             SqlQueryCommand insertCmd = _sqlGenerator.GenerateInsertOrUpdate();
             await db.ExecuteAsync(insertCmd.Sql, settings);

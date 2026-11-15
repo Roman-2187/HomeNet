@@ -87,10 +87,7 @@ namespace HomeNet.DI.Modules
             MessageListener = new MessageSignalRListener(apiBaseUrl, logger, eventBus);
         }
 
-        public async Task InitializeDeviceSessionAsync()
-        {
-            CurrentDeviceId = await DeviceSettingsRepository.GetOrCreateDeviceIdAsync();
-        }
+        
 
 
        

@@ -8,18 +8,34 @@ using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Local
 {
-    // 🔥 Тоже строго от CoreSqlGenerator. Чистая спецификация под одну задачу автологина
-    internal class DeviceSettingsSqlGenerator : BaseSqlGenerator<DeviceSettingsEntity>,  ILocalDeviceSettingsSqlGenerator
+    internal class DeviceSettingsSqlGenerator : BaseSqlGenerator<DeviceSettingsEntity>, ILocalDeviceSettingsSqlGenerator
     {
         public DeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
-        public SqlQueryCommand GenerateSelectByKey() =>
+        /// <summary>
+        /// Выбирает активную сессию на устройстве (где IsActive = true).
+        /// </summary>
+        public SqlQueryCommand GenerateSelectActiveSession() =>
             CreateQuery()
                 .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where).Col(d => d.IsActive).Emit(OpType.Equal).Param("IsActive", true)
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
+        /// <summary>
+        /// Выбирает конкретный аккаунт по его детерминированному Id (хэш DeviceId + UserId).
+        /// </summary>
+        public SqlQueryCommand GenerateSelectById() =>
+            CreateQuery()
+                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where).Col(d => d.Id).Emit(OpType.Equal).Param("Id", Guid.Empty)
+                .Raw(Translator.FormatLimit(1))
+                .Build();
+
+        /// <summary>
+        /// UPSERT по детерминированному ключу Id (паре DeviceId + UserId).
+        /// </summary>
         public SqlQueryCommand GenerateInsertOrUpdate()
         {
             return CreateQuery()
@@ -27,7 +43,7 @@ namespace HomeNetOrm.Generators.Local
                 .InsertFields()
                 .Emit(PhraseType.Values)
                 .InsertParameters()
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.DeviceId).Emit(OpType.CloseBracket)
+                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.Id).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
                 .UpsertExcludedFields()
                 .Build();

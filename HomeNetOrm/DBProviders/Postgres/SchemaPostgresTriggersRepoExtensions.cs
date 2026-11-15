@@ -1,4 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
@@ -9,88 +10,124 @@ namespace HomeNetOrm.DBProviders.Postgres
     internal static class SchemaPostgresTriggersRepoExtensions
     {
         /// <summary>
-        /// Автоматический накат триггеров и функций версионирования для PostgreSQL.
-        /// Красиво вынесен из основного движка прямо в слой работы со схемами! 🦾
+        /// Автоматический накат триггеров версионирования и триггеров надгробий (Tombstones) для PostgreSQL.
         /// </summary>
         public static async Task MigratePostgresVersionTriggersAsync(
-            this SchemaRepository _, // Магия расширения вешается на "табле криатер"
+            this SchemaRepository _,
             DbConnection connection,
             ISchemaSqlGenerator schemaSqlInitializer,
             ISqlDialectTranslator translator,
             IEnumerable<TableSchema> tableSchemas,
             ICastomLogger logger)
         {
-            logger.LogInfo("[Postgres Migrator] Серверный режим: Проверка системы версионирования Postgres...");
+            logger.LogInfo("[Postgres Migrator] Серверный режим: Проверка триггеров версионирования и надгробий...");
 
             try
             {
-                // 1. Создаем/обновляем глобальную функцию инкремента (используя твой метод расширения из PostgresSchemaExtensions)
+                // 1. Создаем/обновляем глобальную функцию инкремента версий
                 string functionSql = schemaSqlInitializer.GenerateVersionFunctionSql(translator);
-                using (var cmdFunc = connection.CreateCommand())
-                {
-                    cmdFunc.CommandText = functionSql;
-                    await cmdFunc.ExecuteNonQueryAsync();
-                }
-                logger.LogInfo("[Postgres Migrator] ✅ Глобальная функция инкремента 'update_version_func' проверена.");
+                await ExecuteSqlAsync(connection, functionSql);
+                logger.LogInfo("[Postgres Migrator] ✅ Глобальная функция 'update_version_func' проверена.");
 
-                // 📋 Черный список таблиц, которым не нужно серверное версионирование
-                var ignoreTablesForVersioning = new HashSet<string> { "device_sync", "devicesync" };
+                // 2. Адаптируем схему DeletedRecords в snake_case через твой турникет
+                var rawDeletedSchema = tableSchemas.First(s =>
+                    s.TableName.Replace("\"", "").Equals("DeletedRecords", StringComparison.OrdinalIgnoreCase));
+                var snakeDeletedSchema = rawDeletedSchema.ToAdaptedSchemas().Snake;
 
-                // 2. Бежим по всем зарегистрированным таблицам и проверяем триггеры в системном каталоге pg_trigger
+                string deletedTable = translator.FormatTable(snakeDeletedSchema);
+                string colId = translator.FormatColumnName("id");
+                string colEntityType = translator.FormatColumnName("entity_type");
+                string colDeletedAt = translator.FormatColumnName("deleted_at");
+
+                // 3. Создаем/обновляем универсальную функцию записи в таблицу надгробий
+                string tombstoneFuncSql = $@"
+                    CREATE OR REPLACE FUNCTION log_deleted_record()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        INSERT INTO {deletedTable} ({colId}, {colEntityType}, {colDeletedAt})
+                        VALUES (OLD.{colId}, TG_ARGV[0], NOW())
+                        ON CONFLICT ({colId}) DO UPDATE SET {colDeletedAt} = NOW();
+                        RETURN OLD;
+                    END;
+                    $$ LANGUAGE plpgsql;";
+                await ExecuteSqlAsync(connection, tombstoneFuncSql);
+                logger.LogInfo("[Postgres Migrator] ✅ Функция надгробий 'log_deleted_record' проверена.");
+
+                // 4. Бежим по всем схемам таблиц
                 foreach (var schema in tableSchemas)
                 {
                     if (schema == null || string.IsNullOrEmpty(schema.TableName)) continue;
 
-                    string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
+                    // Проверяем по самой схеме: есть ли у таблицы отслеживание версий (колонка Version)
+                    bool hasVersionColumn = schema.Columns.Any(c =>
+                        c.Name.Equals("Version", StringComparison.OrdinalIgnoreCase));
 
-                    // Проверяем исключения
-                    if (ignoreTablesForVersioning.Contains(cleanTableName))
+                    if (!hasVersionColumn)
                     {
-                        logger.LogInfo($"[Postgres Migrator] Игнор-лист: Таблица '{schema.TableName}' исключена из серверного версионирования.");
+                        logger.LogInfo($"[Postgres Migrator] Таблица '{schema.TableName}' не использует версионирование. Пропуск.");
                         continue;
                     }
 
-                    string triggerName = $"trg_{cleanTableName}_version";
+                    string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
 
-                    // Ищем существующий триггер в базе
-                    bool triggerExists = false;
-                    using (var checkCmd = connection.CreateCommand())
+                    // --- ШАГ А: Триггер версионирования (BEFORE INSERT/UPDATE) ---
+                    string versionTriggerName = $"trg_{cleanTableName}_version";
+                    if (!await TriggerExistsAsync(connection, versionTriggerName))
                     {
-                        checkCmd.CommandText = "SELECT COUNT(*) FROM pg_trigger WHERE tgname = @tgname;";
-                        var param = checkCmd.CreateParameter();
-                        param.ParameterName = "@tgname";
-                        param.Value = triggerName;
-                        checkCmd.Parameters.Add(param);
-
-                        var result = await checkCmd.ExecuteScalarAsync();
-                        triggerExists = Convert.ToInt32(result) > 0;
-                    }
-
-                    if (triggerExists)
-                    {
-                        logger.LogInfo($"[Postgres Migrator] Лог: Триггер версионирования '{triggerName}' уже существует для таблицы '{schema.TableName}'. Пропуск.");
-                    }
-                    else
-                    {
-                        logger.LogWarning($"[Postgres Migrator] Лог: Триггер '{triggerName}' НЕ найден. Генерируем и накатываем...");
-
-                        // Вызываем твое Fluent-расширение генератора SQL триггера!
+                        logger.LogWarning($"[Postgres Migrator] Триггер '{versionTriggerName}' не найден. Накатываем...");
                         string triggerSql = schemaSqlInitializer.GenerateVersionTriggerSql(schema, translator);
+                        await ExecuteSqlAsync(connection, triggerSql);
+                        logger.LogInfo($"[Postgres Migrator] ✅ Триггер '{versionTriggerName}' привязан к '{schema.TableName}'.");
+                    }
 
-                        using (var runCmd = connection.CreateCommand())
+                    // --- ШАГ Б: Триггер надгробий (AFTER DELETE) для всех версионируемых таблиц, кроме самой DeletedRecords ---
+                    if (!cleanTableName.Equals("deletedrecords", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string deleteTriggerName = $"trg_{cleanTableName}_deleted";
+                        if (!await TriggerExistsAsync(connection, deleteTriggerName))
                         {
-                            runCmd.CommandText = triggerSql;
-                            await runCmd.ExecuteNonQueryAsync();
+                            logger.LogWarning($"[Postgres Migrator] Триггер надгробий '{deleteTriggerName}' не найден. Накатываем...");
+
+                            var snakeSchema = schema.ToAdaptedSchemas().Snake;
+                            string quotedTable = translator.FormatTable(snakeSchema);
+                            string entityTypeArg = schema.TableName.Replace("\"", "");
+
+                            string deleteTriggerSql = $@"
+                                CREATE TRIGGER {deleteTriggerName}
+                                AFTER DELETE ON {quotedTable}
+                                FOR EACH ROW EXECUTE FUNCTION log_deleted_record('{entityTypeArg}');";
+
+                            await ExecuteSqlAsync(connection, deleteTriggerSql);
+                            logger.LogInfo($"[Postgres Migrator] ✅ Триггер надгробий '{deleteTriggerName}' привязан к '{schema.TableName}'.");
                         }
-                        logger.LogInfo($"[Postgres Migrator] ✅ Триггер '{triggerName}' успешно привязан к таблице '{schema.TableName}'.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogCritical($"[Postgres Migrator] ❌ КРИТИЧЕСКАЯ ОШИБКА инициализации триггеров версионирования: {ex.Message}");
+                logger.LogCritical($"[Postgres Migrator] ❌ КРИТИЧЕСКАЯ ОШИБКА инициализации триггеров: {ex.Message}");
                 throw;
             }
+        }
+
+        private static async Task<bool> TriggerExistsAsync(DbConnection connection, string triggerName)
+        {
+            using var checkCmd = connection.CreateCommand();
+            checkCmd.CommandText = "SELECT COUNT(*) FROM pg_trigger WHERE tgname = @tgname;";
+            var param = checkCmd.CreateParameter();
+            param.ParameterName = "@tgname";
+            param.Value = triggerName;
+            checkCmd.Parameters.Add(param);
+
+            var result = await checkCmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result) > 0;
+        }
+
+        private static async Task ExecuteSqlAsync(DbConnection connection, string sql)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+            await cmd.ExecuteNonQueryAsync();
         }
     }
 }

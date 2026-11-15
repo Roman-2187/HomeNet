@@ -7,6 +7,11 @@ using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IUsersTableVm;
+using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IContactsVm;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
+using static HomeNetOrm.Interfaces.Repositories.IUserRepo;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -37,17 +42,17 @@ namespace HomeNetPresentation.ViewModels
         private void InitializeBusSubscriptions()
         {
             // Слушаем изменения таблицы пользователей в БД через центральный репозиторий
-            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
+            _eventBus.Subscribe<Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПЕРЕВОДИМ НА СИСТЕМНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ
-            _eventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
-            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeleted);
+            _eventBus.Subscribe<Inserted>(OnUserAdded);
+            _eventBus.Subscribe<Deleted>(OnUserDeleted);
 
-            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
-            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
+            _eventBus.Subscribe<UserSignedIn>(OnGlobalUserSignedIn);
+            _eventBus.Subscribe<UserSignedUp>(OnGlobalUserSignedUp);
         }
 
-        private void OnGlobalUserSignedIn(IUserVm.UserSignedIn msg)
+        private void OnGlobalUserSignedIn(UserSignedIn msg)
         {
             if (msg?.User == null) return;
 
@@ -55,10 +60,10 @@ namespace HomeNetPresentation.ViewModels
             _currentUser = msg.User;
             CurrentUserName = msg.User.FirstName ?? "Вы";
 
-            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+            _eventBus.Publish(this, new RefreshRequest());
         }
 
-        private void OnGlobalUserSignedUp(IUserVm.UserSignedUp msg)
+        private void OnGlobalUserSignedUp(UserSignedUp msg)
         {
             if (msg?.User == null) return;
 
@@ -66,10 +71,10 @@ namespace HomeNetPresentation.ViewModels
             _currentUser = msg.User;
             CurrentUserName = msg.User.FirstName ?? "Вы";
 
-            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+            _eventBus.Publish(this, new RefreshRequest());
         }
 
-        private void OnUsersRefreshed(IUsersTableVm.Refreshed msg)
+        private void OnUsersRefreshed(Refreshed msg)
         {
             if (msg?.Users == null) return;
 
@@ -88,7 +93,7 @@ namespace HomeNetPresentation.ViewModels
         {
             IsMenuOpen = false;
             CurrentUserName = "Авторизация...";
-            _eventBus.Publish(this, new IUserVm.LogoutClient());
+            _eventBus.Publish(this, new LogoutClient());
         }
 
         [RelayCommand]
@@ -104,7 +109,7 @@ namespace HomeNetPresentation.ViewModels
 
 
 
-        private void OnUserAdded(IUserRepo.Inserted msg)
+        private void OnUserAdded(Inserted msg)
         {
             if (msg?.User == null) return;
 
@@ -121,7 +126,7 @@ namespace HomeNetPresentation.ViewModels
 
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(IUserRepo.Deleted msg)
+        private void OnUserDeleted(Deleted msg)
         {
             if (msg == null) return;
             var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.UserId);
@@ -132,7 +137,9 @@ namespace HomeNetPresentation.ViewModels
         {
             if (value != null)
             {
-                _eventBus.Publish(this, new IContactsVm.FriendSelected(value, _currentUserId ?? Guid.Empty));
+                _eventBus.Publish(this, new FriendSelected(value, _currentUserId ?? Guid.Empty));
+
+                _eventBus.Publish(this, new TextChanged($"собеседник: {_selectedFriend?.FirstName??"unknown"}"));
             }
         }
 
@@ -143,19 +150,19 @@ namespace HomeNetPresentation.ViewModels
             {
                 CurrentUserName = _currentUser.FirstName ?? "Вы";
             }
-            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+            _eventBus.Publish(this, new RefreshRequest());
         }
 
         public void Dispose()
         {
-            _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
+            _eventBus.Unsubscribe<Refreshed>(OnUsersRefreshed);
 
             // 🔥 Не забываем отписаться от новых интерфейсов в Dispose
-            _eventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
-            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<Inserted>(OnUserAdded);
+            _eventBus.Unsubscribe<Deleted>(OnUserDeleted);
 
-            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
-            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
+            _eventBus.Unsubscribe<UserSignedIn>(OnGlobalUserSignedIn);
+            _eventBus.Unsubscribe<UserSignedUp>(OnGlobalUserSignedUp);
         }
     }
 }

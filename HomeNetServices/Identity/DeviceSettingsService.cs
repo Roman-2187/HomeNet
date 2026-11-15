@@ -10,43 +10,34 @@ namespace HomeNetServices.Identity
         private readonly ClientDeviceSettingsRepository _deviceSettingsRepo;
         private readonly ICastomLogger _logger;
 
-        // 🔥 Наш вечный стейт в оперативке
-        private DeviceSettingsEntity? _cachedSettings;
-
-        // Смарт-замок для предотвращения race condition при ленивой инициализации
+        private DeviceSettingsEntity? _cachedActiveSession;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public DeviceSettingsService(ClientDeviceSettingsRepository deviceSettingsRepo, ICastomLogger logger)
         {
             _deviceSettingsRepo = deviceSettingsRepo ?? throw new ArgumentNullException(nameof(deviceSettingsRepo));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            // ЧИСТОТА: Конструктор пустой и стерильный! Никаких .Wait() и Task.Run.
         }
 
-        /// <summary>
-        /// Потокобезопасный ленивый прогрев кэша. Запустится только тогда, 
-        /// когда реально понадобится ID или настройки, и базы уже точно будут готовы.
-        /// </summary>
-        private async Task EnsureSettingsLoadedAsync()
+        private async Task EnsureActiveSessionLoadedAsync()
         {
-            if (_cachedSettings != null) return;
+            if (_cachedActiveSession != null) return;
 
             await _semaphore.WaitAsync();
             try
             {
-                if (_cachedSettings == null)
+                if (_cachedActiveSession == null)
                 {
-                    _logger.LogInfo("[DeviceSettingsService] Ленивый прогрев настроек железа...");
-                    // Базы к этому моменту уже гарантированно запущены
-                    Guid deviceId = await _deviceSettingsRepo.GetOrCreateDeviceIdAsync();
-                    _cachedSettings = await _deviceSettingsRepo.GetSettingsAsync();
-                    _logger.LogInfo($"[DeviceSettingsService] Сервер настроек прогрет в рантайме. ID: {deviceId}");
+                    Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
+                    _cachedActiveSession = await _deviceSettingsRepo.GetActiveSessionAsync();
+                    int totalAccounts = await _deviceSettingsRepo.GetKnownAccountsCountAsync();
+
+                    _logger.LogInfo($"[DeviceSettingsService] Железо ID: {deviceId} | Аккаунтов в истории: {totalAccounts} | Активен: {_cachedActiveSession?.Email ?? "никто"}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[DeviceSettingsService] Ошибка ленивой инициализации настроек: {ex.Message}");
+                _logger.LogError($"[DeviceSettingsService] Ошибка прогрева сессии: {ex.Message}");
             }
             finally
             {
@@ -54,34 +45,44 @@ namespace HomeNetServices.Identity
             }
         }
 
-        public async Task<Guid> GetDeviceIdAsync()
+        public Task<Guid> GetDeviceIdAsync()
         {
-            await EnsureSettingsLoadedAsync();
-            return _cachedSettings?.DeviceId ?? Guid.Empty;
+            return Task.FromResult(ImmortalDeviceProvider.CurrentDeviceId);
         }
 
         public async Task<DeviceSettingsEntity?> GetCurrentSettingsAsync()
         {
-            await EnsureSettingsLoadedAsync();
-            return _cachedSettings;
+            await EnsureActiveSessionLoadedAsync();
+            return _cachedActiveSession;
         }
 
         public async Task SaveSessionAsync(Guid userId, string email, string password)
         {
             try
             {
-                await EnsureSettingsLoadedAsync();
-                var settings = _cachedSettings ?? new DeviceSettingsEntity();
+                Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
+                Guid pairSessionId = ImmortalDeviceProvider.CreatePairSessionId(deviceId, userId);
 
-                settings.UserId = userId;
+                // Проверяем, заходил ли этот юзер раньше с этого ноутбука, чтобы не потерять его LastSyncVersion!
+                var existing = await _deviceSettingsRepo.GetBySessionIdAsync(pairSessionId);
+
+                var settings = existing ?? new DeviceSettingsEntity
+                {
+                    Id = pairSessionId,
+                    DeviceId = deviceId,
+                    UserId = userId,
+                    LastSyncVersion = 0
+                };
+
                 settings.Email = email;
                 settings.Password = password;
+                settings.IsActive = true;
                 settings.UpdatedAt = DateTimeOffset.UtcNow;
 
                 await _deviceSettingsRepo.SaveSettingsAsync(settings);
-                _cachedSettings = settings;
+                _cachedActiveSession = settings;
 
-                _logger.LogInfo($"[DeviceSettings] Сессия пользователя {email} обновлена в оперативке и SQLite.");
+                _logger.LogInfo($"[DeviceSettings] Активна сессия {email} (PairId: {pairSessionId}, Курсор версии: {settings.LastSyncVersion}).");
             }
             catch (Exception ex)
             {
@@ -93,33 +94,27 @@ namespace HomeNetServices.Identity
         {
             try
             {
-                // 1. Гарантируем, что кэш прогрет (уже после инициализации СУБД!)
-                await EnsureSettingsLoadedAsync();
+                await EnsureActiveSessionLoadedAsync();
 
-                var settings = _cachedSettings;
+                var settings = _cachedActiveSession;
                 if (settings == null) return;
 
-                // 2. Зануляем поля сессии прямо в объекте
-                settings.UserId = Guid.Empty;
+                // Затираем ТОЛЬКО чувствительные данные (логин/пароль) и снимаем флаг активности.
+                // UserId и LastSyncVersion остаются в SQLite для быстрого возврата в аккаунт!
                 settings.Email = string.Empty;
                 settings.Password = string.Empty;
+                settings.IsActive = false;
                 settings.UpdatedAt = DateTimeOffset.UtcNow;
 
-                // 3. Вызываем НАШ РОДНОЙ UPSERT генератор! 
-                // Теперь он отработает в штатном режиме, поймает конфликт по DeviceId 
-                // и запишет пустые поля из EXCLUDED прямо в SQLite!
                 await _deviceSettingsRepo.SaveSettingsAsync(settings);
+                _cachedActiveSession = null;
 
-                // 4. Обновляем оперативку
-                _cachedSettings = settings;
-
-                _logger.LogInfo("[DeviceSettings] Учетные данные устройства успешно стерты через UPSERT-генератор (разлогин).");
+                _logger.LogInfo($"[DeviceSettings] Креды стерты, но история аккаунта (UserId: {settings.UserId}) и курсор версии сохранены.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[DeviceSettings] Ошибка очистки сессии через генератор: {ex.Message}");
+                _logger.LogError($"[DeviceSettings] Ошибка очистки сессии: {ex.Message}");
             }
         }
-
     }
 }

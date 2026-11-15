@@ -4,31 +4,40 @@ using HomeNetOrm.Builders;
 namespace HomeNetOrm.Schemes
 {
     /// <summary>
-    /// 🌐 УДАЛЕННЫЙ МОДУЛЬ СХЕМ (Для PostgreSQL): Общие таблицы с триггерами версий + составной ключ девайсов
+    /// 🌐 УДАЛЕННЫЙ МОДУЛЬ СХЕМ (Для PostgreSQL): Общие таблицы с триггерами версий + курсор девайсов + версионируемая таблица надгробий
     /// </summary>
     public class RemoteMessengerSchemaModule : BaseMessengerSchemaModule
     {
         public RemoteMessengerSchemaModule() : base()
         {
-            // Серверная таблица девайсов на составном ключе
-            var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync")
-                .WithVersionTracking();
+            var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
-            deviceSync.AddColumn(d => d.DeviceId).AsPrimaryKey();
-            deviceSync.AddColumn(d => d.UserId).AsPrimaryKey();
-            deviceSync.AddColumn(d => d.Version);
-
-          
+            deviceSync.AddColumn(d => d.Id).AsPrimaryKey();
+            deviceSync.AddColumn(d => d.DeviceId).IsRequired();
+            deviceSync.AddColumn(d => d.UserId).IsRequired();
+            deviceSync.AddColumn(d => d.LastVersion);
             deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);
 
             _schemas.Add(deviceSync.Generate());
+
+
+            // 2. Серверная таблица надгробий (Tombstones) с отслеживанием версий
+            var deletedRecords = new TableBuilder<DeletedRecordEntity>("DeletedRecords")
+                .WithVersionTracking();
+
+            deletedRecords.AddColumn(d => d.Id).AsPrimaryKey();
+            deletedRecords.AddColumn(d => d.EntityType).HasLength(50).IsRequired();
+            deletedRecords.AddColumn(d => d.DeletedAt).IsRequired();
+            deletedRecords.AddColumn(d => d.Version);
+
+            _schemas.Add(deletedRecords.Generate());
         }
 
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
             var builder = base.BuildUsersSchema().WithVersionTracking();
-            
+
             builder.AddColumn(f => f.ServerCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
             builder.AddColumn(u => u.Version);
@@ -38,7 +47,7 @@ namespace HomeNetOrm.Schemes
         protected override TableBuilder<MessageEntity> BuildMessagesSchema()
         {
             var builder = base.BuildMessagesSchema().WithVersionTracking();
-           
+
             builder.AddColumn(m => m.ServerCreatedAt);
             builder.AddColumn(m => m.UpdatedAt);
             builder.AddColumn(m => m.Version);

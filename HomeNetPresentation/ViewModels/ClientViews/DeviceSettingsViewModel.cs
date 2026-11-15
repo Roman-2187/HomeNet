@@ -4,10 +4,12 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetPresentation.Services;
+using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
 using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
@@ -111,6 +113,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
                     // 🔥 Просто пушим событие входа! Навигатор переключит на Messenger, а UserVM запишет ID.
                     _eventBus.Publish(this, new IUserVm.UserSignedIn(localUser));
+
+                    _eventBus.Publish(this,new IStatusBarViewModel.TextChanged("[AutoLogin] выполнен вход "));
                 }
                 else
                 {
