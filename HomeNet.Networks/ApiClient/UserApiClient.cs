@@ -7,19 +7,13 @@ using System.Net.Http.Json;
 
 namespace HomeNet.Network.ApiClient
 {
-    public class UserApiClient : BaseApiClient, IUserApiClient
+    public class UserApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus) : BaseApiClient(httpClient, logger), IUserApiClient
     {
-        private readonly IEventBus _eventBus;
+        private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
         private class EmailCheckResponse
         {
             public bool Exists { get; set; }
-        }
-
-        public UserApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
-            : base(httpClient, logger)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async Task<bool> PushUserAsync(UserEntity user)

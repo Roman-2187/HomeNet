@@ -1,8 +1,9 @@
 ﻿using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels.UserZone; 
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using Microsoft.AspNetCore.SignalR.Client;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IDeviceSettingsVM;
 
 namespace HomeNet.Network.SignalRListeners
 {
@@ -19,31 +20,37 @@ namespace HomeNet.Network.SignalRListeners
             Logger = logger;
             EventBus = eventBus;
 
-            EventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            EventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+            // Ждем то же событие готовности сессии, что и SyncBatchFactory
+            EventBus.Subscribe<SessionPersisted>(OnSessionPersisted);
+            EventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClient);
         }
 
-        private async void OnUserSignedIn(IUserVm.UserSignedIn msg)
+        private async void OnSessionPersisted(SessionPersisted msg)
         {
-            if (msg?.User?.Id != null)
+            if (msg.UserId != Guid.Empty)
             {
-                Logger.LogInfo($"[СЕТЬ] Поймали вход пользователя {msg.User.Id}. Поднимаем SignalR для {GetType().Name}...");
-                await ConnectAsync(msg.User.Id);
+                Logger.LogInfo($"[СЕТЬ] Сессия готова ({msg.UserId}). Поднимаем SignalR для {GetType().Name}...");
+                await ConnectAsync(msg.UserId);
             }
         }
 
-        private async void OnUserSignedUp(IUserVm.UserSignedUp msg)
+        private async void OnLogoutClient(IUserVm.LogoutClient msg)
         {
-            if (msg?.User?.Id != null)
+            if (Connection != null)
             {
-                Logger.LogInfo($"[СЕТЬ] Поймали регистрацию пользователя {msg.User.Id}. Поднимаем SignalR для {GetType().Name}...");
-                await ConnectAsync(msg.User.Id);
+                Logger.LogInfo($"[СЕТЬ] Логаут. Закрываем SignalR для {GetType().Name}...");
+                await Connection.DisposeAsync();
+                Connection = null;
             }
         }
 
         public async Task ConnectAsync(Guid? userId = null)
         {
-            if (Connection != null) await Connection.DisposeAsync();
+            if (Connection != null)
+            {
+                await Connection.DisposeAsync();
+                Connection = null;
+            }
 
             string url = userId.HasValue
                 ? $"{ApiBaseUrl}/chatHub?userId={userId.Value}"
@@ -63,15 +70,12 @@ namespace HomeNet.Network.SignalRListeners
                 return Task.CompletedTask;
             });
 
-            // 🔥 Оборачиваем запуск соединения в ExecuteSafeAsync
-            // Если сервер недоступен, ошибка запишется в лог, но не упадет и не пойдет выше.
             await AutoExceptionHandler.ExecuteSafeAsync(Logger, async () =>
             {
                 await Connection.StartAsync();
-                return true; // Заглушка, так как метод требует возвращаемое значение
+                return true;
             });
 
-            // Эта строчка выполнится в любом случае (даже если упало выше), но только если коннект живой
             if (Connection.State == HubConnectionState.Connected)
             {
                 Logger.LogInfo($"[СЕТЬ] SignalR поднят для {GetType().Name}.");
@@ -86,11 +90,17 @@ namespace HomeNet.Network.SignalRListeners
 
         public async ValueTask DisposeAsync()
         {
-            EventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            if (Connection != null) await Connection.DisposeAsync();
+            EventBus.Unsubscribe<SessionPersisted>(OnSessionPersisted);
+            EventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutClient);
+
+            if (Connection != null)
+            {
+                await Connection.DisposeAsync();
+                Connection = null;
+            }
         }
     }
 
     public record ServerBecameReadyEvent();
 }
+

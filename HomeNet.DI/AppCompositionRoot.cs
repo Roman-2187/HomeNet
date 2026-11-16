@@ -2,6 +2,7 @@
 using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization;
 using HomeNetCore.Enums;
 using HomeNetOrm.Schemes;
@@ -26,7 +27,7 @@ namespace HomeNet.DI
         // 🔥 Прокидываем свойства для быстрого доступа
         public ICastomLogger Logger => Infrastructure.Logger;
         public IEventBus EventBus => Infrastructure.EventBus;
-        public SyncEngine OrmEngine => DataAccess.OrmEngine;
+        
         public EventBusInspector EventBusInspector => Infrastructure.EventBusInspector;
 
         // 🔥 ВАЖНО: Теперь листенеры разделены по зонам ответственности!

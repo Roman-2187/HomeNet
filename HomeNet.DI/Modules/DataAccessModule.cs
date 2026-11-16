@@ -2,9 +2,10 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.Api;
 using HomeNet.Network.ApiClient;
-using HomeNet.Network.Handlers; 
-using HomeNet.Synchronization;
+using HomeNet.Network.Handlers;
+using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNet.Synchronization.Items;
 using HomeNet.Synchronization.Sinc;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Infrastructure;
@@ -15,7 +16,7 @@ using HomeNetOrm.Repositories.Local;
 
 namespace HomeNet.DI.Modules
 {
-    public class DataAccessModule
+    public class DataAccessModule : IAsyncDisposable
     {
         public SiberNetDbEngine DbEngine { get; }
         public string ApiBaseUrl { get; }
@@ -24,7 +25,6 @@ namespace HomeNet.DI.Modules
         public IMessageRepo MessageRepository { get; }
         public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
         public Guid CurrentDeviceId { get; private set; }
-        public SyncEngine OrmEngine { get; }
 
         public ServerHealthMonitor HealthMonitor { get; }
 
@@ -34,6 +34,10 @@ namespace HomeNet.DI.Modules
         public IUserApiClient UserApiClient { get; }
         public IMessageApiClient MessageApiClient { get; }
 
+        // 🔥 Новая фабрика пакетной синхронизации вместо OrmEngine
+        public SyncBatchFactory SyncFactory { get; }
+
+        // 🔥 Легкие слушатели реального времени
         public UserSyncService UserSyncService { get; }
         public MessageSyncService MessageSyncService { get; }
 
@@ -44,6 +48,9 @@ namespace HomeNet.DI.Modules
             IEventBus eventBus)
         {
             ApiBaseUrl = apiBaseUrl;
+
+            // Перенесли настройку Dapper из удаленного CompositeSyncCoordinator
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             // 1. Движок и репозитории
             DbEngine = new SiberNetDbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
@@ -64,53 +71,40 @@ namespace HomeNet.DI.Modules
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-
             HealthMonitor = new ServerHealthMonitor(httpClient, logger, eventBus);
 
-            // 3. API-клиенты (теперь оба работают через перехватчик!)
+            // 3. API-клиенты
             UserApiClient = new UserApiClient(httpClient, logger, eventBus);
             MessageApiClient = new MessageApiClient(httpClient, logger, eventBus);
 
-            // 4. Контейнер хаба (чистый, только для SQLite)
+            // 4. Контейнер хаба
             DbContextContainer = new DbContextContainer(DbEngine, eventBus, logger);
 
-            // 5. Создаем SyncService
-            UserSyncService = new UserSyncService(UserRepository, DeviceSettingsRepository, UserApiClient, eventBus, logger);
-            MessageSyncService = new MessageSyncService(MessageRepository, MessageApiClient, eventBus, logger);
+            // 5. Пакетная синхронизация (Pull / Push по очереди через фабрику)
+            var syncItems = new IEntitySyncItem[]
+            {
+                new UserSyncItem(UserRepository, DeviceSettingsRepository, UserApiClient, logger),
+                new MessageSyncItem(MessageRepository, DeviceSettingsRepository, MessageApiClient, logger)
+            };
+            SyncFactory = new SyncBatchFactory(syncItems, eventBus, logger);
 
-            // 6. Запускаем стартовую синхронизацию
-            var syncCoordinator = new CompositeSyncCoordinator(UserSyncService, MessageSyncService);
-            OrmEngine = new SyncEngine(UserRepository, MessageRepository, syncCoordinator, logger);
+            // 6. Слушатели реального времени (без API-клиентов)
+            UserSyncService = new UserSyncService(UserRepository, eventBus, logger);
+            MessageSyncService = new MessageSyncService(MessageRepository, eventBus, logger);
 
             // 7. SignalR-листенеры
             UserListener = new UserSignalRListener(apiBaseUrl, logger, eventBus);
             MessageListener = new MessageSignalRListener(apiBaseUrl, logger, eventBus);
         }
 
-        
-
-
-       
-
-
-
-    }
-
-    public class CompositeSyncCoordinator : ISyncCoordinator
-    {
-        private readonly ISyncCoordinator _userSync;
-        private readonly ISyncCoordinator _messageSync;
-
-        public CompositeSyncCoordinator(ISyncCoordinator userSync, ISyncCoordinator messageSync)
+        // Корректная очистка ресурсов при закрытии приложения
+        public async ValueTask DisposeAsync()
         {
-            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
-            _userSync = userSync ?? throw new ArgumentNullException(nameof(userSync));
-            _messageSync = messageSync ?? throw new ArgumentNullException(nameof(messageSync));
-        }
-
-        public async Task StartAsync()
-        {
-            await Task.WhenAll(_userSync.StartAsync(), _messageSync.StartAsync());
+            SyncFactory.Dispose();
+            UserSyncService.Dispose();
+            MessageSyncService.Dispose();
+            await UserListener.DisposeAsync();
+            await MessageListener.DisposeAsync();
         }
     }
 }

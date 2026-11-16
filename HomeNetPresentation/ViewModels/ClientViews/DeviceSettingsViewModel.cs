@@ -128,9 +128,6 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         }
 
 
-        /// <summary>
-        /// Ловит успешный вход/регистрацию (в том числе из TryAutoLoginAsync) и делает разовую привязку сессии.
-        /// </summary>
         private async void OnUserSessionActivated(object msg)
         {
             UserEntity? user = msg switch
@@ -144,39 +141,36 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             try
             {
-                // Если мы уже обработали этого пользователя в текущей сессии, можно пропустить повторную запись,
-                // но стандартная проверка на изменение DeviceId или флага IsSynced не повредит.
                 if (CurrentSessionEmail == user.Email) return;
 
                 CurrentSessionEmail = user.Email ?? "Авторизован";
 
+                // 1. Сначала получаем актуальный ID железа и обновляем сущность
                 Guid appDeviceId = await _deviceSettingsService.GetDeviceIdAsync();
-                _eventBus.Publish(this, new IDeviceSettingsVM.SessionPersisted(user.DeviceId, user.Id));
                 _logger.LogInfo($"[Сессия -> VM] Связываем пользователя {user.Email} с девайсом {appDeviceId}");
 
                 user.DeviceId = appDeviceId;
-                user.IsSynced = 0; // Строго 0 для SiberNet Engine PUSH!
+                user.IsSynced = 0;
 
-                // Обновляем сущность юзера в локальной БД
+                // 2. Сохраняем всё в локальный SQLite
                 await _userRepository.UpdateAsync(user);
 
-                // Если галочка стоит — сохраняем сессию в настройки устройства для последующих автовходов
                 if (IsRememberMeChecked)
                 {
                     await _deviceSettingsService.SaveSessionAsync(user.Id, user.Email!, user.Password!);
                 }
 
-                _logger.LogInfo("[Сессия -> VM] Локальный SQLite обновлен. Синхронизатор подхватит апдейт автоматически.");
+                _logger.LogInfo("[Сессия -> VM] Локальный SQLite обновлен. Даем отмашку синхронизатору.");
 
-
-
-               
+                // 3. ТОЛЬКО ТЕПЕРЬ кидаем событие с правильным appDeviceId!
+                _eventBus.Publish(this, new IDeviceSettingsVM.SessionPersisted(appDeviceId, user.Id));
             }
             catch (Exception ex)
             {
                 _logger.LogError($"[Сессия -> VM] Ошибка при обработке активации сессии: {ex.Message}");
             }
         }
+
 
         /// <summary>
         /// 🔥 Перехватчик ЛОГАУТА: Обнуляет записанные данные в текущей сессии
