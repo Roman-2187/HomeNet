@@ -1,6 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Local;

@@ -4,7 +4,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetCore.Validation;
 using HomeNetPresentation.Services;
@@ -15,7 +15,7 @@ namespace HomeNetPresentation.ViewModels
     /// Стерильная форма авторизации мессенджера SiberNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
     /// </summary>
-    public partial class AuthenticationViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
+    public partial class AuthenticationViewModel : FormViewModelBase<UserNavigationManager>
     {
         private readonly IAuthenticateService _loginService;
         private readonly ICastomLogger _logger;
@@ -26,24 +26,14 @@ namespace HomeNetPresentation.ViewModels
             IAuthenticateService loginService,
             IEventBus eventBus,
             ICastomLogger logger,
-            UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
+            UserNavigationManager navigation) : base(eventBus, navigation)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             InitializeInitialHints();
-
-            // В конструкторе меняем подписку, чтобы форма сбрасывалась при успешном входе:
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
-
-           
         }
-
-       
-
-        /// <summary>
-        /// Локальный сброс полей формы после подтверждения успешного входа
-        /// </summary>
 
         private async void OnUserAuthenticated(IUserVm.UserSignedIn msg)
         {
@@ -51,8 +41,6 @@ namespace HomeNetPresentation.ViewModels
             ResetForm();
             InitializeInitialHints();
         }
-
-        
 
         private void InitializeInitialHints()
         {
@@ -73,7 +61,34 @@ namespace HomeNetPresentation.ViewModels
             SubmitButtonText = "войти";
         }
 
-       
+        #region 🦾 КОМАНДЫ ФОРМЫ АВТОРИЗАЦИИ
+
+        [RelayCommand]
+        private async Task CheckEmailAsync()
+        {
+            var email = UserData.Email;
+            if (string.IsNullOrWhiteSpace(email)) return;
+
+            // 1. Сразу показываем промежуточный статус "Проверка..."
+            var checkingResult = new ValidationResult
+            {
+                Field = TypeField.EmailType,
+                State = ValidationState.Info,
+                Message = "Проверка..."
+            };
+
+            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
+            checkingDict[TypeField.EmailType] = checkingResult;
+            ValidationResults = checkingDict;
+
+            // 2. Проверяем наличие аккаунта через сервис (сработает кэш и переопределение)
+            var result = await _loginService.CheckEmailOnBlurAsync(email);
+
+            // 3. Обновляем UI финальным вердиктом ("Пользователь найден" или ошибка)
+            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
+            finalDict[TypeField.EmailType] = result;
+            ValidationResults = finalDict;
+        }
 
         [RelayCommand]
         private async Task LoginAsync()
@@ -93,14 +108,12 @@ namespace HomeNetPresentation.ViewModels
                     _logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
                     var finalUser = verdict.User ?? UserData;
-
                     _eventBus.Publish(this, new IUserVm.UserSignedIn(finalUser));
                 }
                 else
                 {
                     StatusMessage = "Есть ошибки в полях";
-                    _logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email} пароль{UserData.Password}");
-
+                    _logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email}");
                 }
             }
             catch (Exception ex)
@@ -110,38 +123,27 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
         [RelayCommand]
         private void OpenRegisterZone()
         {
             _logger.LogInfo("[AuthVM] Запрос перехода на экран регистрации через EventBus.");
-
-            // Публикуем событие смены экрана в автобус
             _eventBus.Publish(this, new IUserVm.OpenRegistration());
         }
-
 
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
-
-            // 🔥 ЧИСТОТА: Отправляем реактивный рекорд отмены в шину событий. 
-            // Навигатор поймает его и мгновенно сбросит стейт в абсолютный 0 гостевой зоны.
             _eventBus.Publish(this, new IUserVm.BackToStart());
         }
 
-        
-
-       
+        #endregion
 
         public override void Dispose()
         {
-            base.Dispose(); // Чистим базовые ресурсы
+            base.Dispose();
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
         }
-
-      
     }
 }

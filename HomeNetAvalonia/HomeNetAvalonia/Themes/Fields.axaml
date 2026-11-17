@@ -71,25 +71,26 @@
     <!-- ⚡ ДИНАМИЧЕСКИЕ КИБЕР-ТРИГГЕРЫ СТАТУСОВ (ВКЛЮЧАЮТСЯ ТОЛЬКО КОГДА НЕТ ФОКУСА) -->
     <!-- ================================================================================= -->
 
-    <!-- ... блок ошибки оставляем как есть ... -->
+  
 
-    <!-- 🟢 СОСТОЯНИЕ: УСПЕХ -->
-    <!-- 🔥 ЖЕЛЕЗОБЕТОННЫЙ БЛОК: Выносим IsReadOnly в отдельный стиль без :not(:focus)! 
-         Теперь Авалония заблокирует поле намертво, и никакой клик мыши её не переубедит! -->
-    <Style Selector="TextBox.validation-box[Tag=Success]">
+
+
+     <!-- 🟢 СОСТОЯНИЕ: УСПЕХ -->
+    <!-- Блокируем все успешные поля, КРОМЕ тех, у которых есть класс no-lock -->
+    <Style Selector="TextBox.validation-box[Tag=Success]:not(.no-lock)">
         <Setter Property="IsReadOnly" Value="True"/>
     </Style>
 
-    <!-- А это правило остаётся для визуала — чтобы текст зеленел только в покое -->
+    <!-- Визуальная подсветка (зеленый текст и рамка) продолжит работать для всех полей -->
     <Style Selector="TextBox.validation-box[Tag=Success]:not(:focus)">
         <Setter Property="Foreground" Value="#00E666"/>
         <Setter Property="CaretBrush" Value="#00E666"/>
     </Style>
-    
-    <!-- 🔥 ИСПРАВЛЕНИЕ: Рамка успеха горит зелёным ТОЛЬКО когда у поля нет активного фокуса! -->
+
     <Style Selector="TextBox.validation-box[Tag=Success]:not(:focus) /template/ Border#PART_BorderElement">
         <Setter Property="BorderBrush" Value="#00E666"/>
     </Style>
+
 
 
 

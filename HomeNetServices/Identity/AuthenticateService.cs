@@ -1,81 +1,46 @@
 ﻿using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Api;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-using HomeNet.Network.Api; // 🔥
 
 namespace HomeNetServices.Identity
 {
-    public class AuthenticateService : IAuthenticateService
+    public class AuthenticateService : BaseValidationService, IAuthenticateService
     {
-        private readonly IUserApiClient _apiClient; // 🔥 Только API!
+        public AuthenticateService(IUserApiClient apiClient) : base(apiClient) { }
 
-        public AuthenticateService(IUserApiClient apiClient)
-        {
-            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        }
+        protected override ValidationResult InterpretEmailExistence(bool exists) =>
+            exists
+                ? SetResult(TypeField.EmailType, ValidationState.Success, "Пользователь найден")
+                : SetResult(TypeField.EmailType, ValidationState.Error, "Аккаунт с таким Email не найден");
 
         public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
         {
-            if (userInput == null) throw new ArgumentNullException(nameof(userInput));
+            ArgumentNullException.ThrowIfNull(userInput);
 
             if (!string.IsNullOrWhiteSpace(userInput.Email))
                 userInput.Email = userInput.Email.Replace(" ", "");
 
-            // 1. Валидация (локальная)
-            var validationResults = ValidateInput(userInput);
-            if (validationResults.Any(r => r.State == ValidationState.Error))
+            var validationResults = new List<ValidationResult>
+            {
+                ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
+                ValidatePasswordFormat(userInput.Password, checkComplexity: false)
+            };
+
+            // Подмешиваем результат проверки существования Email на потерю фокуса
+            ApplyCachedEmailCheck(userInput.Email, validationResults);
+
+            if (HasErrors(validationResults))
                 return new IAuthenticateService.Verdict(false, validationResults, null);
 
-            // 2. Проверка на сервере (онлайн)
-            var authenticatedUser = await _apiClient.AuthenticateAsync(userInput.Email!, userInput.Password!);
+            var authenticatedUser = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!);
 
             if (authenticatedUser != null)
-            {
                 return new IAuthenticateService.Verdict(true, validationResults, authenticatedUser);
-            }
-            else
-            {
-                var errorResult = new ValidationResult
-                {
-                    Field = TypeField.PasswordType,
-                    State = ValidationState.Error,
-                    Message = "Неверный email или пароль (или сервер недоступен)."
-                };
-                return new IAuthenticateService.Verdict(false, new List<ValidationResult> { errorResult }, null);
-            }
-        }
 
-        private List<ValidationResult> ValidateInput(UserEntity input)
-        {
-            var results = new List<ValidationResult>();
-
-            // Валидация Email (только формат, без запроса в БД)
-            var emailResult = new ValidationResult { Field = TypeField.EmailType };
-            if (string.IsNullOrWhiteSpace(input.Email) || !ValidationFormat.IsValidEmail(input.Email))
-                emailResult = SetResult(emailResult, ValidationState.Error, "Некорректный формат email");
-            else
-                emailResult = SetResult(emailResult, ValidationState.Success, "Email принят");
-
-            results.Add(emailResult);
-
-            // Валидация пароля (только формат)
-            var passResult = new ValidationResult { Field = TypeField.PasswordType };
-            if (string.IsNullOrWhiteSpace(input.Password))
-                passResult = SetResult(passResult, ValidationState.Error, "Пароль не может быть пустым");
-            else
-                passResult = SetResult(passResult, ValidationState.Success, "Пароль принят");
-
-            results.Add(passResult);
-
-            return results;
-        }
-
-        private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
-        {
-            res.State = state;
-            res.Message = message;
-            return res;
+            var errorResult = SetResult(TypeField.PasswordType, ValidationState.Error, "Неверный пароль (или сервер недоступен).");
+            return new IAuthenticateService.Verdict(false, [errorResult], null);
         }
     }
 }

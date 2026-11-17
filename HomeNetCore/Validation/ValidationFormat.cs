@@ -15,7 +15,10 @@ namespace HomeNetCore.Validation
     {
         // 🔥 Скомпилированные регулярки инициализируются один раз при старте приложения и работают со скоростью света
         private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
-        private static readonly Regex PasswordRegex = new(@"^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
+        // Строго латиница + цифры (обязательно) и любые ASCII-спецсимволы (опционально), от 8 знаков
+        // Минимум 8 непробельных символов (\S), обязательно: 1 заглавная латинская буква [A-Z] и 1 цифра \d
+        private static readonly Regex PasswordRegex = new(@"^(?=.*[A-Z])(?=.*\d)\S{8,}$", RegexOptions.Compiled);
+
         private static readonly Regex UserNameRegex = new(@"^[a-zA-Zа-яА-Я0-9_]{3,20}$", RegexOptions.Compiled); // Ограничили длину логина от 3 до 20 символов
         private static readonly Regex PhoneRegex = new(@"^\+?\d{10,15}$", RegexOptions.Compiled);
 

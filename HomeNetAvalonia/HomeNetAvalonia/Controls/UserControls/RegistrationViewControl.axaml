@@ -54,10 +54,10 @@
                            Tag="{Binding ValidationResults[PasswordType].State}" />
             </StackPanel>
 
-            <!-- 3️⃣ CONFIRMED PASSWORD -->
+                      <!-- 3️⃣ CONFIRMED PASSWORD -->
             <StackPanel Grid.Row="3" Margin="0,0,0,5">
                 <TextBlock Text="Повторите пароль:" Foreground="#00CCFF" Margin="0,0,0,4" FontSize="11"/>
-                <TextBox Classes="validation-box"
+                <TextBox Classes="validation-box no-lock"
                          Text="{Binding UserData.ConfirmPassword, Mode=TwoWay}" 
                          Tag="{Binding ValidationResults[ConfirmedPasswordType].State}" />
                 <TextBlock Classes="validation-hint"

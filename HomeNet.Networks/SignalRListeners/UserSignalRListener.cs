@@ -5,11 +5,8 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HomeNet.Network.SignalRListeners
 {
-    public class UserSignalRListener : BaseSignalRListener
+    public class UserSignalRListener(string apiBaseUrl, ICastomLogger logger, IEventBus eventBus) : BaseSignalRListener(apiBaseUrl, logger, eventBus)
     {
-        public UserSignalRListener(string apiBaseUrl, ICastomLogger logger, IEventBus eventBus)
-            : base(apiBaseUrl, logger, eventBus) { }
-
         protected override void RegisterHandlers(HubConnection connection)
         {
             // 🔥 Слушаем только юзеров

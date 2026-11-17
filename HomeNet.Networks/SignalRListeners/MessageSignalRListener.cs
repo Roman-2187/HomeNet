@@ -4,11 +4,8 @@ using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.SignalRListeners;
 using Microsoft.AspNetCore.SignalR.Client;
 
-public class MessageSignalRListener : BaseSignalRListener
+public class MessageSignalRListener(string apiBaseUrl, ICastomLogger logger, IEventBus eventBus) : BaseSignalRListener(apiBaseUrl, logger, eventBus)
 {
-    public MessageSignalRListener(string apiBaseUrl, ICastomLogger logger, IEventBus eventBus)
-        : base(apiBaseUrl, logger, eventBus) { }
-
     protected override void RegisterHandlers(HubConnection connection)
     {
         // 🔥 Слушаем только сообщения

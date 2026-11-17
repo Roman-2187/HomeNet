@@ -2,7 +2,7 @@
 using HomeNetCore.Validation;
 
 
-namespace HomeNetCore.Interfaces
+namespace HomeNetCore.Interfaces.Services
 {
     public interface IAuthenticateService
     {
@@ -14,5 +14,8 @@ namespace HomeNetCore.Interfaces
 
         // Теперь метод возвращает четкую структуру вместо безликого кортежа!
         Task<Verdict> CheckUserAsync(UserEntity userInput);
+
+        Task<ValidationResult> CheckEmailOnBlurAsync(string email);
+
     }
 }
