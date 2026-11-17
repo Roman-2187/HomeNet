@@ -79,6 +79,8 @@ namespace HomeNetOrm.DBProviders.Sqlite
             OpType.IsNull => "IS NULL",
             OpType.Begin => "BEGIN",
             OpType.End => "END;",
+            
+            OpType.NotEqual => "!=",
             OpType.Comma => ",",
             OpType.Excluded => "EXCLUDED", // 🆕 SQLite поймет конструкцию EXCLUDED.field один в один!
             OpType.CurrentTimestamp => "CURRENT_TIMESTAMP", // 🆕 Встроенное время SQLite (вернет текущую дату-время)

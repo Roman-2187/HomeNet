@@ -38,6 +38,8 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _messageSqlGenerator.GenerateInsert();
 
+            Logger.LogDebug($"[Sql] {cmd.Sql}");
+
             try
             {
                 // Просто выполняем запрос без статического перехватчика
@@ -90,13 +92,19 @@ namespace HomeNetOrm.Repositories.Base
         {
             var cmd = _messageSqlGenerator.GenerateSelectById(id);
 
+            Logger.LogDebug($"[Sql] {cmd}");
+
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
-                ExecuteAsync(db => db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params)));
+            {
+                return ExecuteAsync(db => db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params));
+            });
         }
 
         public async Task<IEnumerable<MessageEntity>> GetAllAsync()
         {
             var cmd = _messageSqlGenerator.GenerateSelectAll();
+
+            Logger.LogDebug($"[Sql] {cmd.Sql}");
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params)));
@@ -105,6 +113,8 @@ namespace HomeNetOrm.Repositories.Base
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             var cmd = _messageSqlGenerator.GenerateClearChatHistory(senderId, receiverId);
+
+            Logger.LogDebug($"[Sql] {cmd.Sql}");
 
             int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));

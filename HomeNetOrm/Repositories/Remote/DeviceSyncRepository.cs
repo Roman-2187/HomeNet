@@ -1,21 +1,15 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Generators; // Подключаем напрямую классы генераторов
 using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Models;
-using System;
 using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Repositories.Remote
 {
-    /// <summary>
-    /// Удаленный репозиторий синхронизации. Работает напрямую с классом генератора для Postgres. 🌐🦾
-    /// </summary>
     public class DeviceSyncRepository
     {
         private readonly Func<DbConnection> _connectionFactory;
-        private readonly DeviceSyncSqlGenerator _sqlGenerator; // Твой конкретный класс генератора!
+        private readonly DeviceSyncSqlGenerator _sqlGenerator;
 
         internal DeviceSyncRepository(Func<DbConnection> connectionFactory, DeviceSyncSqlGenerator sqlGenerator)
         {
@@ -23,30 +17,65 @@ namespace HomeNetOrm.Repositories.Remote
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
         }
 
-        public async Task<Guid> GetUserIdByDeviceAsync(Guid deviceId)
+        /// <summary>
+        /// Создаёт или продлевает сессию при входе/регистрации (Id = детерминированный ключ пары UserId + DeviceId).
+        /// </summary>
+        public async Task<DeviceSyncEntity> UpsertSessionAsync(Guid sessionId, Guid userId)
         {
-            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectUserIdByDevice(deviceId);
-
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
-            return await db.QueryFirstOrDefaultAsync<Guid>(cmd.Sql, cmd.Params);
-        }
-
-        public async Task UpdateDeviceCheckpointAsync(Guid deviceId, Guid userId, DateTimeOffset now)
-        {
-            SqlQueryCommand cmd = _sqlGenerator.GenerateDeviceSyncUpsert();
-
+            var now = DateTimeOffset.UtcNow;
             var syncData = new DeviceSyncEntity
             {
-                DeviceId = deviceId,
+                Id = sessionId,
                 UserId = userId,
-                UpdatedAt = now,
-               
+                LastVersion = 0,
+                CreatedAt = now,
+                UpdatedAt = now
             };
+
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSessionUpsert();
 
             using var db = _connectionFactory();
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
+
+            // Возвращаем актуальную запись из базы (с реальным LastVersion, если сессия уже существовала)
+            return (await GetByIdAsync(sessionId))!;
+        }
+
+        /// <summary>
+        /// Ищет активную сессию по её Id. Если вернётся null — запрос не авторизован.
+        /// </summary>
+        public async Task<DeviceSyncEntity?> GetByIdAsync(Guid sessionId)
+        {
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectById(sessionId);
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            return await db.QueryFirstOrDefaultAsync<DeviceSyncEntity>(cmd.Sql, cmd.Params);
+        }
+
+        /// <summary>
+        /// Двигает курсор версии для этой сессии после успешной отдачи дельты.
+        /// </summary>
+        public async Task UpdateLastVersionAsync(Guid sessionId, long newVersion)
+        {
+            SqlQueryCommand cmd = _sqlGenerator.GenerateUpdateLastVersion(sessionId, newVersion);
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
+        }
+
+        /// <summary>
+        /// Аннулирует сессию при выходе из аккаунта.
+        /// </summary>
+        public async Task DeleteSessionAsync(Guid sessionId)
+        {
+            SqlQueryCommand cmd = _sqlGenerator.GenerateDeleteById(sessionId);
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
     }
 }

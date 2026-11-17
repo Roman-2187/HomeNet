@@ -8,7 +8,12 @@ namespace HomeNetServices.Identity
 {
     public class RegistrationService : BaseValidationService, IRegistrationService
     {
-        public RegistrationService(IUserApiClient apiClient) : base(apiClient) { }
+        private readonly IDeviceSettingsService _settingsService;
+
+        public RegistrationService(IUserApiClient apiClient, IDeviceSettingsService settingsService) : base(apiClient)
+        {
+            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+        }
 
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
             exists
@@ -18,17 +23,25 @@ namespace HomeNetServices.Identity
         public async Task<IRegistrationService.Verdict> RegisterUserAsync(UserEntity user)
         {
             var validationResults = ValidateInput(user);
-
-            // Подмешиваем кэшированный результат проверки Email при потере фокуса
             ApplyCachedEmailCheck(user.Email, validationResults);
 
             if (HasErrors(validationResults))
                 return new IRegistrationService.Verdict(false, validationResults, null);
 
+            // 1. Назначаем ID пользователю и забираем детерминированный SessionId у SettingsService
+            if (user.Id == Guid.Empty)
+                user.Id = Guid.NewGuid();
+
+            user.SessionId = _settingsService.CreateSessionIdForUser(user.Id);
+
+            // 2. Отправляем полностью подготовленного юзера на сервер (сервер сохранит ровно этот SessionId!)
             bool success = await ApiClient.PushUserAsync(user);
 
             if (success)
+            {
+                user.IsSynced = 1; // Сразу фиксируем, что запись уже на сервере
                 return new IRegistrationService.Verdict(true, validationResults, user);
+            }
 
             var errorResult = SetResult(TypeField.EmailType, ValidationState.Error, "Сервер отклонил регистрацию (возможно, Email уже занят).");
             return new IRegistrationService.Verdict(false, [errorResult], null);
@@ -43,7 +56,6 @@ namespace HomeNetServices.Identity
             results.Add(nameRes);
             results.Add(emailRes);
 
-            // Защитный барьер: не проверяем пароли, если имя или email уже с ошибкой
             if (nameRes.State == ValidationState.Error || emailRes.State == ValidationState.Error)
             {
                 results.Add(SetResult(TypeField.PasswordType, ValidationState.Info, "Пароль должен содержать минимум 8 символов, буквы и цифры"));

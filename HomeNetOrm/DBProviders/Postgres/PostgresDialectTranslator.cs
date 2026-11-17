@@ -72,6 +72,7 @@ namespace HomeNetOrm.DBProviders.Postgres
         public string Translate(OpType op) => op switch
         {
             OpType.Equal => "=",
+            OpType.NotEqual => "!=",
             OpType.And => "AND",
             OpType.Or => "OR",
             OpType.True => "TRUE",

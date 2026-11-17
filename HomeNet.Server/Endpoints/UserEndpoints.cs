@@ -1,7 +1,9 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Server.Filters;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Remote;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -9,8 +11,16 @@ namespace HomeNet.Server.Endpoints
 {
     public static class UserEndpoints
     {
-        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepo userRepository, ICastomLogger serverLogger)
+        public static void MapUserEndpoints(
+            this IEndpointRouteBuilder endpoints,
+            IUserRepo userRepository,
+            DeviceSyncRepository deviceSyncRepository,
+            ICastomLogger serverLogger)
         {
+            // =========================================================================
+            // 🔓 ПУБЛИЧНЫЕ РУЧКИ (Работают без X-Session-Id и выдают его при успехе)
+            // =========================================================================
+
             // === [🔐 АУТЕНТИФИКАЦИЯ] ===
             endpoints.MapPost("/api/users/auth", async (LoginRequest request) =>
             {
@@ -25,7 +35,19 @@ namespace HomeNet.Server.Endpoints
                         return Results.Unauthorized();
                     }
 
-                    serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email}");
+                    // 1. Генерируем токен сессии (или берем присланный, если клиент его передал)
+                    Guid sessionId = request.SessionId != Guid.Empty
+                        ? request.SessionId
+                        : Guid.NewGuid();
+
+                    // 2. Фиксируем или продлеваем сессию в таблице device_sync на сервере
+                    await deviceSyncRepository.UpsertSessionAsync(sessionId, user.Id);
+
+                    // 3. Возвращаем пользователя с активным токеном сессии, но без пароля
+                    user.SessionId = sessionId;
+                    user.Password = string.Empty;
+
+                    serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email} (SessionId: {sessionId})");
                     return Results.Ok(user);
                 }
                 catch (Exception ex)
@@ -35,75 +57,30 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            // === [📥 GET ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (ТОЛЬКО ДЛЯ АДМИНА)] ===
-            endpoints.MapGet("/api/users", async (Guid userId, Guid deviceId) =>
-            {
-                try
-                {
-                    var user = await userRepository.GetByIdAsync(userId);
-                    if (user == null) return Results.Unauthorized();
-
-                    const string ADMIN_EMAIL = "ohagow.r@gmail.com";
-                    if (user.Email != ADMIN_EMAIL || user.DeviceId != deviceId)
-                    {
-                        serverLogger.LogWarning($"[API] Доступ запрещён для {user.Email}.");
-                        return Results.Unauthorized();
-                    }
-
-                    serverLogger.LogInfo($"[API] Запрос всех пользователей от админа {user.Email}.");
-                    var users = await userRepository.GetAllAsync();
-                    return Results.Ok(users);
-                }
-                catch (Exception ex)
-                {
-                    serverLogger.LogError($"[API Ошибка] Сбой получения всех пользователей: {ex.Message}");
-                    return Results.Problem("Ошибка сервера");
-                }
-            });
-
-            // === [📥 GET ПОЛЬЗОВАТЕЛЯ ПО ID] ===
-            endpoints.MapGet("/api/users/{id:guid}", async (Guid id) =>
-            {
-                try
-                {
-                    serverLogger.LogInfo($"[API] Запрос пользователя по ID: {id}");
-                    var user = await userRepository.GetByIdAsync(id);
-                    return user == null
-                        ? Results.NotFound(new { Error = "Пользователь не найден" })
-                        : Results.Ok(user);
-                }
-                catch (Exception ex)
-                {
-                    serverLogger.LogError($"[API Ошибка] Сбой получения пользователя по ID: {ex.Message}");
-                    return Results.Problem("Ошибка сервера");
-                }
-            });
-
-            // === [📤 PUSH РЕГИСТРАЦИЯ И ОБНОВЛЕНИЕ ПРОФИЛЯ] ===
+            // === [📤 РЕГИСТРАЦИЯ НОВОГО ПОЛЬЗОВАТЕЛЯ] ===
             endpoints.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
             {
                 try
                 {
-                    serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
-                    var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
+                    serverLogger.LogInfo($"[API PUSH] Регистрация пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
-                    if (existingServerUser != null)
-                    {
-                        existingServerUser.DeviceId = incomingUser.DeviceId;
-                        existingServerUser.FirstName = incomingUser.FirstName;
-                        existingServerUser.LastName = incomingUser.LastName;
-                        existingServerUser.PhoneNumber = incomingUser.PhoneNumber;
+                    // 1. Записываем нового пользователя в PostgreSQL
+                    await userRepository.InsertAsync(incomingUser);
 
-                        await userRepository.UpdateAsync(existingServerUser);
-                        serverLogger.LogInfo($"[API Успех] Профиль успешно обновлен.");
-                    }
-                    else
-                    {
-                        await userRepository.InsertAsync(incomingUser);
-                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан.");
-                    }
+                    // 2. Если клиент не прислал SessionId, генерируем его на сервере; иначе берем присланный
+                    Guid sessionId = incomingUser.SessionId != Guid.Empty
+                        ? incomingUser.SessionId
+                        : Guid.NewGuid();
 
-                    return Results.Ok(new { Success = true });
+                    // 3. Открываем сессию в таблице device_sync
+                    await deviceSyncRepository.UpsertSessionAsync(sessionId, incomingUser.Id);
+
+                    // 4. Подготавливаем безопасный ответ (с токеном сессии, но без пароля)
+                    incomingUser.SessionId = sessionId;
+                    incomingUser.Password = string.Empty;
+
+                    serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан. SessionId: {sessionId}");
+                    return Results.Ok(incomingUser);
                 }
                 catch (DuplicateEmailException ex)
                 {
@@ -117,10 +94,11 @@ namespace HomeNet.Server.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH: {ex.Message}");
+                    serverLogger.LogError($"[API Ошибка] Не удалось зарегистрировать: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
             });
+
 
             // === [📥 ПРОВЕРКА СУЩЕСТВОВАНИЯ EMAIL] ===
             endpoints.MapGet("/api/users/check-email", async ([FromServices] IUserRepo repo, [FromQuery] string email) =>
@@ -140,28 +118,53 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            // === [🗑️ DELETE ПОЛЬЗОВАТЕЛЯ] ===
-            endpoints.MapDelete("/api/users/{id:guid}", async (Guid id) =>
-            {
-                try
-                {
-                    serverLogger.LogInfo($"[API DELETE] Запрос на удаление пользователя: {id}");
-                    var user = await userRepository.GetByIdAsync(id);
-                    if (user == null)
-                        return Results.NotFound(new { Error = "Пользователь не найден" });
+            // =========================================================================
+            // 🔒 ЗАЩИЩЁННЫЕ РУЧКИ (Требуют живой X-Session-Id в таблице device_sync)
+            // =========================================================================
+            var protectedGroup = endpoints.MapGroup("/api/users")
+                                          .AddEndpointFilter<SessionAuthFilter>();
 
-                    await userRepository.DeleteByIdAsync(id);
-                    serverLogger.LogInfo($"[API DELETE] Пользователь {id} успешно удалён.");
-                    return Results.Ok(new { Success = true });
-                }
-                catch (Exception ex)
+            // === [📥 GET ПОЛЬЗОВАТЕЛЯ ПО ID] ===
+            protectedGroup.MapGet("/{id:guid}", async (Guid id) =>
+            {
+                var user = await userRepository.GetByIdAsync(id);
+                if (user == null) return Results.NotFound(new { Error = "Пользователь не найден" });
+
+                user.Password = string.Empty;
+                return Results.Ok(user);
+            });
+
+            // === [🗑️ DELETE ПОЛЬЗОВАТЕЛЯ] ===
+            protectedGroup.MapDelete("/{id:guid}", async (HttpContext httpContext, Guid id) =>
+            {
+                var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+                var caller = await userRepository.GetByIdAsync(session.UserId);
+
+                const string ADMIN_EMAIL = "ohagow.r@gmail.com";
+                // Удалять может либо сам владелец аккаунта, либо админ
+                if (session.UserId != id && caller?.Email != ADMIN_EMAIL)
                 {
-                    serverLogger.LogError($"[API DELETE] Ошибка удаления: {ex.Message}");
-                    return Results.Problem("Ошибка сервера");
+                    serverLogger.LogWarning($"[API DELETE] Попытка чужого удаления от {session.UserId}!");
+                    return Results.Forbid();
                 }
+
+                await userRepository.DeleteByIdAsync(id);
+                await deviceSyncRepository.DeleteSessionAsync(session.Id);
+                serverLogger.LogInfo($"[API DELETE] Пользователь {id} успешно удалён.");
+                return Results.Ok(new { Success = true });
+            });
+
+            // === [🚪 LOGOUT (АННУЛИРОВАНИЕ СЕССИИ)] ===
+            protectedGroup.MapPost("/logout", async (HttpContext httpContext) =>
+            {
+                var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+                await deviceSyncRepository.DeleteSessionAsync(session.Id);
+                serverLogger.LogInfo($"[API LOGOUT] Сессия {session.Id} закрыта на сервере.");
+                return Results.Ok(new { Success = true });
             });
         }
 
-        public record LoginRequest(string Email, string Password);
+        public record LoginRequest(string Email, string Password, Guid SessionId = default);
+
     }
 }

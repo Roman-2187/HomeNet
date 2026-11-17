@@ -6,6 +6,8 @@ namespace HomeNet.Network.ApiClient
     public interface IApiClientBase
     {
         Task PingAsync(CancellationToken cancellationToken = default);
+        void SetSessionHeader(Guid sessionId);
+        void ClearSessionHeader();
     }
 
     public abstract class BaseApiClient : IApiClientBase
@@ -17,6 +19,21 @@ namespace HomeNet.Network.ApiClient
         {
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+
+        public void SetSessionHeader(Guid sessionId)
+        {
+            HttpClient.DefaultRequestHeaders.Remove("X-Session-Id");
+            if (sessionId != Guid.Empty)
+            {
+                HttpClient.DefaultRequestHeaders.Add("X-Session-Id", sessionId.ToString());
+            }
+        }
+
+        public void ClearSessionHeader()
+        {
+            HttpClient.DefaultRequestHeaders.Remove("X-Session-Id");
         }
 
         public async Task PingAsync(CancellationToken cancellationToken = default)

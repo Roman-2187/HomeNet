@@ -15,7 +15,6 @@ namespace HomeNet.Network.ApiClient
         {
             public bool Exists { get; set; }
         }
-
         public async Task<bool> PushUserAsync(UserEntity user)
         {
             try
@@ -24,8 +23,13 @@ namespace HomeNet.Network.ApiClient
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // 🔥 Кричим, что сервер принял
-                    _eventBus.Publish(this, new IUserApiClient.UserRegisteredOnServer(user));
+                    var createdUser = await response.Content.ReadFromJsonAsync<UserEntity>() ?? user;
+                    if (createdUser.SessionId != Guid.Empty)
+                    {
+                        SetSessionHeader(createdUser.SessionId);
+                    }
+
+                    _eventBus.Publish(this, new IUserApiClient.UserRegisteredOnServer(createdUser));
                     return true;
                 }
 
@@ -39,6 +43,7 @@ namespace HomeNet.Network.ApiClient
                 return false;
             }
         }
+
 
         public async Task<bool> DeleteUserAsync(Guid userId)
         {
@@ -64,22 +69,26 @@ namespace HomeNet.Network.ApiClient
             }
         }
 
-        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(Guid deviceId, long lastVersion)
+
+
+        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync()
         {
             try
             {
-                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с версии {lastVersion}...");
-                string url = $"/api/sync/users?deviceId={deviceId}&lastVersion={lastVersion}";
-
-                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>(url);
-                return response ?? new SyncBatchResponse<UserEntity> { LatestVersion = lastVersion };
+                Logger.LogInfo("[UserApiClient] Запрос обновлений пользователей...");
+                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>("/api/sync/users");
+                return response ?? new SyncBatchResponse<UserEntity>();
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[UserApiClient] Не удалось скачать обновления пользователей: {ex.Message}");
-                return new SyncBatchResponse<UserEntity> { LatestVersion = lastVersion };
+                return new SyncBatchResponse<UserEntity>();
             }
         }
+
+
+
+
 
         public async Task<UserEntity?> GetUserByIdAsync(Guid id)
         {
@@ -119,20 +128,20 @@ namespace HomeNet.Network.ApiClient
 
                 var response = await HttpClient.PostAsJsonAsync("/api/users/auth", new { Email = email, Password = password });
 
-                // 🔥 ЛОГИРУЕМ КОД ОТВЕТА ОТ СЕРВЕРА
-                Logger.LogInfo($"[UserApiClient] Сервер ответил кодом: {(int)response.StatusCode} ({response.StatusCode})");
-
                 if (response.IsSuccessStatusCode)
                 {
                     var user = await response.Content.ReadFromJsonAsync<UserEntity>();
-                    Logger.LogInfo($"[UserApiClient] Успешный вход. Юзер: {user?.Email ?? "null"}");
+                    if (user != null && user.SessionId != Guid.Empty)
+                    {
+                        SetSessionHeader(user.SessionId);
+                    }
+
+                    Logger.LogInfo($"[UserApiClient] Успешный вход. Юзер: {user?.Email ?? "null"}, SessionId: {user?.SessionId}");
                     return user;
                 }
 
-                // 🔥 ЛОГИРУЕМ ТЕЛО ОШИБКИ (если сервер что-то прислал)
                 var errorContent = await response.Content.ReadAsStringAsync();
-                Logger.LogWarning($"[UserApiClient] Сервер отклонил вход. Тело ответа: {errorContent}");
-
+                Logger.LogWarning($"[UserApiClient] Сервер отклонил вход ({(int)response.StatusCode}): {errorContent}");
                 return null;
             }
             catch (Exception ex)

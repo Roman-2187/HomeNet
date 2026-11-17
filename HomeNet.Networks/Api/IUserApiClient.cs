@@ -8,7 +8,8 @@ namespace HomeNet.Network.Api
     {
         Task<bool> PushUserAsync(UserEntity user);
         Task<bool> DeleteUserAsync(Guid userId);
-        Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(Guid deviceId, long lastVersion);
+        Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync();
+
 
 
         // 🔥 Новые методы для работы с сервером (чтение и поиск)

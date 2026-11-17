@@ -4,17 +4,14 @@ using HomeNetCore.Validation;
 
 namespace HomeNetServices.Identity
 {
-    public abstract class BaseValidationService
+    public abstract class BaseValidationService(IUserApiClient apiClient)
     {
-        protected readonly IUserApiClient ApiClient;
+        protected readonly IUserApiClient ApiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+
+
 
         private string? _lastCheckedEmail;
         private ValidationResult? _lastEmailCheckResult;
-
-        protected BaseValidationService(IUserApiClient apiClient)
-        {
-            ApiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        }
 
         /// <summary>
         /// Наследник сам решает, хорошо или плохо, что Email найден на сервере.
@@ -23,32 +20,48 @@ namespace HomeNetServices.Identity
 
         public virtual async Task<ValidationResult> CheckEmailOnBlurAsync(string email)
         {
-            var formatCheck = ValidateEmailFormat(email);
+            var cleanEmail = email?.Replace(" ", "").Trim() ?? string.Empty;
+
+            var formatCheck = ValidateEmailFormat(cleanEmail);
             if (formatCheck.State == ValidationState.Error)
             {
-                _lastCheckedEmail = null;
-                _lastEmailCheckResult = null;
+                ClearEmailCache();
                 return formatCheck;
             }
 
+            // Если этот Email уже получил зеленый свет (Success) — отдаем кэш, в API не лезем!
+            if (string.Equals(_lastCheckedEmail, cleanEmail, StringComparison.OrdinalIgnoreCase) &&
+                _lastEmailCheckResult?.State == ValidationState.Success)
+            {
+                return _lastEmailCheckResult;
+            }
+
+            // Если раньше была ошибка (или это новый Email) — идем в API проверять заново
             try
             {
-                bool exists = await ApiClient.CheckEmailExistsAsync(email);
+                bool exists = await ApiClient.CheckEmailExistsAsync(cleanEmail);
                 var result = InterpretEmailExistence(exists);
 
-                _lastCheckedEmail = email;
-                _lastEmailCheckResult = result;
+                if (result.State == ValidationState.Success)
+                {
+                    // Запоминаем ТОЛЬКО успешный результат
+                    _lastCheckedEmail = cleanEmail;
+                    _lastEmailCheckResult = result;
+                }
+                else
+                {
+                    // Ошибку не кэшируем, чтобы при следующем LostFocus проверить снова
+                    ClearEmailCache();
+                }
+
                 return result;
             }
             catch (Exception)
             {
-                var errorResult = SetResult(TypeField.EmailType, ValidationState.Error, "Ошибка сети. Не удалось проверить Email.");
-                _lastCheckedEmail = email;
-                _lastEmailCheckResult = errorResult;
-                return errorResult;
+                ClearEmailCache();
+                return SetResult(TypeField.EmailType, ValidationState.Error, "Ошибка сети. Не удалось проверить Email.");
             }
         }
-
         protected void ApplyCachedEmailCheck(string? email, List<ValidationResult> results)
         {
             if (_lastCheckedEmail == email && _lastEmailCheckResult != null)
@@ -58,8 +71,7 @@ namespace HomeNetServices.Identity
             }
         }
 
-        protected ValidationResult SetResult(TypeField field, ValidationState state, string message) =>
-            new() { Field = field, State = state, Message = message };
+      
 
         protected ValidationResult ValidateUserName(string? userName)
         {
@@ -96,10 +108,9 @@ namespace HomeNetServices.Identity
                 return SetResult(TypeField.PasswordType, ValidationState.Error, "Пароль не должен содержать пробелы");
 
             // 2. Обновляем текст для регулярки (упоминаем заглавную букву)
-            if (checkComplexity && !ValidationFormat.IsValidPassword(password))
-                return SetResult(TypeField.PasswordType, ValidationState.Error, "Минимум 8 символов, 1 заглавная латинская буква и 1 цифра");
-
-            return SetResult(TypeField.PasswordType, ValidationState.Success, "Пароль принят");
+            return checkComplexity && !ValidationFormat.IsValidPassword(password)
+                ? SetResult(TypeField.PasswordType, ValidationState.Error, "Минимум 8 символов, 1 заглавная латинская буква и 1 цифра")
+                : SetResult(TypeField.PasswordType, ValidationState.Success, "Пароль принят");
         }
 
 
@@ -115,7 +126,21 @@ namespace HomeNetServices.Identity
             return SetResult(TypeField.ConfirmedPasswordType, ValidationState.Success, "Пароли совпадают");
         }
 
-        protected bool HasErrors(IEnumerable<ValidationResult> results) =>
-            results.Any(r => r.State == ValidationState.Error);
+        protected bool HasErrors(IEnumerable<ValidationResult> results)
+        {
+            return results.Any(r => r.State == ValidationState.Error);
+        }
+
+        protected ValidationResult SetResult(TypeField field, ValidationState state, string message)
+        {
+            return new() { Field = field, State = state, Message = message };
+        }
+
+
+        public void ClearEmailCache()
+        {
+            _lastCheckedEmail = null;
+            _lastEmailCheckResult = null;
+        }
     }
 }

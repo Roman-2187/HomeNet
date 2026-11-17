@@ -30,8 +30,8 @@ namespace HomeNetOrm.Infrastructure
 
         protected override void RegisterSpecificRepositories()
         {
-            var deviceSettingsGen = new DeviceSettingsSqlGenerator(Schemas, Translator, Logger);
-            Repositories[typeof(ClientDeviceSettingsRepository)] = new ClientDeviceSettingsRepository(ConnectionFactory, deviceSettingsGen);
+            var deviceSettingsGen = new SettingsSqlGenerator(Schemas, Translator, Logger);
+            Repositories[typeof(ClientSettingsRepo)] = new ClientSettingsRepo(ConnectionFactory, deviceSettingsGen);
         }
     }
 }

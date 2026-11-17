@@ -3,6 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.Api;
 using HomeNet.Network.ApiClient;
 using HomeNet.Network.Handlers;
+using HomeNet.Network.SignalR;
 using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Items;
@@ -23,21 +24,19 @@ namespace HomeNet.DI.Modules
         public IDbContextContainer DbContextContainer { get; }
         public IUserRepo UserRepository { get; }
         public IMessageRepo MessageRepository { get; }
-        public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
+        public ClientSettingsRepo DeviceSettingsRepository { get; }
         public Guid CurrentDeviceId { get; private set; }
 
         public ServerHealthMonitor HealthMonitor { get; }
 
-        public UserSignalRListener UserListener { get; }
-        public MessageSignalRListener MessageListener { get; }
+        // 🔥 Единый клиент SignalR вместо двух отдельных слушателей
+        public SignalRHubClient HubClient { get; }
 
         public IUserApiClient UserApiClient { get; }
         public IMessageApiClient MessageApiClient { get; }
 
-        // 🔥 Новая фабрика пакетной синхронизации вместо OrmEngine
         public SyncBatchFactory SyncFactory { get; }
 
-        // 🔥 Легкие слушатели реального времени
         public UserSyncService UserSyncService { get; }
         public MessageSyncService MessageSyncService { get; }
 
@@ -49,7 +48,6 @@ namespace HomeNet.DI.Modules
         {
             ApiBaseUrl = apiBaseUrl;
 
-            // Перенесли настройку Dapper из удаленного CompositeSyncCoordinator
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             // 1. Движок и репозитории
@@ -57,7 +55,7 @@ namespace HomeNet.DI.Modules
             DbEngine.InitializeRepositories(eventBus);
             UserRepository = DbEngine.Repositories.GetRepository<IUserRepo>();
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
-            DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientDeviceSettingsRepository>();
+            DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientSettingsRepo>();
 
             // 2. HttpClient с перехватчиком состояния сети
             var statusHandler = new ConnectionStatusHandler(eventBus)
@@ -80,7 +78,7 @@ namespace HomeNet.DI.Modules
             // 4. Контейнер хаба
             DbContextContainer = new DbContextContainer(DbEngine, eventBus, logger);
 
-            // 5. Пакетная синхронизация (Pull / Push по очереди через фабрику)
+            // 5. Пакетная синхронизация
             var syncItems = new IEntitySyncItem[]
             {
                 new UserSyncItem(UserRepository, DeviceSettingsRepository, UserApiClient, logger),
@@ -92,9 +90,13 @@ namespace HomeNet.DI.Modules
             UserSyncService = new UserSyncService(UserRepository, eventBus, logger);
             MessageSyncService = new MessageSyncService(MessageRepository, eventBus, logger);
 
-            // 7. SignalR-листенеры
-            UserListener = new UserSignalRListener(apiBaseUrl, logger, eventBus);
-            MessageListener = new MessageSignalRListener(apiBaseUrl, logger, eventBus);
+            // 7. Единый SignalR-хаб с набором обработчиков
+            var hubHandlers = new IHubHandler[]
+            {
+                new UserHubHandler(logger, eventBus),
+                new MessageHubHandler(logger, eventBus)
+            };
+            HubClient = new SignalRHubClient(apiBaseUrl, logger, eventBus, hubHandlers);
         }
 
         // Корректная очистка ресурсов при закрытии приложения
@@ -103,8 +105,7 @@ namespace HomeNet.DI.Modules
             SyncFactory.Dispose();
             UserSyncService.Dispose();
             MessageSyncService.Dispose();
-            await UserListener.DisposeAsync();
-            await MessageListener.DisposeAsync();
+            await HubClient.DisposeAsync();
         }
     }
 }

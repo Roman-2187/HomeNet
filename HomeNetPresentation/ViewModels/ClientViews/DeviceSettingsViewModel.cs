@@ -76,49 +76,39 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             DeviceIdDisplay = deviceId.ToString().ToUpper();
         }
 
-        /// <summary>
-        /// 🔥 ПРЯМОЙ АВТОВХОД: Если данные есть в SQLite настроек, генерируем событие входа напрямую
-        /// </summary>
-        /// <summary>
-        /// 🔥 ПРЯМОЙ АВТОВХОД: Читаем DeviceSettingsEntity и генерируем событие входа напрямую
-        /// </summary>
         private async Task TryAutoLoginAsync()
         {
             try
             {
                 _logger.LogInfo("[AutoLogin] Проверяем наличие сохраненной сессии на устройстве...");
 
-                // 🔥 1. Вызываем твой метод из сервиса настроек
-                DeviceSettingsEntity? settings = await _deviceSettingsService.GetCurrentSettingsAsync();
+                SettingsEntity? settings = await _deviceSettingsService.GetCurrentSettingsAsync();
 
-                // Проверяем, есть ли там данные пользователя (не пустые ли они после ClearSession)
+                // Проверяем наличие активной сессии без пароля!
                 if (settings == null ||
+                    settings.Id == Guid.Empty ||
                     settings.UserId == Guid.Empty ||
-                    string.IsNullOrEmpty(settings.Email) ||
-                    string.IsNullOrEmpty(settings.Password))
+                    string.IsNullOrEmpty(settings.Email))
                 {
                     _logger.LogInfo("[AutoLogin] Чистый запуск. Сохраненной сессии пользователя нет.");
                     return;
                 }
 
-                _logger.LogInfo($"[AutoLogin] Найдена сессия для {settings.Email}. Напрямую запрашиваем User из локального SQLite...");
+                _logger.LogInfo($"[AutoLogin] Найдена сессия {settings.Id} для {settings.Email}. Загружаем профиль из SQLite...");
 
-                // 2. Идем напрямую в сервис пользователей локального SQLite
-                UserEntity? localUser = await _userRepository.GetByEmailAsync(settings.Email);
+                UserEntity? localUser = await _userRepository.GetByIdAsync(settings.UserId);
 
-                // 3. Сверяем пароль для безопасности
-                if (localUser != null && localUser.Password == settings.Password)
+                if (localUser != null)
                 {
+                    localUser.SessionId = settings.Id;
                     _logger.LogInfo("[AutoLogin] Сессия валидна. Генерируем событие входа для всей экосистемы SiberNet.");
 
-                    // 🔥 Просто пушим событие входа! Навигатор переключит на Messenger, а UserVM запишет ID.
                     _eventBus.Publish(this, new IUserVm.UserSignedIn(localUser));
-
-                    _eventBus.Publish(this,new IStatusBarViewModel.TextChanged("[AutoLogin] выполнен вход "));
+                    _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("[AutoLogin] выполнен вход"));
                 }
                 else
                 {
-                    _logger.LogWarning("[AutoLogin] Данные сессии устарели или пользователь не найден.");
+                    _logger.LogWarning("[AutoLogin] Профиль пользователя не найден в локальной базе.");
                 }
             }
             catch (Exception ex)
@@ -126,7 +116,6 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 _logger.LogError($"[AutoLogin] Сбой авто-авторизации: {ex.Message}");
             }
         }
-
 
         private async void OnUserSessionActivated(object msg)
         {
@@ -144,25 +133,23 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 if (CurrentSessionEmail == user.Email) return;
 
                 CurrentSessionEmail = user.Email ?? "Авторизован";
-
-                // 1. Сначала получаем актуальный ID железа и обновляем сущность
                 Guid appDeviceId = await _deviceSettingsService.GetDeviceIdAsync();
-                _logger.LogInfo($"[Сессия -> VM] Связываем пользователя {user.Email} с девайсом {appDeviceId}");
 
-                user.DeviceId = appDeviceId;
-                user.IsSynced = 0;
+                // Если регистрация прошла с сервером — помечаем как синхронизированного, чтобы SyncBatchFactory не слал дубль!
+                if (user.SessionId != Guid.Empty)
+                {
+                    user.IsSynced = 1;
+                }
 
-                // 2. Сохраняем всё в локальный SQLite
                 await _userRepository.UpdateAsync(user);
 
                 if (IsRememberMeChecked)
                 {
-                    await _deviceSettingsService.SaveSessionAsync(user.Id, user.Email!, user.Password!);
+                    await _deviceSettingsService.SaveSessionAsync(user.SessionId, user.Id, user.Email!);
                 }
 
-                _logger.LogInfo("[Сессия -> VM] Локальный SQLite обновлен. Даем отмашку синхронизатору.");
+                _logger.LogInfo($"[Сессия -> VM] Локальный SQLite обновлен (SessionId: {user.SessionId}). Даем отмашку синхронизатору.");
 
-                // 3. ТОЛЬКО ТЕПЕРЬ кидаем событие с правильным appDeviceId!
                 _eventBus.Publish(this, new IDeviceSettingsVM.SessionPersisted(appDeviceId, user.Id));
             }
             catch (Exception ex)
@@ -170,6 +157,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 _logger.LogError($"[Сессия -> VM] Ошибка при обработке активации сессии: {ex.Message}");
             }
         }
+
 
 
         /// <summary>

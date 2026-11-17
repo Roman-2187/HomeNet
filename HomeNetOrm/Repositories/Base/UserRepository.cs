@@ -40,6 +40,8 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _userSqlGenerator.GenerateInsert();
 
+            Logger.LogDebug($"[Sql] {cmd.Sql}");
+
             try
             {
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
@@ -97,7 +99,13 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<IEnumerable<UserEntity>> GetAllAsync()
         {
+
+           
+
             var cmd = _userSqlGenerator.GenerateSelectAll();
+
+            Logger.LogDebug($"[Sql] {cmd.Sql}");
+
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params)));

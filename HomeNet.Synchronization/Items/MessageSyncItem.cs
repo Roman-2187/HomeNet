@@ -8,7 +8,7 @@ namespace HomeNet.Synchronization.Items
     public class MessageSyncItem : IEntitySyncItem
     {
         private readonly IMessageRepo _messageRepository;
-        private readonly ClientDeviceSettingsRepository _deviceSettingsRepo;
+        private readonly ClientSettingsRepo _deviceSettingsRepo;
         private readonly IMessageApiClient _apiClient;
         private readonly ICastomLogger _logger;
 
@@ -16,7 +16,7 @@ namespace HomeNet.Synchronization.Items
 
         public MessageSyncItem(
             IMessageRepo messageRepository,
-            ClientDeviceSettingsRepository deviceSettingsRepo,
+            ClientSettingsRepo deviceSettingsRepo,
             IMessageApiClient apiClient,
             ICastomLogger logger)
         {

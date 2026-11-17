@@ -51,8 +51,8 @@
             Comma,
 
                   Excluded,          // 🆕 Для синтаксиса EXCLUDED.column в UPSERT
-            CurrentTimestamp   // 🆕 Для CURRENT_TIME
-
+            CurrentTimestamp,   // 🆕 Для CURRENT_TIME
+            NotEqual
         }
 
         public static class Op

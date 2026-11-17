@@ -1,6 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Server.Filters;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Remote;
 
@@ -15,25 +16,42 @@ namespace HomeNet.Server.Endpoints
             DeletedRecordRepository deletedRecordRepository,
             ICastomLogger serverLogger)
         {
-            var group = endpoints.MapGroup("/api/sync");
+            // Вешаем фильтр проверки X-Session-Id на всю группу синхронизации!
+            var group = endpoints.MapGroup("/api/sync")
+                                 .AddEndpointFilter<SessionAuthFilter>();
 
             // ============================================================================
-            // 📥 PULL ПОЛЬЗОВАТЕЛЕЙ + НАДГРОБИЯ ПО ВЕРСИИ
+            // 📥 PULL ПОЛЬЗОВАТЕЛЕЙ + НАДГРОБИЯ ПО СЕРВЕРНОМУ КУРСОРУ ВЕРСИЙ
             // ============================================================================
-            group.MapGet("/users", async (Guid deviceId, long lastVersion) =>
+            group.MapGet("/users", async (HttpContext httpContext) =>
             {
                 try
                 {
-                    serverLogger.LogInfo($"[API SYNC] Запрос обновлений профилей с версии {lastVersion} (DeviceId: {deviceId})...");
+                    var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+                    long lastVersion = session.LastVersion;
+
+                    serverLogger.LogInfo($"[API SYNC] Запрос профилей с версии {lastVersion} (SessionId: {session.Id}, UserId: {session.UserId})...");
 
                     var allUsers = await userRepository.GetAllAsync();
                     var updatedUsers = allUsers.Where(u => u.Version > lastVersion).ToList();
+
+                    // Затираем пароли перед отправкой по сети
+                    foreach (var u in updatedUsers)
+                    {
+                        u.Password = string.Empty;
+                    }
 
                     var tombstones = (await deletedRecordRepository.GetDeletedSinceVersionAsync("Users", lastVersion)).ToList();
 
                     long maxUserVersion = updatedUsers.Count > 0 ? updatedUsers.Max(u => u.Version) : lastVersion;
                     long maxDeletedVersion = tombstones.Count > 0 ? tombstones.Max(d => d.Version) : lastVersion;
                     long latestVersion = Math.Max(lastVersion, Math.Max(maxUserVersion, maxDeletedVersion));
+
+                    // Двигаем курсор версии прямо в таблице device_sync на сервере
+                    if (latestVersion > lastVersion)
+                    {
+                        await deviceSyncRepository.UpdateLastVersionAsync(session.Id, latestVersion);
+                    }
 
                     var batch = new SyncBatchResponse<UserEntity>
                     {
@@ -51,36 +69,6 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
-
-            // ============================================================================
-            // 📥 ВЕКТОР СИНХРОНИЗАЦИИ: Получаем ID пользователя, привязанного к этому девайсу
-            // ============================================================================
-            group.MapGet("/version/{deviceId:guid}", async (Guid deviceId) =>
-            {
-                serverLogger.LogInfo($"[API SYNC] Запрос вектора синхронизации для девайса: {deviceId}");
-                Guid userId = await deviceSyncRepository.GetUserIdByDeviceAsync(deviceId);
-                return Results.Ok(new { DeviceId = deviceId, UserId = userId });
-            });
-
-            // ============================================================================
-            // 📤 ФИКСАЦИЯ ЯКОРЯ СИНХРОНИЗАЦИИ: Обновляем чекпоинт устройства в Postgres
-            // ============================================================================
-            group.MapPost("/anchor", async (DeviceSyncRequest request) =>
-            {
-                if (request == null || request.DeviceId == Guid.Empty || request.UserId == Guid.Empty)
-                    return Results.BadRequest("Неполные данные для фиксации якоря.");
-
-                serverLogger.LogInfo($"[API SYNC] Фиксация якоря репликации для девайса: {request.DeviceId}");
-                await deviceSyncRepository.UpdateDeviceCheckpointAsync(
-                    request.DeviceId,
-                    request.UserId,
-                    DateTimeOffset.UtcNow
-                );
-
-                return Results.Ok(new { Anchored = true });
-            });
         }
     }
-
-    public record DeviceSyncRequest(Guid DeviceId, Guid UserId);
 }

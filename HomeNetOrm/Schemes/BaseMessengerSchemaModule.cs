@@ -40,7 +40,7 @@ namespace HomeNetOrm.Schemes
             builder.AddColumn(u => u.LastName).HasLength(50);
             builder.AddColumn(u => u.PhoneNumber).HasLength(50);
             builder.AddColumn(u => u.Email).HasLength(50).IsRequired().IsUnique();
-            builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
+            
 
           
             return builder;

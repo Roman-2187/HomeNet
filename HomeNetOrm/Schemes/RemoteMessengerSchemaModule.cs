@@ -10,10 +10,10 @@ namespace HomeNetOrm.Schemes
     {
         public RemoteMessengerSchemaModule() : base()
         {
+           
             var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
-            deviceSync.AddColumn(d => d.Id).AsPrimaryKey();
-            deviceSync.AddColumn(d => d.DeviceId).IsRequired();
+            deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Это наш единый SessionId (PairId)
             deviceSync.AddColumn(d => d.UserId).IsRequired();
             deviceSync.AddColumn(d => d.LastVersion);
             deviceSync.AddColumn(d => d.CreatedAt);
@@ -37,7 +37,7 @@ namespace HomeNetOrm.Schemes
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
             var builder = base.BuildUsersSchema().WithVersionTracking();
-
+            builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
             builder.AddColumn(f => f.ServerCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
             builder.AddColumn(u => u.Version);

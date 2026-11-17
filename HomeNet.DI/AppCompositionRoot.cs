@@ -30,9 +30,8 @@ namespace HomeNet.DI
         
         public EventBusInspector EventBusInspector => Infrastructure.EventBusInspector;
 
-        // 🔥 ВАЖНО: Теперь листенеры разделены по зонам ответственности!
-        public UserSignalRListener UserListener => DataAccess.UserListener;
-        public MessageSignalRListener MessageListener => DataAccess.MessageListener;
+        // Единый клиент SignalR вместо двух раздельных слушателей
+        public SignalRHubClient HubClient => DataAccess.HubClient;
 
         private AppCompositionRoot(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {

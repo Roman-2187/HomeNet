@@ -11,7 +11,7 @@ namespace HomeNet.Synchronization.Items
     public class UserSyncItem : IEntitySyncItem
     {
         private readonly IUserRepo _userRepository;
-        private readonly ClientDeviceSettingsRepository _deviceSettingsRepo;
+        private readonly ClientSettingsRepo _deviceSettingsRepo;
         private readonly IUserApiClient _apiClient;
         private readonly ICastomLogger _logger;
 
@@ -19,7 +19,7 @@ namespace HomeNet.Synchronization.Items
 
         public UserSyncItem(
             IUserRepo userRepository,
-            ClientDeviceSettingsRepository deviceSettingsRepo,
+            ClientSettingsRepo deviceSettingsRepo,
             IUserApiClient apiClient,
             ICastomLogger logger)
         {
@@ -34,26 +34,20 @@ namespace HomeNet.Synchronization.Items
             try
             {
                 var session = await _deviceSettingsRepo.GetActiveSessionAsync();
-                Guid deviceId = session?.DeviceId ?? Guid.Empty;
-                long lastVersion = session?.LastSyncVersion ?? 0;
+                if (session == null || session.Id == Guid.Empty) return;
 
-                _logger.LogInfo($"[UserSyncItem] PULL с версии {lastVersion}...");
-                var batch = await _apiClient.FetchFreshUsersAsync(deviceId, lastVersion);
+                _logger.LogInfo($"[UserSyncItem] Запрос обновлений профилей (SessionId: {session.Id})...");
+                var batch = await _apiClient.FetchFreshUsersAsync();
 
                 await UpsertUsersAsync(batch.UpdatedItems);
-                session = await ApplyTombstonesAsync(batch.DeletedIds, session);
-
-                if (session != null && batch.LatestVersion > lastVersion)
-                {
-                    session.LastSyncVersion = batch.LatestVersion;
-                    await _deviceSettingsRepo.SaveSettingsAsync(session);
-                }
+                await ApplyTombstonesAsync(batch.DeletedIds, session);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"[UserSyncItem] Ошибка PULL: {ex.Message}");
             }
         }
+
 
         public async Task PushAsync(CancellationToken ct = default)
         {
@@ -97,7 +91,7 @@ namespace HomeNet.Synchronization.Items
             }
         }
 
-        private async Task<DeviceSettingsEntity?> ApplyTombstonesAsync(IEnumerable<Guid> deletedIds, DeviceSettingsEntity? session)
+        private async Task<SettingsEntity?> ApplyTombstonesAsync(IEnumerable<Guid> deletedIds, SettingsEntity? session)
         {
             foreach (var id in deletedIds)
             {

@@ -11,18 +11,18 @@ namespace HomeNetOrm.Schemes
     {
         public LocalMessengerSchemaModule() : base()
         {
-            // Хранилище сессий и курсоров синхронизации для всех аккаунтов на этом устройстве
-            var deviceSettings = new TableBuilder<DeviceSettingsEntity>("DeviceSettings");
-            deviceSettings.AddColumn(s => s.Id).AsPrimaryKey();
-            deviceSettings.AddColumn(s => s.DeviceId).IsRequired();
-            deviceSettings.AddColumn(s => s.UserId).IsRequired();
-            deviceSettings.AddColumn(s => s.Email);
-            deviceSettings.AddColumn(s => s.Password);
-            deviceSettings.AddColumn(s => s.IsActive).HasDefault(0, ColumnType.Integer);
-            deviceSettings.AddColumn(s => s.LastSyncVersion).HasDefault(0, ColumnType.Integer);
-            deviceSettings.AddColumn(s => s.UpdatedAt);
+            var clientSettings = new TableBuilder<SettingsEntity>("Settings");
+            
+            clientSettings.AddColumn(s => s.Id).AsPrimaryKey(); // Единый SessionId
+            clientSettings.AddColumn(s => s.DeviceId).IsRequired();
+            clientSettings.AddColumn(s => s.UserId).IsRequired();
+            clientSettings.AddColumn(s => s.Email);
+            clientSettings.AddColumn(s => s.IsActive).HasDefault(0, ColumnType.Integer);
+            clientSettings.AddColumn(s => s.UpdatedAt);
 
-            _schemas.Add(deviceSettings.Generate());
+            _schemas.Add(clientSettings.Generate());
+
+
         }
 
         protected override TableBuilder<UserEntity> BuildUsersSchema()

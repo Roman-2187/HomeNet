@@ -1,11 +1,11 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Server.Endpoints;
+using HomeNet.Server.Filters;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Remote;
 using HomeNetOrm.Schemes;
 using Microsoft.AspNetCore.SignalR;
-
 
 namespace HomeNet.Server
 {
@@ -42,17 +42,20 @@ namespace HomeNet.Server
             DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
             DeletedRecordRepository deletedRecordRepository = postgresEngine.Repositories.GetRepository<DeletedRecordRepository>();
 
-            // 🔥 РЕГИСТРИРУЕМ В DI-КОНТЕЙНЕРЕ ASP.NET CORE:
+            // 🔥 5. РЕГИСТРИРУЕМ ЗАВИСИМОСТИ И ФИЛЬТР АВТОРИЗАЦИИ В DI ASP.NET CORE:
             builder.Services.AddSingleton(userRepository);
             builder.Services.AddSingleton(deletedRecordRepository);
+            builder.Services.AddSingleton(deviceSyncRepository);
+            builder.Services.AddSingleton(serverLogger);
+            builder.Services.AddSingleton<SessionAuthFilter>();
 
             builder.Services.AddSignalR();
             var app = builder.Build();
 
             // --- МАППИНГ РАЗДЕЛЕННЫХ СЛОЕВ ЭНДПОИНТОВ ---
             app.MapMessageEndpoints(messageRepository, serverLogger);
-            app.MapUserEndpoints(userRepository,  serverLogger);
-            app.MapSyncEndpoints(deviceSyncRepository, userRepository,deletedRecordRepository,serverLogger);
+            app.MapUserEndpoints(userRepository, deviceSyncRepository, serverLogger);
+            app.MapSyncEndpoints(deviceSyncRepository, userRepository, deletedRecordRepository, serverLogger);
 
             app.MapGet("/api/health", () =>
             {

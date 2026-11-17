@@ -17,9 +17,9 @@ namespace HomeNet.Models.Shared.Entity
         // понимает, с какого именно девайса прилетел запрос, без лишних поисков!
         [ObservableProperty] private Guid _deviceId;
 
+        public Guid SessionId { get; set; }
 
-      
-       
+
 
 
         // ==========================================

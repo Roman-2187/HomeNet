@@ -8,14 +8,11 @@ using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Local
 {
-    internal class DeviceSettingsSqlGenerator : BaseSqlGenerator<DeviceSettingsEntity>, ILocalDeviceSettingsSqlGenerator
+    internal class SettingsSqlGenerator : BaseSqlGenerator<SettingsEntity>, ILocalDeviceSettingsSqlGenerator
     {
-        public DeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
+        public SettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
-        /// <summary>
-        /// Выбирает активную сессию на устройстве (где IsActive = true).
-        /// </summary>
         public SqlQueryCommand GenerateSelectActiveSession() =>
             CreateQuery()
                 .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
@@ -23,9 +20,6 @@ namespace HomeNetOrm.Generators.Local
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
-        /// <summary>
-        /// Выбирает конкретный аккаунт по его детерминированному Id (хэш DeviceId + UserId).
-        /// </summary>
         public SqlQueryCommand GenerateSelectById() =>
             CreateQuery()
                 .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
@@ -33,9 +27,14 @@ namespace HomeNetOrm.Generators.Local
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
-        /// <summary>
-        /// UPSERT по детерминированному ключу Id (паре DeviceId + UserId).
-        /// </summary>
+        public SqlQueryCommand GenerateDeactivateOthers(Guid activeSessionId) =>
+            CreateQuery()
+                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+                    .Col(d => d.IsActive).Emit(OpType.Equal).Param("IsActive", false)
+                .Emit(PhraseType.Where)
+                    .Col(d => d.Id).Emit(OpType.NotEqual).Param("Id", activeSessionId)
+                .Build();
+
         public SqlQueryCommand GenerateInsertOrUpdate()
         {
             return CreateQuery()
@@ -49,15 +48,10 @@ namespace HomeNetOrm.Generators.Local
                 .Build();
         }
 
-
-        /// <summary>
-        /// Удаляет запись сессии из локальной БД по UserId (при срабатывании надгробия с сервера).
-        /// </summary>
         public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>
             CreateQuery()
                 .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
                 .Emit(PhraseType.Where).Col(d => d.UserId).Emit(OpType.Equal).Param("UserId", userId)
                 .Build();
-
     }
 }

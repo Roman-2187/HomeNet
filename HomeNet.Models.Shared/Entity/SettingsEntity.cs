@@ -4,7 +4,7 @@
     /// Внутреннее хранилище сессий и курсоров синхронизации (SQLite).
     /// Хранит историю всех аккаунтов, заходивших с этого устройства.
     /// </summary>
-    public class DeviceSettingsEntity
+    public class SettingsEntity
     {
         // 🔐 ДЕТЕРМИНИРОВАННЫЙ ПЕРВИЧНЫЙ КЛЮЧ (MD5 от DeviceId + UserId)
         public Guid Id { get; set; }

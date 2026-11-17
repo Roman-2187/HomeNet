@@ -2,7 +2,7 @@
 using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Interfaces.Generators.HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 
@@ -13,7 +13,10 @@ namespace HomeNetOrm.Generators.Remote
         public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
-        public SqlQueryCommand GenerateDeviceSyncUpsert()
+        /// <summary>
+        /// Регистрирует сессию (Id = PairId). При повторном входе обновляет только время активности, сохраняя LastVersion.
+        /// </summary>
+        public SqlQueryCommand GenerateSessionUpsert()
         {
             return CreateQuery()
                 .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
@@ -23,27 +26,43 @@ namespace HomeNetOrm.Generators.Remote
                 .Emit(PhraseType.On).Emit(PhraseType.Conflict)
                     .Emit(OpType.OpenBracket).Col(d => d.Id).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(d => d.LastVersion).Emit(OpType.Equal).Raw("EXCLUDED.last_version")
-                    .Emit(OpType.Comma)
                     .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
                 .Build();
         }
 
-        public SqlQueryCommand GenerateSelectUpdatesByTimestamp(DateTimeOffset timestamp) =>
+        /// <summary>
+        /// Получает полную запись сессии по её Id (для проверки авторизации и чтения LastVersion).
+        /// </summary>
+        public SqlQueryCommand GenerateSelectById(Guid sessionId) =>
             CreateQuery()
                 .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
                 .Emit(PhraseType.Where)
-                    .Col(d => d.UpdatedAt).Emit(OpType.GreaterThan)
-                    .Param(d => d.UpdatedAt, timestamp)
+                    .Col(d => d.Id).Emit(OpType.Equal)
+                    .Param(d => d.Id, sessionId)
+                .Raw(Translator.FormatLimit(1))
                 .Build();
 
-        public SqlQueryCommand GenerateSelectUserIdByDevice(Guid deviceId) =>
+        /// <summary>
+        /// Обновляет курсор версии для конкретной сессии.
+        /// </summary>
+        public SqlQueryCommand GenerateUpdateLastVersion(Guid sessionId, long newVersion) =>
             CreateQuery()
-                .Emit(CmdType.Select).Col(d => d.UserId).Emit(PhraseType.From).Table()
+                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+                    .Col(d => d.LastVersion).Emit(OpType.Equal).Param(d => d.LastVersion, newVersion)
+                    .Emit(OpType.Comma)
+                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
                 .Emit(PhraseType.Where)
-                    .Col(d => d.DeviceId).Emit(OpType.Equal)
-                    .Param(d => d.DeviceId, deviceId)
-                .Raw(Translator.FormatLimit(1))
+                    .Col(d => d.Id).Emit(OpType.Equal).Param(d => d.Id, sessionId)
+                .Build();
+
+        /// <summary>
+        /// Удаляет сессию при выходе пользователя (логауте).
+        /// </summary>
+        public SqlQueryCommand GenerateDeleteById(Guid sessionId) =>
+            CreateQuery()
+                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where)
+                    .Col(d => d.Id).Emit(OpType.Equal).Param(d => d.Id, sessionId)
                 .Build();
     }
 }

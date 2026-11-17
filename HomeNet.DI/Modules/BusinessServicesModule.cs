@@ -23,22 +23,24 @@ namespace HomeNet.DI.Modules
         public BusinessServicesModule(
             IUserRepo userRepo,          // Нужен для чтения (кэш)
             IMessageRepo msgRepo,        // Нужен для чтения (кэш)
-            ClientDeviceSettingsRepository deviceSettingsRepo, // Локальные настройки
+            ClientSettingsRepo deviceSettingsRepo, // Локальные настройки
             IUserApiClient userApiClient,   // 🔥 Новый клиент
             IMessageApiClient messageApiClient, // 🔥 Новый клиент
             ICastomLogger logger,
             IEventBus eventBus)
         {
             UserRepository = userRepo;
-
+ DeviceSettingsService = new SettingsService(deviceSettingsRepo, userApiClient, logger);
             // 🔥 Сервисы теперь используют API-клиенты (для записи) и репозитории (для чтения)
-            RegistrationService = new RegistrationService(userApiClient);
+            RegistrationService = new RegistrationService(userApiClient, DeviceSettingsService);
             AuthenticateService = new AuthenticateService(userApiClient);
             DeleteService = new DeleteService(userApiClient, logger);
             MessageService = new MessageService(messageApiClient, msgRepo); // Передали API и репо для чтения
 
             // Настройки устройства остаются локальными
-            DeviceSettingsService = new DeviceSettingsService(deviceSettingsRepo, logger);
+            // Настройки устройства остаются локальными + управляют заголовком сессии в ApiClient
+           
+
         }
     }
 }

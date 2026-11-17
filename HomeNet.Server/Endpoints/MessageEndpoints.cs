@@ -1,7 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Server.Filters;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions; // 🔥 ОБЯЗАТЕЛЬНО ПОДКЛЮЧАЕМ НАШИ ЭКСТЕНШЕНЫ!
+using HomeNetOrm.Repositories.Extensions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace HomeNet.Server.Endpoints
@@ -10,23 +11,26 @@ namespace HomeNet.Server.Endpoints
     {
         public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, ICastomLogger serverLogger)
         {
+            // Вешаем замок X-Session-Id на ВСЕ эндпоинты сообщений!
+            var group = endpoints.MapGroup("/api/messages")
+                                 .AddEndpointFilter<SessionAuthFilter>();
+
             // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
-            endpoints.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>
+            group.MapGet("/sync", async (HttpContext httpContext, string lastSyncedAt) =>
             {
                 try
                 {
+                    var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+
                     if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
                         clientCheckpoint = DateTimeOffset.MinValue;
 
-                    if (userId == Guid.Empty) return Results.Ok(Array.Empty<MessageEntity>());
+                    serverLogger.LogInfo($"[API PULL] Юзер {session.UserId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
 
-                    serverLogger.LogInfo($"[API PULL] Юзер {userId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
-
-                    // 🔥 ИСПРАВЛЕНО: Вызываем наш новый, очищенный от хардкода экстеншен синхронизации репозитория!
-                    var freshMessages = await messageRepository.GetMessagesForSyncAsync(userId, clientCheckpoint);
+                    var freshMessages = await messageRepository.GetMessagesForSyncAsync(session.UserId, clientCheckpoint);
                     var messageList = freshMessages.ToList();
 
-                    serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для пользователя {userId} из PostgreSQL.");
+                    serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для пользователя {session.UserId} из PostgreSQL.");
                     return Results.Ok(messageList);
                 }
                 catch (Exception ex)
@@ -37,18 +41,22 @@ namespace HomeNet.Server.Endpoints
             });
 
             // === [📤 PUSH ПРИЕМ СООБЩЕНИЙ] ===
-            endpoints.MapPost("/api/messages", async (MessageEntity incomingMessage, IHubContext<ServerChatHub> hubContext) =>
+            group.MapPost("/", async (HttpContext httpContext, MessageEntity incomingMessage, IHubContext<ServerChatHub> hubContext) =>
             {
                 try
                 {
-                    serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
+                    var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
 
-                    // Метод остался доменным, внутри него пропишутся правильные таймстампы
+                    // Защита от подмены отправителя!
+                    if (incomingMessage.SenderId != session.UserId)
+                    {
+                        serverLogger.LogWarning($"[API БЕЗОПАСНОСТЬ] Попытка подмены SenderId ({incomingMessage.SenderId} != {session.UserId})!");
+                        return Results.Forbid();
+                    }
+
+                    serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
                     await messageRepository.InsertAsync(incomingMessage);
 
-                    serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано in PostgreSQL.");
-
-                    // Наш транслятор сетевого автобуса в действии! 🧼
                     await hubContext.Clients.Group(incomingMessage.ReceiverId.ToString()).SendAsync("ReceiveMessage", incomingMessage);
                     return Results.Ok(new { Success = true });
                 }
@@ -59,7 +67,7 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            endpoints.MapGet("/api/messages", () => Results.Ok(new { Status = "OK" }));
+            group.MapGet("/", () => Results.Ok(new { Status = "OK" }));
         }
     }
 }
