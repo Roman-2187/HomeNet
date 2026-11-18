@@ -24,7 +24,7 @@ namespace HomeNetServices.Identity
             ApplyCachedEmailCheck(user.Email, validationResults);
 
             if (HasErrors(validationResults))
-                return new IRegistrationService.Verdict(false, validationResults, null);
+                return new Verdict(false, validationResults, null);
 
             // 1. Назначаем ID пользователю и вычисляем детерминированный SessionId напрямую
             if (user.Id == Guid.Empty)
@@ -33,15 +33,19 @@ namespace HomeNetServices.Identity
             user.SessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(user.Id);
 
             // 2. Отправляем полностью подготовленного юзера на сервер
-            bool success = await ApiClient.PushUserAsync(user);
+            var pushResult = await ApiClient.PushUserAsync(user);
 
-            if (success)
+            if (pushResult.IsSuccess && pushResult.User != null)
             {
-                user.IsSynced = 1; // Сразу фиксируем, что запись уже на сервере
-                return new Verdict(true, validationResults, user);
+                pushResult.User.IsSynced = 1; // Сразу фиксируем, что запись уже на сервере
+                return new Verdict(true, validationResults, pushResult.User);
             }
 
-            var errorResult = SetResult(TypeField.EmailType, ValidationState.Error, "Сервер отклонил регистрацию (возможно, Email уже занят).");
+            var errorResult = SetResult(
+                TypeField.EmailType,
+                ValidationState.Error,
+                pushResult.ErrorMessage ?? "Не удалось зарегистрировать аккаунт.");
+
             return new Verdict(false, [errorResult], null);
         }
 

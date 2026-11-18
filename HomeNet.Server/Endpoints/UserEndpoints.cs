@@ -32,7 +32,7 @@ namespace HomeNet.Server.Endpoints
                         return Results.BadRequest(new { Error = "SessionId устройства обязателен для входа." });
                     }
 
-                    serverLogger.LogInfo($"[API AUTH] Попытка входа для {request.Email}...");
+                  
                     var user = await userRepository.GetByEmailAsync(request.Email);
 
                     if (user == null || user.Password != request.Password)
@@ -71,9 +71,10 @@ namespace HomeNet.Server.Endpoints
 
                     if (incomingUser.Id == Guid.Empty)
                     {
-                        serverLogger.LogWarning($"[API PUSH] Отклонена регистрация '{incomingUser.Email}': отсутствует UserId.");
-                        return Results.BadRequest(new { Error = "UserId обязателен для регистрации." });
+                        serverLogger.LogWarning($"[API PUSH] Отклонена регистрация '{incomingUser.Email}': передан пустой Id пользователя.");
+                        return Results.BadRequest(new { Error = "Идентификатор пользователя (Id) обязателен для регистрации." });
                     }
+
 
                     serverLogger.LogInfo($"[API PUSH] Регистрация пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
@@ -140,17 +141,16 @@ namespace HomeNet.Server.Endpoints
                 return Results.Ok(user);
             });
 
+
             // === [🗑️ DELETE ПОЛЬЗОВАТЕЛЯ] ===
             protectedGroup.MapDelete("/{id:guid}", async (HttpContext httpContext, Guid id) =>
             {
                 var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
-                var caller = await userRepository.GetByIdAsync(session.UserId);
 
-                const string ADMIN_EMAIL = "ohagow.r@gmail.com";
-                // Удалять может либо сам владелец аккаунта, либо админ
-                if (session.UserId != id && caller?.Email != ADMIN_EMAIL)
+                // Удалять аккаунт может только сам владелец текущей активной сессии
+                if (session.UserId != id)
                 {
-                    serverLogger.LogWarning($"[API DELETE] Попытка чужого удаления от {session.UserId}!");
+                    serverLogger.LogWarning($"[API DELETE] Попытка чужого удаления: сессия {session.UserId} пытается удалить {id}!");
                     return Results.Forbid();
                 }
 
@@ -159,6 +159,9 @@ namespace HomeNet.Server.Endpoints
                 serverLogger.LogInfo($"[API DELETE] Пользователь {id} успешно удалён.");
                 return Results.Ok(new { Success = true });
             });
+
+
+
 
             // === [🚪 LOGOUT (АННУЛИРОВАНИЕ СЕССИИ)] ===
             protectedGroup.MapPost("/logout", async (HttpContext httpContext) =>

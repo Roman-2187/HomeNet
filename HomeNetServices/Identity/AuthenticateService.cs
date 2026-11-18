@@ -25,10 +25,10 @@ namespace HomeNetServices.Identity
                 userInput.Email = userInput.Email.Replace(" ", "");
 
             var validationResults = new List<ValidationResult>
-            {
-                ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
-                ValidatePasswordFormat(userInput.Password, checkComplexity: false)
-            };
+    {
+        ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
+        ValidatePasswordFormat(userInput.Password, checkComplexity: false)
+    };
 
             ApplyCachedEmailCheck(userInput.Email, validationResults);
 
@@ -38,13 +38,18 @@ namespace HomeNetServices.Identity
             // Всегда генерируем свежий токен сессии на базе текущего устройства
             Guid sessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(Guid.NewGuid());
 
-            var authenticatedUser = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
+            var authResult = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
 
-            if (authenticatedUser != null)
-                return new IAuthenticateService.Verdict(true, validationResults, authenticatedUser);
+            if (authResult.IsSuccess && authResult.User != null)
+                return new IAuthenticateService.Verdict(true, validationResults, authResult.User);
 
-            var errorResult = SetResult(TypeField.PasswordType, ValidationState.Error, "Неверный пароль (или сервер недоступен).");
+            var errorResult = SetResult(
+                TypeField.PasswordType,
+                ValidationState.Error,
+                authResult.ErrorMessage ?? "Не удалось выполнить вход.");
+
             return new IAuthenticateService.Verdict(false, [errorResult], null);
         }
+
     }
 }

@@ -52,13 +52,13 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             _eventBus.Subscribe<IAdminVm.LogoutAdmin>(_ => OnLogoutRequested(null!));
 
 
-            _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+            _eventBus.Subscribe<InfrastructureReady>(OnInfrastructureReady);
 
            
         }
 
 
-        private void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg)
+        private void OnInfrastructureReady(InfrastructureReady msg)
         {
             _logger.LogInfo("[AutoLogin] Получен сигнал, что база готова. Запускаем проверку сессии.");
 

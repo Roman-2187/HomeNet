@@ -6,7 +6,8 @@ namespace HomeNet.Network.Api
 {
     public interface IUserApiClient : IApiClientBase
     {
-        Task<bool> PushUserAsync(UserEntity user);
+       
+        Task<AuthResponse> PushUserAsync(UserEntity user);
         Task<bool> DeleteUserAsync(Guid userId);
         Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync();
 
@@ -18,11 +19,14 @@ namespace HomeNet.Network.Api
 
         Task<bool> CheckEmailExistsAsync(string email);
 
-        Task<UserEntity?> AuthenticateAsync(string email, string password, Guid sessionId);
+        Task<AuthResponse> AuthenticateAsync(string email, string password, Guid sessionId);
+
 
         // 🔥 ФАКТЫ, которые публикует сам API-клиент
         public record UserRegisteredOnServer(UserEntity User);
         public record UserRegistrationFailed(Guid UserId, string Error);
+
+        public record AuthResponse(bool IsSuccess, UserEntity? User, string? ErrorMessage);
 
         public record UserDeletedOnServer(Guid UserId);
         public record UserDeleteFailed(Guid UserId, string Error);

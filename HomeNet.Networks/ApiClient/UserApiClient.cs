@@ -4,6 +4,7 @@ using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
 using System.Net.Http.Json;
+using static HomeNet.Network.Api.IUserApiClient;
 
 namespace HomeNet.Network.ApiClient
 {
@@ -15,7 +16,7 @@ namespace HomeNet.Network.ApiClient
         {
             public bool Exists { get; set; }
         }
-        public async Task<bool> PushUserAsync(UserEntity user)
+        public async Task<AuthResponse> PushUserAsync(UserEntity user)
         {
             try
             {
@@ -30,19 +31,43 @@ namespace HomeNet.Network.ApiClient
                     }
 
                     _eventBus.Publish(this, new IUserApiClient.UserRegisteredOnServer(createdUser));
-                    return true;
+                    return new AuthResponse(true, createdUser, null);
                 }
 
-                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, $"HTTP {response.StatusCode}"));
-                return false;
+                string errorMessage = response.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.Conflict => "Этот Email уже занят.",
+                    System.Net.HttpStatusCode.BadRequest => "Некорректные данные при регистрации.",
+                    _ => $"Ошибка сервера ({(int)response.StatusCode})."
+                };
+
+                Logger.LogWarning($"[UserApiClient] Ошибка регистрации ({(int)response.StatusCode}): {errorMessage}");
+                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, errorMessage));
+                return new AuthResponse(false, null, errorMessage);
+            }
+            catch (HttpRequestException ex)
+            {
+                const string msg = "Сервер недоступен. Проверьте подключение к сети.";
+                Logger.LogError($"[UserApiClient] Сервер недоступен при регистрации: {ex.Message}");
+                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, msg));
+                return new AuthResponse(false, null, msg);
+            }
+            catch (TaskCanceledException ex)
+            {
+                const string msg = "Превышено время ожидания ответа от сервера.";
+                Logger.LogError($"[UserApiClient] Таймаут при регистрации: {ex.Message}");
+                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, msg));
+                return new AuthResponse(false, null, msg);
             }
             catch (Exception ex)
             {
+                const string msg = "Внутренняя ошибка приложения при регистрации.";
                 Logger.LogError($"[UserApiClient] Ошибка отправки пользователя: {ex.Message}");
                 _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, ex.Message));
-                return false;
+                return new AuthResponse(false, null, msg);
             }
         }
+
 
 
         public async Task<bool> DeleteUserAsync(Guid userId)
@@ -120,7 +145,10 @@ namespace HomeNet.Network.ApiClient
         }
 
 
-        public async Task<UserEntity?> AuthenticateAsync(string email, string password, Guid sessionId)
+
+
+
+        public async Task<AuthResponse> AuthenticateAsync(string email, string password, Guid sessionId)
         {
             try
             {
@@ -139,20 +167,34 @@ namespace HomeNet.Network.ApiClient
                     }
 
                     Logger.LogInfo($"[UserApiClient] Успешный вход. Юзер: {user?.Email ?? "null"}, SessionId: {user?.SessionId}");
-                    return user;
+                    return new AuthResponse(true, user, null);
                 }
 
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Logger.LogWarning($"[UserApiClient] Сервер отклонил вход ({(int)response.StatusCode}): {errorContent}");
-                return null;
+
+                string errorMessage = response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    ? "Неверный Email или пароль."
+                    : $"Ошибка сервера ({(int)response.StatusCode}).";
+
+                return new AuthResponse(false, null, errorMessage);
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.LogError($"[UserApiClient] Сервер недоступен при авторизации: {ex.Message}");
+                return new AuthResponse(false, null, "Сервер недоступен. Проверьте подключение к сети.");
+            }
+            catch (TaskCanceledException ex)
+            {
+                Logger.LogError($"[UserApiClient] Таймаут при авторизации: {ex.Message}");
+                return new AuthResponse(false, null, "Превышено время ожидания ответа от сервера.");
             }
             catch (Exception ex)
             {
-                Logger.LogError($"[UserApiClient] Ошибка при авторизации: {ex.Message}");
-                return null;
+                Logger.LogError($"[UserApiClient] Непредвиденная ошибка при авторизации: {ex.Message}");
+                return new AuthResponse(false, null, "Внутренняя ошибка приложения при входе.");
             }
         }
-
 
 
         public async Task<bool> CheckEmailExistsAsync(string email)
