@@ -27,6 +27,13 @@ namespace HomeNetOrm.Generators.Local
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
+        public SqlQueryCommand GenerateSelectByEmail() =>
+          CreateQuery()
+              .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+              .Emit(PhraseType.Where).Col(d => d.Email).Emit(OpType.Equal).Param("Email", string.Empty)
+              .Raw(Translator.FormatLimit(1))
+              .Build();
+
         public SqlQueryCommand GenerateDeactivateOthers(Guid activeSessionId) =>
             CreateQuery()
                 .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
@@ -35,6 +42,8 @@ namespace HomeNetOrm.Generators.Local
                     .Col(d => d.Id).Emit(OpType.NotEqual).Param("Id", activeSessionId)
                 .Build();
 
+      
+
         public SqlQueryCommand GenerateInsertOrUpdate()
         {
             return CreateQuery()
@@ -42,11 +51,14 @@ namespace HomeNetOrm.Generators.Local
                 .InsertFields()
                 .Emit(PhraseType.Values)
                 .InsertParameters()
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.Id).Emit(OpType.CloseBracket)
+                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.UserId).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                .UpsertExcludedFields()
+                    .Col(d => d.Id).Emit(OpType.Equal).Raw("EXCLUDED.\"id\"")
+                    .Emit(OpType.Comma)
+                    .UpsertExcludedFields()
                 .Build();
         }
+
 
         public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>
             CreateQuery()

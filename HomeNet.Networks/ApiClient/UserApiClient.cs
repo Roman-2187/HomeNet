@@ -120,13 +120,15 @@ namespace HomeNet.Network.ApiClient
         }
 
 
-        public async Task<UserEntity?> AuthenticateAsync(string email, string password)
+        public async Task<UserEntity?> AuthenticateAsync(string email, string password, Guid sessionId)
         {
             try
             {
-                Logger.LogInfo($"[UserApiClient] Попытка входа для {email}...");
+                Logger.LogInfo($"[UserApiClient] Попытка входа для {email} (SessionId: {sessionId})...");
 
-                var response = await HttpClient.PostAsJsonAsync("/api/users/auth", new { Email = email, Password = password });
+                var response = await HttpClient.PostAsJsonAsync(
+                    "/api/users/auth",
+                    new { Email = email, Password = password, SessionId = sessionId });
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -150,6 +152,7 @@ namespace HomeNet.Network.ApiClient
                 return null;
             }
         }
+
 
 
         public async Task<bool> CheckEmailExistsAsync(string email)

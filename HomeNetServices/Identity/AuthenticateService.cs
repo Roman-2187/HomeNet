@@ -8,7 +8,9 @@ namespace HomeNetServices.Identity
 {
     public class AuthenticateService : BaseValidationService, IAuthenticateService
     {
-        public AuthenticateService(IUserApiClient apiClient) : base(apiClient) { }
+        public AuthenticateService(IUserApiClient apiClient) : base(apiClient)
+        {
+        }
 
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
             exists
@@ -28,13 +30,15 @@ namespace HomeNetServices.Identity
                 ValidatePasswordFormat(userInput.Password, checkComplexity: false)
             };
 
-            // Подмешиваем результат проверки существования Email на потерю фокуса
             ApplyCachedEmailCheck(userInput.Email, validationResults);
 
             if (HasErrors(validationResults))
                 return new IAuthenticateService.Verdict(false, validationResults, null);
 
-            var authenticatedUser = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!);
+            // Всегда генерируем свежий токен сессии на базе текущего устройства
+            Guid sessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(Guid.NewGuid());
+
+            var authenticatedUser = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
 
             if (authenticatedUser != null)
                 return new IAuthenticateService.Verdict(true, validationResults, authenticatedUser);

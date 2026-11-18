@@ -3,16 +3,14 @@ using HomeNet.Network.Api;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
+using static HomeNetCore.Interfaces.Services.IRegistrationService;
 
 namespace HomeNetServices.Identity
 {
     public class RegistrationService : BaseValidationService, IRegistrationService
     {
-        private readonly IDeviceSettingsService _settingsService;
-
-        public RegistrationService(IUserApiClient apiClient, IDeviceSettingsService settingsService) : base(apiClient)
+        public RegistrationService(IUserApiClient apiClient) : base(apiClient)
         {
-            _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         }
 
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
@@ -20,7 +18,7 @@ namespace HomeNetServices.Identity
                 ? SetResult(TypeField.EmailType, ValidationState.Error, "Этот Email уже занят")
                 : SetResult(TypeField.EmailType, ValidationState.Success, "Email свободен");
 
-        public async Task<IRegistrationService.Verdict> RegisterUserAsync(UserEntity user)
+        public async Task<Verdict> RegisterUserAsync(UserEntity user)
         {
             var validationResults = ValidateInput(user);
             ApplyCachedEmailCheck(user.Email, validationResults);
@@ -28,23 +26,23 @@ namespace HomeNetServices.Identity
             if (HasErrors(validationResults))
                 return new IRegistrationService.Verdict(false, validationResults, null);
 
-            // 1. Назначаем ID пользователю и забираем детерминированный SessionId у SettingsService
+            // 1. Назначаем ID пользователю и вычисляем детерминированный SessionId напрямую
             if (user.Id == Guid.Empty)
                 user.Id = Guid.NewGuid();
 
-            user.SessionId = _settingsService.CreateSessionIdForUser(user.Id);
+            user.SessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(user.Id);
 
-            // 2. Отправляем полностью подготовленного юзера на сервер (сервер сохранит ровно этот SessionId!)
+            // 2. Отправляем полностью подготовленного юзера на сервер
             bool success = await ApiClient.PushUserAsync(user);
 
             if (success)
             {
                 user.IsSynced = 1; // Сразу фиксируем, что запись уже на сервере
-                return new IRegistrationService.Verdict(true, validationResults, user);
+                return new Verdict(true, validationResults, user);
             }
 
             var errorResult = SetResult(TypeField.EmailType, ValidationState.Error, "Сервер отклонил регистрацию (возможно, Email уже занят).");
-            return new IRegistrationService.Verdict(false, [errorResult], null);
+            return new Verdict(false, [errorResult], null);
         }
 
         private List<ValidationResult> ValidateInput(UserEntity input)

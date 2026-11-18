@@ -30,9 +30,8 @@ namespace HomeNet.DI.Modules
             IEventBus eventBus)
         {
             UserRepository = userRepo;
- DeviceSettingsService = new SettingsService(deviceSettingsRepo, userApiClient, logger);
-            // 🔥 Сервисы теперь используют API-клиенты (для записи) и репозитории (для чтения)
-            RegistrationService = new RegistrationService(userApiClient, DeviceSettingsService);
+            DeviceSettingsService = new SettingsService(deviceSettingsRepo, userApiClient, logger);        
+            RegistrationService = new RegistrationService(userApiClient);
             AuthenticateService = new AuthenticateService(userApiClient);
             DeleteService = new DeleteService(userApiClient, logger);
             MessageService = new MessageService(messageApiClient, msgRepo); // Передали API и репо для чтения

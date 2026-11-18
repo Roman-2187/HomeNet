@@ -60,5 +60,18 @@ namespace HomeNetOrm.Repositories.Local
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
+
+
+        public async Task<SettingsEntity?> GetByEmailAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return null;
+
+            var cmd = _sqlGenerator.GenerateSelectByEmail();
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            return await db.QueryFirstOrDefaultAsync<SettingsEntity>(cmd.Sql, new { Email = email.Trim() });
+        }
+
     }
 }

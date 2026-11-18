@@ -58,11 +58,8 @@ namespace HomeNetServices.Identity
 
         public Task<Guid> GetDeviceIdAsync() => Task.FromResult(ImmortalDeviceProvider.CurrentDeviceId);
 
-        public Guid CreateSessionIdForUser(Guid userId)
-        {
-            Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
-            return ImmortalDeviceProvider.CreatePairSessionId(deviceId, userId);
-        }
+        public Guid CreateSessionIdForUser(Guid userId) =>
+            ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(userId);
 
         public async Task<SettingsEntity?> GetCurrentSettingsAsync()
         {
@@ -77,7 +74,7 @@ namespace HomeNetServices.Identity
                 Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
                 Guid activeSessionId = sessionId != Guid.Empty
                     ? sessionId
-                    : ImmortalDeviceProvider.CreatePairSessionId(deviceId, userId);
+                    : ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(userId);
 
                 var existing = await _deviceSettingsRepo.GetBySessionIdAsync(activeSessionId);
 
@@ -115,7 +112,7 @@ namespace HomeNetServices.Identity
                 var settings = _cachedActiveSession;
                 if (settings == null) return;
 
-                settings.Email = string.Empty;
+               
                 settings.IsActive = false;
                 settings.UpdatedAt = DateTimeOffset.UtcNow;
 

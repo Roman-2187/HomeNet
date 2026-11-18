@@ -13,8 +13,11 @@ namespace HomeNetOrm.Generators.Remote
         public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
+      
+
+
         /// <summary>
-        /// Регистрирует сессию (Id = PairId). При повторном входе обновляет только время активности, сохраняя LastVersion.
+        /// Регистрирует сессию или перезаписывает токен (Id) при повторном входе того же UserId, сохраняя LastVersion.
         /// </summary>
         public SqlQueryCommand GenerateSessionUpsert()
         {
@@ -24,11 +27,14 @@ namespace HomeNetOrm.Generators.Remote
                 .Emit(PhraseType.Values)
                 .InsertParameters()
                 .Emit(PhraseType.On).Emit(PhraseType.Conflict)
-                    .Emit(OpType.OpenBracket).Col(d => d.Id).Emit(OpType.CloseBracket)
+                    .Emit(OpType.OpenBracket).Col(d => d.UserId).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
+                    .Col(d => d.Id).Emit(OpType.Equal).Raw("EXCLUDED.\"id\"")
+                    .Emit(OpType.Comma)
                     .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
                 .Build();
         }
+
 
         /// <summary>
         /// Получает полную запись сессии по её Id (для проверки авторизации и чтения LastVersion).

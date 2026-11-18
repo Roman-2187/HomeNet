@@ -35,7 +35,7 @@ namespace HomeNetOrm.Schemes
         {
             var builder = new TableBuilder<UserEntity>("Users");
             builder.AddColumn(u => u.Id).AsPrimaryKey();
-            builder.AddColumn(u => u.DeviceId).IsRequired();
+           
             builder.AddColumn(u => u.FirstName).HasLength(50).IsRequired();
             builder.AddColumn(u => u.LastName).HasLength(50);
             builder.AddColumn(u => u.PhoneNumber).HasLength(50);

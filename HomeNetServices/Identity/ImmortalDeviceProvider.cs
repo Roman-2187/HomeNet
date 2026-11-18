@@ -21,6 +21,14 @@ namespace HomeNetServices.Identity
         public static Guid CurrentDeviceId => _cachedDeviceId.Value;
 
         /// <summary>
+        /// Генерирует детерминированный SessionId для указанного пользователя на текущем устройстве.
+        /// </summary>
+        public static Guid CreateSessionIdForCurrentDevice(Guid userId)
+        {
+            return CreatePairSessionId(CurrentDeviceId, userId);
+        }
+
+        /// <summary>
         /// Генерирует детерминированный GUID для пары (DeviceId + UserId) через MD5.
         /// Для одного и того же юзера на этом железе результат всегда идентичен.
         /// </summary>

@@ -18,7 +18,7 @@ namespace HomeNet.Network.Api
 
         Task<bool> CheckEmailExistsAsync(string email);
 
-        Task<UserEntity?> AuthenticateAsync(string email, string password);
+        Task<UserEntity?> AuthenticateAsync(string email, string password, Guid sessionId);
 
         // 🔥 ФАКТЫ, которые публикует сам API-клиент
         public record UserRegisteredOnServer(UserEntity User);

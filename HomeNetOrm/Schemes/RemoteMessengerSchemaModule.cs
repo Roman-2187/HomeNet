@@ -11,10 +11,14 @@ namespace HomeNetOrm.Schemes
         public RemoteMessengerSchemaModule() : base()
         {
            
+
+
+
+
             var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
-            deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Это наш единый SessionId (PairId)
-            deviceSync.AddColumn(d => d.UserId).IsRequired();
+            deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Актуальный SessionId
+            deviceSync.AddColumn(d => d.UserId).IsRequired().IsUnique(); // Гарантирует 1 актуальную сессию на пользователя
             deviceSync.AddColumn(d => d.LastVersion);
             deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);

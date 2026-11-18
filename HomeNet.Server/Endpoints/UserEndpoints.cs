@@ -26,6 +26,12 @@ namespace HomeNet.Server.Endpoints
             {
                 try
                 {
+                    if (request.SessionId == Guid.Empty)
+                    {
+                        serverLogger.LogWarning($"[API AUTH] Отклонено: не передан SessionId для {request.Email}");
+                        return Results.BadRequest(new { Error = "SessionId устройства обязателен для входа." });
+                    }
+
                     serverLogger.LogInfo($"[API AUTH] Попытка входа для {request.Email}...");
                     var user = await userRepository.GetByEmailAsync(request.Email);
 
@@ -35,19 +41,14 @@ namespace HomeNet.Server.Endpoints
                         return Results.Unauthorized();
                     }
 
-                    // 1. Генерируем токен сессии (или берем присланный, если клиент его передал)
-                    Guid sessionId = request.SessionId != Guid.Empty
-                        ? request.SessionId
-                        : Guid.NewGuid();
+                    // 1. Фиксируем или продлеваем переданную клиентом сессию в таблице device_sync
+                    await deviceSyncRepository.UpsertSessionAsync(request.SessionId, user.Id);
 
-                    // 2. Фиксируем или продлеваем сессию в таблице device_sync на сервере
-                    await deviceSyncRepository.UpsertSessionAsync(sessionId, user.Id);
-
-                    // 3. Возвращаем пользователя с активным токеном сессии, но без пароля
-                    user.SessionId = sessionId;
+                    // 2. Возвращаем пользователя с подтвержденным токеном сессии, но без пароля
+                    user.SessionId = request.SessionId;
                     user.Password = string.Empty;
 
-                    serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email} (SessionId: {sessionId})");
+                    serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email} (SessionId: {request.SessionId})");
                     return Results.Ok(user);
                 }
                 catch (Exception ex)
@@ -62,24 +63,30 @@ namespace HomeNet.Server.Endpoints
             {
                 try
                 {
+                    if (incomingUser.SessionId == Guid.Empty)
+                    {
+                        serverLogger.LogWarning($"[API PUSH] Отклонена регистрация '{incomingUser.Email}': отсутствует SessionId.");
+                        return Results.BadRequest(new { Error = "SessionId устройства обязателен для регистрации." });
+                    }
+
+                    if (incomingUser.Id == Guid.Empty)
+                    {
+                        serverLogger.LogWarning($"[API PUSH] Отклонена регистрация '{incomingUser.Email}': отсутствует UserId.");
+                        return Results.BadRequest(new { Error = "UserId обязателен для регистрации." });
+                    }
+
                     serverLogger.LogInfo($"[API PUSH] Регистрация пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
                     // 1. Записываем нового пользователя в PostgreSQL
                     await userRepository.InsertAsync(incomingUser);
 
-                    // 2. Если клиент не прислал SessionId, генерируем его на сервере; иначе берем присланный
-                    Guid sessionId = incomingUser.SessionId != Guid.Empty
-                        ? incomingUser.SessionId
-                        : Guid.NewGuid();
+                    // 2. Открываем сессию в таблице device_sync строго с клиентским SessionId
+                    await deviceSyncRepository.UpsertSessionAsync(incomingUser.SessionId, incomingUser.Id);
 
-                    // 3. Открываем сессию в таблице device_sync
-                    await deviceSyncRepository.UpsertSessionAsync(sessionId, incomingUser.Id);
-
-                    // 4. Подготавливаем безопасный ответ (с токеном сессии, но без пароля)
-                    incomingUser.SessionId = sessionId;
+                    // 3. Подготавливаем безопасный ответ (без пароля)
                     incomingUser.Password = string.Empty;
 
-                    serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан. SessionId: {sessionId}");
+                    serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан. SessionId: {incomingUser.SessionId}");
                     return Results.Ok(incomingUser);
                 }
                 catch (DuplicateEmailException ex)
@@ -98,7 +105,6 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
-
 
             // === [📥 ПРОВЕРКА СУЩЕСТВОВАНИЯ EMAIL] ===
             endpoints.MapGet("/api/users/check-email", async ([FromServices] IUserRepo repo, [FromQuery] string email) =>
@@ -165,6 +171,5 @@ namespace HomeNet.Server.Endpoints
         }
 
         public record LoginRequest(string Email, string Password, Guid SessionId = default);
-
     }
 }
