@@ -6,12 +6,8 @@ using HomeNetCore.Validation;
 
 namespace HomeNetServices.Identity
 {
-    public class AuthenticateService : BaseValidationService, IAuthenticateService
+    public class AuthenticateService(IUserApiClient apiClient) : BaseValidationService(apiClient), IAuthenticateService
     {
-        public AuthenticateService(IUserApiClient apiClient) : base(apiClient)
-        {
-        }
-
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
             exists
                 ? SetResult(TypeField.EmailType, ValidationState.Success, "Пользователь найден")
@@ -24,11 +20,11 @@ namespace HomeNetServices.Identity
             if (!string.IsNullOrWhiteSpace(userInput.Email))
                 userInput.Email = userInput.Email.Replace(" ", "");
 
-            var validationResults = new List<ValidationResult>
-    {
-        ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
-        ValidatePasswordFormat(userInput.Password, checkComplexity: false)
-    };
+                var validationResults = new List<ValidationResult>
+                {
+                    ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
+                    ValidatePasswordFormat(userInput.Password, checkComplexity: false)
+                };
 
             ApplyCachedEmailCheck(userInput.Email, validationResults);
 

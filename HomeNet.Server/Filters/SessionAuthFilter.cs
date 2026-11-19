@@ -4,7 +4,7 @@
 
     namespace HomeNet.Server.Filters
     {
-        public class SessionAuthFilter(DeviceSyncRepository deviceSyncRepository, ICastomLogger logger) : IEndpointFilter
+        public class SessionAuthFilter(DeviceSyncRepo deviceSyncRepository, ICastomLogger logger) : IEndpointFilter
         {
             public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
             {

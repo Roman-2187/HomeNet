@@ -1,10 +1,9 @@
 ﻿using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
-using HomeNet.Network.ApiClient;
 
 namespace HomeNet.Network.Api
 {
-    public interface IMessageApiClient : IApiClientBase
+    public interface IMessageApiClient : IApiClient
     {
         Task<bool> PushMessageAsync(MessageEntity message);
 

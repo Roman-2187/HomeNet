@@ -3,7 +3,7 @@ using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Generators.Extensions;
+using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;

@@ -12,11 +12,7 @@ namespace HomeNet.Network.ApiClient
     {
         private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-        private class EmailCheckResponse
-        {
-            public bool Exists { get; set; }
-        }
-        public async Task<AuthResponse> PushUserAsync(UserEntity user)
+        public async Task<AuthResponse> RegisterUserAsync(UserEntity user)
         {
             try
             {
@@ -30,7 +26,7 @@ namespace HomeNet.Network.ApiClient
                         SetSessionHeader(createdUser.SessionId);
                     }
 
-                    _eventBus.Publish(this, new IUserApiClient.UserRegisteredOnServer(createdUser));
+                    _eventBus.Publish(this, new UserRegisteredOnServer(createdUser));
                     return new AuthResponse(true, createdUser, null);
                 }
 
@@ -42,113 +38,31 @@ namespace HomeNet.Network.ApiClient
                 };
 
                 Logger.LogWarning($"[UserApiClient] Ошибка регистрации ({(int)response.StatusCode}): {errorMessage}");
-                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, errorMessage));
+                _eventBus.Publish(this, new UserRegistrationFailed(user.Id, errorMessage));
                 return new AuthResponse(false, null, errorMessage);
             }
             catch (HttpRequestException ex)
             {
                 const string msg = "Сервер недоступен. Проверьте подключение к сети.";
                 Logger.LogError($"[UserApiClient] Сервер недоступен при регистрации: {ex.Message}");
-                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, msg));
+                _eventBus.Publish(this, new UserRegistrationFailed(user.Id, msg));
                 return new AuthResponse(false, null, msg);
             }
             catch (TaskCanceledException ex)
             {
                 const string msg = "Превышено время ожидания ответа от сервера.";
                 Logger.LogError($"[UserApiClient] Таймаут при регистрации: {ex.Message}");
-                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, msg));
+                _eventBus.Publish(this, new UserRegistrationFailed(user.Id, msg));
                 return new AuthResponse(false, null, msg);
             }
             catch (Exception ex)
             {
                 const string msg = "Внутренняя ошибка приложения при регистрации.";
                 Logger.LogError($"[UserApiClient] Ошибка отправки пользователя: {ex.Message}");
-                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, ex.Message));
+                _eventBus.Publish(this, new UserRegistrationFailed(user.Id, ex.Message));
                 return new AuthResponse(false, null, msg);
             }
         }
-
-
-
-        public async Task<bool> DeleteUserAsync(Guid userId)
-        {
-            try
-            {
-                var response = await HttpClient.DeleteAsync($"/api/users/{userId}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    // 🔥 Кричим, что сервер удалил
-                    _eventBus.Publish(this, new IUserApiClient.UserDeletedOnServer(userId));
-                    return true;
-                }
-
-                _eventBus.Publish(this, new IUserApiClient.UserDeleteFailed(userId, $"HTTP {response.StatusCode}"));
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserApiClient] Ошибка удаления пользователя: {ex.Message}");
-                _eventBus.Publish(this, new IUserApiClient.UserDeleteFailed(userId, ex.Message));
-                return false;
-            }
-        }
-
-
-
-        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(long sinceVersion)
-        {
-            try
-            {
-                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с версии {sinceVersion}...");
-                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>($"/api/sync/users?sinceVersion={sinceVersion}");
-                return response ?? new SyncBatchResponse<UserEntity>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserApiClient] Не удалось скачать обновления пользователей: {ex.Message}");
-                return new SyncBatchResponse<UserEntity>();
-            }
-        }
-
-
-
-
-
-
-
-        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
-        {
-            try
-            {
-                Logger.LogInfo($"[UserApiClient] Запрос юзера по ID: {id}...");
-                return await HttpClient.GetFromJsonAsync<UserEntity>($"/api/users/{id}");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserApiClient] Ошибка получения юзера {id}: {ex.Message}");
-                return null;
-            }
-        }
-
-        public async Task<IReadOnlyCollection<UserEntity>> GetAllUsersAsync()
-        {
-            try
-            {
-                Logger.LogInfo("[UserApiClient] Запрос всех пользователей...");
-                var response = await HttpClient.GetFromJsonAsync<List<UserEntity>>("/api/users");
-                return response ?? new List<UserEntity>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserApiClient] Ошибка получения списка: {ex.Message}");
-                return Array.Empty<UserEntity>();
-            }
-        }
-
-
-
-
 
         public async Task<AuthResponse> AuthenticateAsync(string email, string password, Guid sessionId)
         {
@@ -199,6 +113,77 @@ namespace HomeNet.Network.ApiClient
         }
 
 
+        public async Task<bool> DeleteUserAsync(Guid userId)
+        {
+            try
+            {
+                var response = await HttpClient.DeleteAsync($"/api/users/{userId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // 🔥 Кричим, что сервер удалил
+                    _eventBus.Publish(this, new UserDeletedOnServer(userId));
+                    return true;
+                }
+
+                _eventBus.Publish(this, new UserDeleteFailed(userId, $"HTTP {response.StatusCode}"));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка удаления пользователя: {ex.Message}");
+                _eventBus.Publish(this, new UserDeleteFailed(userId, ex.Message));
+                return false;
+            }
+        }
+
+        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(long sinceVersion)
+        {
+            try
+            {
+                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с версии {sinceVersion}...");
+                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>($"/api/sync/users?sinceVersion={sinceVersion}");
+                return response ?? new SyncBatchResponse<UserEntity>();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Не удалось скачать обновления пользователей: {ex.Message}");
+                return new SyncBatchResponse<UserEntity>();
+            }
+        }
+
+
+        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
+        {
+            try
+            {
+                Logger.LogInfo($"[UserApiClient] Запрос юзера по ID: {id}...");
+                return await HttpClient.GetFromJsonAsync<UserEntity>($"/api/users/{id}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка получения юзера {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+
+        public async Task<IReadOnlyCollection<UserEntity>> GetAllUsersAsync()
+        {
+            try
+            {
+                Logger.LogInfo("[UserApiClient] Запрос всех пользователей...");
+                var response = await HttpClient.GetFromJsonAsync<List<UserEntity>>("/api/users");
+                return response ?? new List<UserEntity>();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка получения списка: {ex.Message}");
+                return Array.Empty<UserEntity>();
+            }
+        }
+
+
         public async Task<bool> CheckEmailExistsAsync(string email)
         {
             try
@@ -212,9 +197,8 @@ namespace HomeNet.Network.ApiClient
                 throw; // 🔥 ПРОБРАСЫВАЕМ ДАЛЬШЕ! Сервис сам поймет, что произошла ошибка.
             }
         }
-
+       
     }
-
-
+ 
 
 }

@@ -1,26 +1,15 @@
 ﻿// BaseApiClient.cs
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Network.Api;
 
 namespace HomeNet.Network.ApiClient
 {
-    public interface IApiClientBase
+   
+
+    public abstract class BaseApiClient(HttpClient httpClient, ICastomLogger logger) : IApiClient
     {
-        Task PingAsync(CancellationToken cancellationToken = default);
-        void SetSessionHeader(Guid sessionId);
-        void ClearSessionHeader();
-    }
-
-    public abstract class BaseApiClient : IApiClientBase
-    {
-        protected readonly HttpClient HttpClient;
-        protected readonly ICastomLogger Logger;
-
-        protected BaseApiClient(HttpClient httpClient, ICastomLogger logger)
-        {
-            HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
+        protected readonly HttpClient HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        protected readonly ICastomLogger Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         public void SetSessionHeader(Guid sessionId)
         {

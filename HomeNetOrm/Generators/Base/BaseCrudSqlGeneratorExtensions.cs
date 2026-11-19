@@ -1,10 +1,9 @@
 ﻿using HomeNet.Models.Shared.Entity; // Где лежит твоя BaseEntity
-using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 
-namespace HomeNetOrm.Generators.Extensions
+namespace HomeNetOrm.Generators.Base
 {
     // 🔥 Весь базовый CRUD теперь здесь! Чистый Fluent без хардкода полей.
    internal static class BaseCrudSqlGeneratorExtensions

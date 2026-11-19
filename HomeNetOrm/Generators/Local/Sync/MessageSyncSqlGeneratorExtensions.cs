@@ -24,7 +24,20 @@ namespace HomeNetOrm.Generators.Extensions
         }
 
 
-        // 📥 МЕТОД 3: Выборка сообщений пользователя по глобальной версии (вместо метки 00:00:00)
+
+        internal static SqlQueryCommand GenerateSelectUnsynced(this IMessageSqlGenerator generator)
+        {
+            return generator.CreateQuery()
+                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where)
+                    .Col(m => m.IsSynced).Emit(OpType.Equal).Param(m => m.IsSynced, 0)
+                .Emit(PhraseType.OrderBy).Col(m => m.LocalCreatedAt).Emit(OpType.Asc)
+                .Build();
+        }
+
+
+
+
         internal static SqlQueryCommand GenerateSelectMessagesSinceVersion(this IMessageSqlGenerator generator, Guid userId, long sinceVersion)
         {
             return generator.CreateQuery()
@@ -52,10 +65,10 @@ namespace HomeNetOrm.Generators.Extensions
                 .Emit(PhraseType.On).Emit(PhraseType.Conflict)
                     .Emit(OpType.OpenBracket).Col(m => m.Id).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(m => m.Text).Emit(OpType.Equal).Raw("EXCLUDED.\"text\"").Emit(OpType.Comma)
-                    .Col(m => m.IsRead).Emit(OpType.Equal).Raw("EXCLUDED.\"is_read\"").Emit(OpType.Comma)
-                    .Col(m => m.UpdatedAt).Emit(OpType.Equal).Raw("EXCLUDED.\"updated_at\"").Emit(OpType.Comma)
-                    .Col(m => m.IsSynced).Emit(OpType.Equal).Raw("1")
+                    .Col(m => m.Text).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.Text).Emit(OpType.Comma)
+                    .Col(m => m.IsRead).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.IsRead).Emit(OpType.Comma)
+                    .Col(m => m.UpdatedAt).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.UpdatedAt).Emit(OpType.Comma)
+                    .Col(m => m.IsSynced).Emit(OpType.Equal).Emit(OpType.True)
                 .Build();
         }
 

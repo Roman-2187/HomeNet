@@ -3,7 +3,7 @@ using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Server.Filters;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions;
+using HomeNetOrm.Repositories.Local.Sync;
 using HomeNetOrm.Repositories.Remote;
 
 namespace HomeNet.Server.Endpoints

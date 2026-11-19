@@ -3,14 +3,14 @@ using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions;
 using HomeNetOrm.Repositories.Local;
+using HomeNetOrm.Repositories.Local.Sync;
 
 namespace HomeNet.Synchronization.Items
 {
     public class UserSyncItem(
         IUserRepo userRepository,
-        ClientSettingsRepo deviceSettingsRepo,
+        DeviceSettingsRepo deviceSettingsRepo,
         IUserApiClient apiClient,
         ICastomLogger logger) : IEntitySyncItem
     {
@@ -40,21 +40,8 @@ namespace HomeNet.Synchronization.Items
             }
         }
 
-        public async Task PushAsync(CancellationToken ct = default)
-        {
-            try
-            {
-                var pending = await userRepository.GetPendingUsersAsync();
-                foreach (var user in pending)
-                {
-                    await apiClient.PushUserAsync(user);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"[UserSyncItem] Ошибка PUSH: {ex.Message}");
-            }
-        }
+        public Task PushAsync(CancellationToken ct = default) => Task.CompletedTask;
+
 
         private async Task<SettingsEntity?> ApplyTombstonesAsync(IEnumerable<Guid> deletedIds, SettingsEntity? session)
         {

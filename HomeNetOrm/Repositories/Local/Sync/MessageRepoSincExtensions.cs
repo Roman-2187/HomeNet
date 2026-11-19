@@ -1,11 +1,11 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Generators.Extensions; 
+using HomeNetOrm.Generators.Extensions;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Base;
 
-namespace HomeNetOrm.Repositories.Extensions
+namespace HomeNetOrm.Repositories.Local.Sync
 {
     public static class MessageRepoSincExtensions
     {
@@ -27,15 +27,7 @@ namespace HomeNetOrm.Repositories.Extensions
             await baseRepo.ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
         }
 
-        // 🎯 Фиксация флага успешной отправки СМС клиентом
-        public static async Task MarkMessageAsSyncedAsync(this IMessageRepo repo, Guid id)
-        {
-            var baseRepo = (BaseRepository<MessageEntity>)repo;
-            var cmd = baseRepo.SqlGenerator.GenerateUpdateMarkAsSynced(id);
-
-            await baseRepo.ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
-            baseRepo.Logger.LogInfo($"[MessageEntity] Запись {id} успешно засинхронена.");
-        }
+       
 
 
         // 📥 Выгрузка сообщений пользователя, изменённых после указанной версии
@@ -59,10 +51,12 @@ namespace HomeNetOrm.Repositories.Extensions
             }
         }
 
-        public static async Task<List<MessageEntity>> GetPendingMessagesAsync(this IMessageRepo repo)
+        public static async Task<IEnumerable<MessageEntity>> GetPendingMessagesAsync(this IMessageRepo repo)
         {
-            var all = await repo.GetAllAsync();
-            return all.Where(m => m.IsSynced == 0).ToList();
+            var baseRepo = (BaseRepository<MessageEntity>)repo;
+            var cmd = ((IMessageSqlGenerator)baseRepo.SqlGenerator).GenerateSelectUnsynced();
+
+            return await baseRepo.ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
         }
 
     }

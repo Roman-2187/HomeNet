@@ -2,14 +2,14 @@
 using HomeNet.Network.Api;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions;
 using HomeNetOrm.Repositories.Local;
+using HomeNetOrm.Repositories.Local.Sync;
 
 namespace HomeNet.Synchronization.Items
 {
     public class MessageSyncItem(
         IMessageRepo messageRepository,
-        ClientSettingsRepo deviceSettingsRepo,
+        DeviceSettingsRepo deviceSettingsRepo,
         IMessageApiClient apiClient,
         ICastomLogger logger) : IEntitySyncItem
     {

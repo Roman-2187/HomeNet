@@ -28,11 +28,11 @@ namespace HomeNetOrm.Generators.Local
                 .Build();
 
         public SqlQueryCommand GenerateSelectByEmail() =>
-          CreateQuery()
-              .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-              .Emit(PhraseType.Where).Col(d => d.Email).Emit(OpType.Equal).Param("Email", string.Empty)
-              .Raw(Translator.FormatLimit(1))
-              .Build();
+            CreateQuery()
+                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where).Col(d => d.Email).Emit(OpType.Equal).Param("Email", string.Empty)
+                .Raw(Translator.FormatLimit(1))
+                .Build();
 
         public SqlQueryCommand GenerateDeactivateOthers(Guid activeSessionId) =>
             CreateQuery()
@@ -42,17 +42,15 @@ namespace HomeNetOrm.Generators.Local
                     .Col(d => d.Id).Emit(OpType.NotEqual).Param("Id", activeSessionId)
                 .Build();
 
-
-
         public SqlQueryCommand GenerateUpdateLastUserVersion(Guid userId, long newVersion) =>
-    CreateQuery()
-        .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-            .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
-            .Emit(OpType.Comma)
-            .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
-        .Emit(PhraseType.Where)
-            .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
-        .Build();
+            CreateQuery()
+                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+                    .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
+                    .Emit(OpType.Comma)
+                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(PhraseType.Where)
+                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+                .Build();
 
         public SqlQueryCommand GenerateUpdateLastMessageVersion(Guid userId, long newVersion) =>
             CreateQuery()
@@ -64,37 +62,18 @@ namespace HomeNetOrm.Generators.Local
                     .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
                 .Build();
 
-
-
-
-        public SqlQueryCommand GenerateInsertOrUpdate()
-        {
-            return CreateQuery()
+        public SqlQueryCommand GenerateInsertOrUpdate() =>
+            CreateQuery()
                 .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
                 .InsertFields()
                 .Emit(PhraseType.Values)
                 .InsertParameters()
                 .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.UserId).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(d => d.Id).Emit(OpType.Equal).Raw("EXCLUDED.\"id\"")
+                    .Col(d => d.Id).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(d => d.Id)
                     .Emit(OpType.Comma)
                     .UpsertExcludedFields()
                 .Build();
-        }
-
-        public SqlQueryCommand GenerateUpdateLastSyncVersion(Guid userId, long newVersion) =>
-            CreateQuery()
-                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-                    .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
-                    .Emit(OpType.Comma)
-                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
-                .Emit(PhraseType.Where)
-                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
-                .Build();
-
-
-
-
 
         public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>
             CreateQuery()

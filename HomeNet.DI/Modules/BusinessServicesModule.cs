@@ -23,7 +23,7 @@ namespace HomeNet.DI.Modules
         public BusinessServicesModule(
             IUserRepo userRepo,          // Нужен для чтения (кэш)
             IMessageRepo msgRepo,        // Нужен для чтения (кэш)
-            ClientSettingsRepo deviceSettingsRepo, // Локальные настройки
+            DeviceSettingsRepo deviceSettingsRepo, // Локальные настройки
             IUserApiClient userApiClient,   // 🔥 Новый клиент
             IMessageApiClient messageApiClient, // 🔥 Новый клиент
             ICastomLogger logger,

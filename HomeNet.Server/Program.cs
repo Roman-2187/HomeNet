@@ -52,7 +52,7 @@ namespace HomeNet.Server
             // 🔥 4. Достаем готовые репозитории из фабрики
             IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
             IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
-            DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
+            DeviceSyncRepo deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepo>();
             DeletedRecordRepository deletedRecordRepository = postgresEngine.Repositories.GetRepository<DeletedRecordRepository>();
 
             // 🔥 5. РЕГИСТРИРУЕМ ЗАВИСИМОСТИ И ФИЛЬТР АВТОРИЗАЦИИ В DI ASP.NET CORE:

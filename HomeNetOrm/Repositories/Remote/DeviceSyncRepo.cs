@@ -1,17 +1,18 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Generators.Remote;
+using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Remote
 {
-    public class DeviceSyncRepository
+    public class DeviceSyncRepo : IDeviceSyncRepo
     {
         private readonly Func<DbConnection> _connectionFactory;
         private readonly DeviceSyncSqlGenerator _sqlGenerator;
 
-        internal DeviceSyncRepository(Func<DbConnection> connectionFactory, DeviceSyncSqlGenerator sqlGenerator)
+        internal DeviceSyncRepo(Func<DbConnection> connectionFactory, DeviceSyncSqlGenerator sqlGenerator)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));

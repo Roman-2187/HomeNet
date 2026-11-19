@@ -30,7 +30,7 @@ namespace HomeNetOrm.Infrastructure
         protected override void RegisterSpecificRepositories()
         {
             var deviceSyncGen = new DeviceSyncSqlGenerator(Schemas, Translator, Logger);
-            Repositories[typeof(DeviceSyncRepository)] = new DeviceSyncRepository(ConnectionFactory, deviceSyncGen);
+            Repositories[typeof(DeviceSyncRepo)] = new DeviceSyncRepo(ConnectionFactory, deviceSyncGen);
 
             var deletedRecordGen = new DeletedRecordSqlGenerator(Schemas, Translator, Logger);
             Repositories[typeof(DeletedRecordRepository)] = new DeletedRecordRepository(ConnectionFactory, deletedRecordGen);

@@ -14,7 +14,7 @@ namespace HomeNet.Server.Endpoints
         public static void MapUserEndpoints(
             this IEndpointRouteBuilder endpoints,
             IUserRepo userRepository,
-            DeviceSyncRepository deviceSyncRepository,
+            DeviceSyncRepo deviceSyncRepository,
             ICastomLogger serverLogger)
         {
             // =========================================================================

@@ -24,7 +24,7 @@ namespace HomeNet.DI.Modules
         public IDbContextContainer DbContextContainer { get; }
         public IUserRepo UserRepository { get; }
         public IMessageRepo MessageRepository { get; }
-        public ClientSettingsRepo DeviceSettingsRepository { get; }
+        public DeviceSettingsRepo DeviceSettingsRepository { get; }
         public Guid CurrentDeviceId { get; private set; }
 
         public ServerHealthMonitor HealthMonitor { get; }
@@ -55,7 +55,7 @@ namespace HomeNet.DI.Modules
             DbEngine.InitializeRepositories(eventBus);
             UserRepository = DbEngine.Repositories.GetRepository<IUserRepo>();
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
-            DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientSettingsRepo>();
+            DeviceSettingsRepository = DbEngine.Repositories.GetRepository<DeviceSettingsRepo>();
 
             // 2. HttpClient с перехватчиком состояния сети
             var statusHandler = new ConnectionStatusHandler(eventBus)

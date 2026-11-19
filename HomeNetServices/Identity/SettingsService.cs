@@ -8,7 +8,7 @@ namespace HomeNetServices.Identity
 {
     public class SettingsService : IDeviceSettingsService
     {
-        private readonly ClientSettingsRepo _deviceSettingsRepo;
+        private readonly DeviceSettingsRepo _deviceSettingsRepo;
         private readonly IUserApiClient _apiClient;
         private readonly ICastomLogger _logger;
 
@@ -16,7 +16,7 @@ namespace HomeNetServices.Identity
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public SettingsService(
-            ClientSettingsRepo deviceSettingsRepo,
+            DeviceSettingsRepo deviceSettingsRepo,
             IUserApiClient apiClient,
             ICastomLogger logger)
         {

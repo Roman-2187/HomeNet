@@ -33,7 +33,7 @@ namespace HomeNetServices.Identity
             user.SessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(user.Id);
 
             // 2. Отправляем полностью подготовленного юзера на сервер
-            var pushResult = await ApiClient.PushUserAsync(user);
+            var pushResult = await ApiClient.RegisterUserAsync(user);
 
             if (pushResult.IsSuccess && pushResult.User != null)
             {
