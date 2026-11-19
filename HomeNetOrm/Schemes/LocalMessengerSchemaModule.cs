@@ -1,6 +1,7 @@
 ﻿using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
+using static Dapper.SqlMapper;
 
 namespace HomeNetOrm.Schemes
 {
@@ -19,7 +20,8 @@ namespace HomeNetOrm.Schemes
             clientSettings.AddColumn(s => s.Email);
             clientSettings.AddColumn(s => s.IsActive).HasDefault(0, ColumnType.Integer);
             clientSettings.AddColumn(s => s.UpdatedAt);
-
+            clientSettings.AddColumn(d => d.LastUserVersion);
+            clientSettings.AddColumn(s => s.LastMessageVersion);
             _schemas.Add(clientSettings.Generate());
 
 

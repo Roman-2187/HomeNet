@@ -3,6 +3,7 @@ using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Server.Filters;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions;
 using HomeNetOrm.Repositories.Remote;
 
 namespace HomeNet.Server.Endpoints
@@ -11,7 +12,6 @@ namespace HomeNet.Server.Endpoints
     {
         public static void MapSyncEndpoints(
             this IEndpointRouteBuilder endpoints,
-            DeviceSyncRepository deviceSyncRepository,
             IUserRepo userRepository,
             DeletedRecordRepository deletedRecordRepository,
             ICastomLogger serverLogger)
@@ -21,19 +21,17 @@ namespace HomeNet.Server.Endpoints
                                  .AddEndpointFilter<SessionAuthFilter>();
 
             // ============================================================================
-            // 📥 PULL ПОЛЬЗОВАТЕЛЕЙ + НАДГРОБИЯ ПО СЕРВЕРНОМУ КУРСОРУ ВЕРСИЙ
+            // 📥 PULL ПОЛЬЗОВАТЕЛЕЙ + НАДГРОБИЯ ПО КЛИЕНТСКОМУ КУРСОРУ ВЕРСИЙ
             // ============================================================================
-            group.MapGet("/users", async (HttpContext httpContext) =>
+            group.MapGet("/users", async (HttpContext httpContext, long sinceVersion = 0) =>
             {
                 try
                 {
                     var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
-                    long lastVersion = session.LastVersion;
 
-                    serverLogger.LogInfo($"[API SYNC] Запрос профилей с версии {lastVersion} (SessionId: {session.Id}, UserId: {session.UserId})...");
+                    serverLogger.LogInfo($"[API SYNC] Запрос профилей с версии {sinceVersion} (SessionId: {session.Id}, UserId: {session.UserId})...");
 
-                    var allUsers = await userRepository.GetAllAsync();
-                    var updatedUsers = allUsers.Where(u => u.Version > lastVersion).ToList();
+                    var updatedUsers = (await userRepository.GetUsersSinceVersionAsync(sinceVersion)).ToList();
 
                     // Затираем пароли перед отправкой по сети
                     foreach (var u in updatedUsers)
@@ -41,17 +39,11 @@ namespace HomeNet.Server.Endpoints
                         u.Password = string.Empty;
                     }
 
-                    var tombstones = (await deletedRecordRepository.GetDeletedSinceVersionAsync("Users", lastVersion)).ToList();
+                    var tombstones = (await deletedRecordRepository.GetDeletedSinceVersionAsync("Users", sinceVersion)).ToList();
 
-                    long maxUserVersion = updatedUsers.Count > 0 ? updatedUsers.Max(u => u.Version) : lastVersion;
-                    long maxDeletedVersion = tombstones.Count > 0 ? tombstones.Max(d => d.Version) : lastVersion;
-                    long latestVersion = Math.Max(lastVersion, Math.Max(maxUserVersion, maxDeletedVersion));
-
-                    // Двигаем курсор версии прямо в таблице device_sync на сервере
-                    if (latestVersion > lastVersion)
-                    {
-                        await deviceSyncRepository.UpdateLastVersionAsync(session.Id, latestVersion);
-                    }
+                    long maxUserVersion = updatedUsers.Count > 0 ? updatedUsers.Max(u => u.Version) : sinceVersion;
+                    long maxDeletedVersion = tombstones.Count > 0 ? tombstones.Max(d => d.Version) : sinceVersion;
+                    long latestVersion = Math.Max(sinceVersion, Math.Max(maxUserVersion, maxDeletedVersion));
 
                     var batch = new SyncBatchResponse<UserEntity>
                     {

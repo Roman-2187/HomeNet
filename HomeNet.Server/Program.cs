@@ -25,10 +25,23 @@ namespace HomeNet.Server
             var schemaModule = new RemoteMessengerSchemaModule();
             var serverSchemas = schemaModule.GetSchemas();
 
-            builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+
+            // 1. Формируем путь к %localappdata%\HomeNet\secrets.json
+            var localSecretsPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "HomeNet",
+                "secrets.json");
+
+
+
+            // 2. Читаем сначала из AppData (для локальной разработки), а затем из корня проекта (для VPS)
+            builder.Configuration
+                .AddJsonFile(localSecretsPath, optional: true, reloadOnChange: true)
+                .AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
             string postgresConn = builder.Configuration["PostgresConnection"]
                 ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
+
 
             // 2. Создаем движок для PostgreSQL
             var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
@@ -55,7 +68,7 @@ namespace HomeNet.Server
             // --- МАППИНГ РАЗДЕЛЕННЫХ СЛОЕВ ЭНДПОИНТОВ ---
             app.MapMessageEndpoints(messageRepository, serverLogger);
             app.MapUserEndpoints(userRepository, deviceSyncRepository, serverLogger);
-            app.MapSyncEndpoints(deviceSyncRepository, userRepository, deletedRecordRepository, serverLogger);
+            app.MapSyncEndpoints( userRepository, deletedRecordRepository, serverLogger);
 
             app.MapGet("/api/health", () =>
             {

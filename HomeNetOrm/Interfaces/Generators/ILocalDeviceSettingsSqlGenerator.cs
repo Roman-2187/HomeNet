@@ -11,5 +11,7 @@ namespace HomeNetOrm.Interfaces.Generators
         SqlQueryCommand GenerateSelectActiveSession();
         SqlQueryCommand GenerateSelectById();
         SqlQueryCommand GenerateInsertOrUpdate();
+
+        SqlQueryCommand GenerateUpdateLastSyncVersion(Guid userId, long newVersion);
     }
 }

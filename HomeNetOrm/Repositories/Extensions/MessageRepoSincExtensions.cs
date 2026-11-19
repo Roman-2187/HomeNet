@@ -36,5 +36,34 @@ namespace HomeNetOrm.Repositories.Extensions
             await baseRepo.ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
             baseRepo.Logger.LogInfo($"[MessageEntity] Запись {id} успешно засинхронена.");
         }
+
+
+        // 📥 Выгрузка сообщений пользователя, изменённых после указанной версии
+        public static async Task<IEnumerable<MessageEntity>> GetMessagesSinceVersionAsync(this IMessageRepo repo, Guid userId, long sinceVersion)
+        {
+            var baseRepo = (BaseRepository<MessageEntity>)repo;
+            var cmd = ((IMessageSqlGenerator)baseRepo.SqlGenerator).GenerateSelectMessagesSinceVersion(userId, sinceVersion);
+
+            return await baseRepo.ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
+        }
+
+
+   
+
+        public static async Task ApplySyncBatchAsync(this IMessageRepo repo, IEnumerable<MessageEntity> messages)
+        {
+            foreach (var message in messages)
+            {
+                message.IsSynced = 1;
+                await repo.SaveOrSyncMessageAsync(message);
+            }
+        }
+
+        public static async Task<List<MessageEntity>> GetPendingMessagesAsync(this IMessageRepo repo)
+        {
+            var all = await repo.GetAllAsync();
+            return all.Where(m => m.IsSynced == 0).ToList();
+        }
+
     }
 }

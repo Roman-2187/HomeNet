@@ -1,8 +1,9 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Api;
 using HomeNet.Network.ApiClient;
-using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
 public class MessageApiClient : BaseApiClient, IMessageApiClient
@@ -38,19 +39,19 @@ public class MessageApiClient : BaseApiClient, IMessageApiClient
         }
     }
 
-    // PULL остается синхронным (для Synchronizer)
-    public async Task<IReadOnlyCollection<MessageEntity>> FetchFreshMessagesAsync(Guid userId, DateTimeOffset lastSyncedAt)
+    public async Task<SyncBatchResponse<MessageEntity>> FetchFreshMessagesAsync(long sinceVersion)
     {
         try
         {
-            string url = $"/api/messages/sync?userId={userId}&lastSyncedAt={Uri.EscapeDataString(lastSyncedAt.ToString("o"))}";
-            var response = await HttpClient.GetFromJsonAsync<List<MessageEntity>>(url);
-            return response ?? new List<MessageEntity>();
+            Logger.LogInfo($"[MessageApiClient] Запрос обновлений сообщений с версии {sinceVersion}...");
+            var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<MessageEntity>>($"/api/messages/sync?sinceVersion={sinceVersion}");
+            return response ?? new SyncBatchResponse<MessageEntity>();
         }
         catch (Exception ex)
         {
-            Logger.LogError($"[MessageApiClient] Ошибка PULL: {ex.Message}");
-            return Array.Empty<MessageEntity>();
+            Logger.LogError($"[MessageApiClient] Не удалось скачать обновления сообщений: {ex.Message}");
+            return new SyncBatchResponse<MessageEntity>();
         }
     }
+
 }

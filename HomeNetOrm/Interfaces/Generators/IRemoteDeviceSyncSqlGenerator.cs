@@ -14,7 +14,7 @@ namespace HomeNetOrm.Interfaces.Generators
         {
             SqlQueryCommand GenerateSessionUpsert();
             SqlQueryCommand GenerateSelectById(Guid sessionId);
-            SqlQueryCommand GenerateUpdateLastVersion(Guid sessionId, long newVersion);
+            
             SqlQueryCommand GenerateDeleteById(Guid sessionId);
         }
     }

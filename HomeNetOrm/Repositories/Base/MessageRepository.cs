@@ -14,7 +14,7 @@ namespace HomeNetOrm.Repositories.Base
     public class MessageRepository : BaseRepository<MessageEntity>, IMessageRepo
     {
         private readonly IMessageSqlGenerator _messageSqlGenerator;
-        private readonly IEventBus? _eventBus;
+        
         private readonly IDbExceptionHandler _errorHandler;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
@@ -29,7 +29,7 @@ namespace HomeNetOrm.Repositories.Base
         internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
             : this(connectionFactory, sqlGenerator, logger, errorHandler)
         {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async Task<MessageEntity> InsertAsync(MessageEntity message)
@@ -46,7 +46,7 @@ namespace HomeNetOrm.Repositories.Base
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
 
                 Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
-                _eventBus?.Publish(this, new IMessageRepo.Saved(message));
+                EventBus?.Publish(this, new IMessageRepo.Saved(message));
                 return message;
             }
             catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
@@ -71,7 +71,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus?.Publish(this, new IMessageRepo.Updated(entity));
+                EventBus?.Publish(this, new IMessageRepo.Updated(entity));
             }
         }
 
@@ -84,7 +84,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus?.Publish(this, new IMessageRepo.Deleted(id));
+                EventBus?.Publish(this, new IMessageRepo.Deleted(id));
             }
         }
 
@@ -121,7 +121,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus?.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
+                EventBus?.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
             }
 
             return rowsAffected > 0;

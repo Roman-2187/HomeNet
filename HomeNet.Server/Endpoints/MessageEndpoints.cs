@@ -1,4 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Server.Filters;
 using HomeNetOrm.Interfaces.Repositories;
@@ -15,23 +16,27 @@ namespace HomeNet.Server.Endpoints
             var group = endpoints.MapGroup("/api/messages")
                                  .AddEndpointFilter<SessionAuthFilter>();
 
-            // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
-            group.MapGet("/sync", async (HttpContext httpContext, string lastSyncedAt) =>
+            // === [📥 PULL СИНХРОНИЗАЦИЯ СМС ПО ВЕРСИИ] ===
+            group.MapGet("/sync", async (HttpContext httpContext, long sinceVersion = 0) =>
             {
                 try
                 {
                     var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
 
-                    if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
-                        clientCheckpoint = DateTimeOffset.MinValue;
+                    serverLogger.LogInfo($"[API PULL] Юзер {session.UserId} запрашивает свои СМС с версии {sinceVersion}...");
 
-                    serverLogger.LogInfo($"[API PULL] Юзер {session.UserId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
+                    var freshMessages = (await messageRepository.GetMessagesSinceVersionAsync(session.UserId, sinceVersion)).ToList();
+                    long latestVersion = freshMessages.Count > 0 ? freshMessages.Max(m => m.Version) : sinceVersion;
 
-                    var freshMessages = await messageRepository.GetMessagesForSyncAsync(session.UserId, clientCheckpoint);
-                    var messageList = freshMessages.ToList();
+                    var batch = new SyncBatchResponse<MessageEntity>
+                    {
+                        UpdatedItems = freshMessages,
+                        DeletedIds = [],
+                        LatestVersion = latestVersion
+                    };
 
-                    serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для пользователя {session.UserId} из PostgreSQL.");
-                    return Results.Ok(messageList);
+                    serverLogger.LogInfo($"[API Успех] Отдано {freshMessages.Count} СМС для пользователя {session.UserId}. Новая версия: {latestVersion}.");
+                    return Results.Ok(batch);
                 }
                 catch (Exception ex)
                 {

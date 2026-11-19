@@ -19,28 +19,38 @@ namespace HomeNetOrm.Generators.Extensions
                 .Build();
         }
 
+
+
+        // 📥 МЕТОД 3: Выборка пользователей по глобальной версии (вместо вычитки всей таблицы)
+        internal static SqlQueryCommand GenerateSelectUsersSinceVersion(this IUserSqlGenerator generator, long sinceVersion)
+        {
+            return generator.CreateQuery()
+                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+                .Emit(PhraseType.Where)
+                    .Col(u => u.Version).Emit(OpType.GreaterThan).Param(u => u.Version, sinceVersion)
+                .Emit(PhraseType.OrderBy).Col(u => u.Version).Emit(OpType.Asc)
+                .Build();
+        }
+
+
         // 💾 МЕТОД 2: Атомарный UPSERT входящих пакетов пользователей
         internal static SqlQueryCommand GenerateUserUpsert(this IUserSqlGenerator generator)
         {
-            var baseInsert = generator.GenerateInsert();
-
             return generator.CreateQuery()
-                .Raw(baseInsert.Sql)
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(u => u.Id).Emit(OpType.CloseBracket)
+                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .InsertFields()
+                .Emit(PhraseType.Values)
+                .InsertParameters()
+                .Emit(PhraseType.On).Emit(PhraseType.Conflict)
+                    .Emit(OpType.OpenBracket).Col(u => u.Email).Emit(OpType.CloseBracket)
                 .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-
-                // firstName = EXCLUDED.firstName (Исправлено вместо старого Username)
-                .Col(u => u.FirstName).Emit(OpType.Equal).Emit(OpType.Excluded).Col(u => u.FirstName).Emit(OpType.Comma)
-
-                // email = EXCLUDED.email
-                .Col(u => u.Email).Emit(OpType.Equal).Emit(OpType.Excluded).Col(u => u.Email).Emit(OpType.Comma)
-
-                // local_created_at = EXCLUDED.local_created_at
-                .Col(u => u.LocalCreatedAt).Emit(OpType.Equal).Emit(OpType.Excluded).Col(u => u.LocalCreatedAt).Emit(OpType.Comma)
-
-                // updated_at = CURRENT_TIMESTAMP
-                .Col(u => u.UpdatedAt).Emit(OpType.Equal).Emit(OpType.CurrentTimestamp)
+                    .Col(u => u.Id).Emit(OpType.Equal).Raw("EXCLUDED.\"id\"").Emit(OpType.Comma)
+                    .Col(u => u.FirstName).Emit(OpType.Equal).Raw("EXCLUDED.\"first_name\"").Emit(OpType.Comma)
+                    .Col(u => u.LastName).Emit(OpType.Equal).Raw("EXCLUDED.\"last_name\"").Emit(OpType.Comma)
+                    .Col(u => u.PhoneNumber).Emit(OpType.Equal).Raw("EXCLUDED.\"phone_number\"").Emit(OpType.Comma)
+                    .Col(u => u.IsSynced).Emit(OpType.Equal).Raw("1")
                 .Build();
         }
+
     }
 }

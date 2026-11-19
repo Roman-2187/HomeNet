@@ -13,11 +13,8 @@ namespace HomeNetOrm.Generators.Remote
         public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
-      
-
-
         /// <summary>
-        /// Регистрирует сессию или перезаписывает токен (Id) при повторном входе того же UserId, сохраняя LastVersion.
+        /// Регистрирует сессию или перезаписывает токен (Id) при повторном входе того же UserId.
         /// </summary>
         public SqlQueryCommand GenerateSessionUpsert()
         {
@@ -35,9 +32,8 @@ namespace HomeNetOrm.Generators.Remote
                 .Build();
         }
 
-
         /// <summary>
-        /// Получает полную запись сессии по её Id (для проверки авторизации и чтения LastVersion).
+        /// Получает полную запись сессии по её Id (для проверки авторизации).
         /// </summary>
         public SqlQueryCommand GenerateSelectById(Guid sessionId) =>
             CreateQuery()
@@ -46,19 +42,6 @@ namespace HomeNetOrm.Generators.Remote
                     .Col(d => d.Id).Emit(OpType.Equal)
                     .Param(d => d.Id, sessionId)
                 .Raw(Translator.FormatLimit(1))
-                .Build();
-
-        /// <summary>
-        /// Обновляет курсор версии для конкретной сессии.
-        /// </summary>
-        public SqlQueryCommand GenerateUpdateLastVersion(Guid sessionId, long newVersion) =>
-            CreateQuery()
-                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-                    .Col(d => d.LastVersion).Emit(OpType.Equal).Param(d => d.LastVersion, newVersion)
-                    .Emit(OpType.Comma)
-                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
-                .Emit(PhraseType.Where)
-                    .Col(d => d.Id).Emit(OpType.Equal).Param(d => d.Id, sessionId)
                 .Build();
 
         /// <summary>

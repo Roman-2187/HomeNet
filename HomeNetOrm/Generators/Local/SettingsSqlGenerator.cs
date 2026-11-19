@@ -42,7 +42,30 @@ namespace HomeNetOrm.Generators.Local
                     .Col(d => d.Id).Emit(OpType.NotEqual).Param("Id", activeSessionId)
                 .Build();
 
-      
+
+
+        public SqlQueryCommand GenerateUpdateLastUserVersion(Guid userId, long newVersion) =>
+    CreateQuery()
+        .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+            .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
+            .Emit(OpType.Comma)
+            .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+        .Emit(PhraseType.Where)
+            .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+        .Build();
+
+        public SqlQueryCommand GenerateUpdateLastMessageVersion(Guid userId, long newVersion) =>
+            CreateQuery()
+                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+                    .Col(d => d.LastMessageVersion).Emit(OpType.Equal).Param(d => d.LastMessageVersion, newVersion)
+                    .Emit(OpType.Comma)
+                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(PhraseType.Where)
+                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+                .Build();
+
+
+
 
         public SqlQueryCommand GenerateInsertOrUpdate()
         {
@@ -58,6 +81,19 @@ namespace HomeNetOrm.Generators.Local
                     .UpsertExcludedFields()
                 .Build();
         }
+
+        public SqlQueryCommand GenerateUpdateLastSyncVersion(Guid userId, long newVersion) =>
+            CreateQuery()
+                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
+                    .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
+                    .Emit(OpType.Comma)
+                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(PhraseType.Where)
+                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+                .Build();
+
+
+
 
 
         public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>

@@ -18,7 +18,7 @@ namespace HomeNetOrm.Repositories.Remote
         }
 
         /// <summary>
-        /// Создаёт или продлевает сессию при входе/регистрации (Id = детерминированный ключ пары UserId + DeviceId).
+        /// Создаёт или обновляет сессию при входе/регистрации.
         /// </summary>
         public async Task<DeviceSyncEntity> UpsertSessionAsync(Guid sessionId, Guid userId)
         {
@@ -27,7 +27,6 @@ namespace HomeNetOrm.Repositories.Remote
             {
                 Id = sessionId,
                 UserId = userId,
-                LastVersion = 0,
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -38,7 +37,6 @@ namespace HomeNetOrm.Repositories.Remote
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
 
-            // Возвращаем актуальную запись из базы (с реальным LastVersion, если сессия уже существовала)
             return (await GetByIdAsync(sessionId))!;
         }
 
@@ -52,18 +50,6 @@ namespace HomeNetOrm.Repositories.Remote
             using var db = _connectionFactory();
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<DeviceSyncEntity>(cmd.Sql, cmd.Params);
-        }
-
-        /// <summary>
-        /// Двигает курсор версии для этой сессии после успешной отдачи дельты.
-        /// </summary>
-        public async Task UpdateLastVersionAsync(Guid sessionId, long newVersion)
-        {
-            SqlQueryCommand cmd = _sqlGenerator.GenerateUpdateLastVersion(sessionId, newVersion);
-
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
-            await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
 
         /// <summary>

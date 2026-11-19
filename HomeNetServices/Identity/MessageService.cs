@@ -1,4 +1,5 @@
 ﻿using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Api;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
 

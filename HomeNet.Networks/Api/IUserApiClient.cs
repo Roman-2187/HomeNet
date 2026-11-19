@@ -9,7 +9,7 @@ namespace HomeNet.Network.Api
        
         Task<AuthResponse> PushUserAsync(UserEntity user);
         Task<bool> DeleteUserAsync(Guid userId);
-        Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync();
+      
 
 
 
@@ -20,6 +20,8 @@ namespace HomeNet.Network.Api
         Task<bool> CheckEmailExistsAsync(string email);
 
         Task<AuthResponse> AuthenticateAsync(string email, string password, Guid sessionId);
+
+        Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(long sinceVersion);
 
 
         // 🔥 ФАКТЫ, которые публикует сам API-клиент

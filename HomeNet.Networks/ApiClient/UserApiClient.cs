@@ -96,12 +96,12 @@ namespace HomeNet.Network.ApiClient
 
 
 
-        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync()
+        public async Task<SyncBatchResponse<UserEntity>> FetchFreshUsersAsync(long sinceVersion)
         {
             try
             {
-                Logger.LogInfo("[UserApiClient] Запрос обновлений пользователей...");
-                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>("/api/sync/users");
+                Logger.LogInfo($"[UserApiClient] Запрос обновлений пользователей с версии {sinceVersion}...");
+                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<UserEntity>>($"/api/sync/users?sinceVersion={sinceVersion}");
                 return response ?? new SyncBatchResponse<UserEntity>();
             }
             catch (Exception ex)
@@ -110,6 +110,8 @@ namespace HomeNet.Network.ApiClient
                 return new SyncBatchResponse<UserEntity>();
             }
         }
+
+
 
 
 

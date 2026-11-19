@@ -15,7 +15,7 @@ namespace HomeNetOrm.Repositories.Base
     public class UserRepository : BaseRepository<UserEntity>, IUserRepo
     {
         private readonly IUserSqlGenerator _userSqlGenerator;
-        private readonly IEventBus? _eventBus;
+       
         private readonly IDbExceptionHandler _errorHandler;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
@@ -30,7 +30,7 @@ namespace HomeNetOrm.Repositories.Base
         internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
             : this(connectionFactory, sqlGenerator, logger, errorHandler)
         {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+           EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         // 🔥 Вставка осталась с ручной обработкой (т.к. кидаем DuplicateEmailException)
@@ -47,7 +47,7 @@ namespace HomeNetOrm.Repositories.Base
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' успешно записан.");
 
-                _eventBus?.Publish(this, new IUserRepo.Inserted(user, "Успешно записан"));
+                EventBus?.Publish(this, new IUserRepo.Inserted(user, "Успешно записан"));
                 return user;
             }
             catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
@@ -72,7 +72,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus?.Publish(this, new IUserRepo.Updated(entity, "Обновлен"));
+                EventBus?.Publish(this, new IUserRepo.Updated(entity, "Обновлен"));
             }
         }
 
@@ -85,7 +85,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus?.Publish(this, new IUserRepo.Deleted(id));
+               EventBus?.Publish(this, new IUserRepo.Deleted(id));
             }
         }
 

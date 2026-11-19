@@ -1,57 +1,40 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Network.Api;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions;
 using HomeNetOrm.Repositories.Local;
 
 namespace HomeNet.Synchronization.Items
 {
-    public class MessageSyncItem : IEntitySyncItem
+    public class MessageSyncItem(
+        IMessageRepo messageRepository,
+        ClientSettingsRepo deviceSettingsRepo,
+        IMessageApiClient apiClient,
+        ICastomLogger logger) : IEntitySyncItem
     {
-        private readonly IMessageRepo _messageRepository;
-        private readonly ClientSettingsRepo _deviceSettingsRepo;
-        private readonly IMessageApiClient _apiClient;
-        private readonly ICastomLogger _logger;
-
         public int Order => 2;
-
-        public MessageSyncItem(
-            IMessageRepo messageRepository,
-            ClientSettingsRepo deviceSettingsRepo,
-            IMessageApiClient apiClient,
-            ICastomLogger logger)
-        {
-            _messageRepository = messageRepository;
-            _deviceSettingsRepo = deviceSettingsRepo;
-            _apiClient = apiClient;
-            _logger = logger;
-        }
 
         public async Task PullAsync(CancellationToken ct = default)
         {
             try
             {
-                var session = await _deviceSettingsRepo.GetActiveSessionAsync();
+                var session = await deviceSettingsRepo.GetActiveSessionAsync();
                 if (session == null || session.UserId == Guid.Empty) return;
 
-                _logger.LogInfo($"[MessageSyncItem] PULL сообщений для {session.UserId}...");
-                var freshMessages = await _apiClient.FetchFreshMessagesAsync(session.UserId, DateTimeOffset.MinValue);
+                var batch = await apiClient.FetchFreshMessagesAsync(session.LastMessageVersion);
 
-                foreach (var message in freshMessages)
+                await messageRepository.ApplySyncBatchAsync(batch.UpdatedItems);
+
+                if (batch.LatestVersion > session.LastMessageVersion)
                 {
-                    message.IsSynced = 1;
-                    try
-                    {
-                        await _messageRepository.InsertAsync(message);
-                    }
-                    catch (DuplicateMessageException)
-                    {
-                        // Дубликаты пропускаем
-                    }
+                    await deviceSettingsRepo.UpdateLastMessageVersionAsync(session.UserId, batch.LatestVersion);
+                    logger.LogInfo($"[MessageSyncItem] Курсор сообщений обновлён: {session.LastMessageVersion} -> {batch.LatestVersion}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[MessageSyncItem] Ошибка PULL: {ex.Message}");
+                logger.LogError($"[MessageSyncItem] Ошибка PULL: {ex.Message}");
             }
         }
 
@@ -59,17 +42,15 @@ namespace HomeNet.Synchronization.Items
         {
             try
             {
-                var allMessages = await _messageRepository.GetAllAsync();
-                var pending = allMessages.Where(m => m.IsSynced == 0).ToList();
-
+                var pending = await messageRepository.GetPendingMessagesAsync();
                 foreach (var message in pending)
                 {
-                    await _apiClient.PushMessageAsync(message);
+                    await apiClient.PushMessageAsync(message);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[MessageSyncItem] Ошибка PUSH: {ex.Message}");
+                logger.LogError($"[MessageSyncItem] Ошибка PUSH: {ex.Message}");
             }
         }
     }

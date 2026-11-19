@@ -12,6 +12,15 @@
         // 💻 Бессмертный ID железа
         public Guid DeviceId { get; set; }
 
+        public long LastUserVersion { get; set; } = 0;
+
+
+       
+
+        public long LastMessageVersion { get; set; } = 0;
+
+       
+
         // 👤 ID пользователя (не стирается при выходе!)
         public Guid UserId { get; set; }
 

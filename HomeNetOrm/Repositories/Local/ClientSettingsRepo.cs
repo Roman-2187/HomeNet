@@ -41,6 +41,21 @@ namespace HomeNetOrm.Repositories.Local
             using var db = _connectionFactory();
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
 
+
+
+            if (settings.LastUserVersion == 0 && settings.LastMessageVersion == 0 && !string.IsNullOrWhiteSpace(settings.Email))
+            {
+                var existing = await GetByEmailAsync(settings.Email);
+                if (existing != null)
+                {
+                    settings.LastUserVersion = existing.LastUserVersion;
+                    settings.LastMessageVersion = existing.LastMessageVersion;
+                }
+            }
+
+
+
+
             if (settings.IsActive)
             {
                 var deactivateCmd = _sqlGenerator.GenerateDeactivateOthers(settings.Id);
@@ -52,6 +67,18 @@ namespace HomeNetOrm.Repositories.Local
             await db.ExecuteAsync(insertCmd.Sql, settings);
         }
 
+        /// <summary>
+        /// Обновляет курсор версии синхронизации в локальной базе для указанного пользователя.
+        /// </summary>
+        public async Task UpdateLastSyncVersionAsync(Guid userId, long newVersion)
+        {
+            var cmd = _sqlGenerator.GenerateUpdateLastSyncVersion(userId, newVersion);
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
+        }
+
         public async Task DeleteByUserIdAsync(Guid userId)
         {
             var cmd = _sqlGenerator.GenerateDeleteByUserId(userId);
@@ -60,7 +87,6 @@ namespace HomeNetOrm.Repositories.Local
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
-
 
         public async Task<SettingsEntity?> GetByEmailAsync(string email)
         {
@@ -72,6 +98,28 @@ namespace HomeNetOrm.Repositories.Local
             if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<SettingsEntity>(cmd.Sql, new { Email = email.Trim() });
         }
+
+
+
+
+
+        public async Task UpdateLastUserVersionAsync(Guid userId, long newVersion)
+        {
+            var cmd = _sqlGenerator.GenerateUpdateLastUserVersion(userId, newVersion);
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
+        }
+
+        public async Task UpdateLastMessageVersionAsync(Guid userId, long newVersion)
+        {
+            var cmd = _sqlGenerator.GenerateUpdateLastMessageVersion(userId, newVersion);
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, cmd.Params);
+        }
+
+
 
     }
 }
