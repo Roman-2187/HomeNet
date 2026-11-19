@@ -360,6 +360,11 @@ MigrationBackup/
 .ionide/
 
 # Fody - auto-generated XML schema
-FodyWeavers.xsdsecrets.json
 
+
+# Fody - auto-generated XML schema
+FodyWeavers.xsd
+
+# Секреты сервера
 secrets.json
+**/secrets.json

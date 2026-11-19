@@ -38,7 +38,7 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _messageSqlGenerator.GenerateInsert();
 
-            Logger.LogDebug($"[Sql] {cmd.Sql}");
+            
 
             try
             {
@@ -92,7 +92,7 @@ namespace HomeNetOrm.Repositories.Base
         {
             var cmd = _messageSqlGenerator.GenerateSelectById(id);
 
-            Logger.LogDebug($"[Sql] {cmd}");
+           
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
             {
@@ -104,7 +104,7 @@ namespace HomeNetOrm.Repositories.Base
         {
             var cmd = _messageSqlGenerator.GenerateSelectAll();
 
-            Logger.LogDebug($"[Sql] {cmd.Sql}");
+          
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params)));

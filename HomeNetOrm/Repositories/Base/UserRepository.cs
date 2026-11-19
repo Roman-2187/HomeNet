@@ -40,7 +40,7 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _userSqlGenerator.GenerateInsert();
 
-            Logger.LogDebug($"[Sql] {cmd.Sql}");
+           
 
             try
             {
@@ -104,8 +104,7 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _userSqlGenerator.GenerateSelectAll();
 
-            Logger.LogDebug($"[Sql] {cmd.Sql}");
-
+           
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params)));

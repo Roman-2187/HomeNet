@@ -6,10 +6,8 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetPresentation.Services;
-using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
 using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
