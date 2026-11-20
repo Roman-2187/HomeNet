@@ -18,7 +18,7 @@ namespace HomeNetOrm.Schemes
             var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
             deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Актуальный SessionId
-            deviceSync.AddColumn(d => d.UserId).IsRequired().IsUnique(); // Гарантирует 1 актуальную сессию на пользователя
+            deviceSync.AddColumn(d => d.UserId).IsRequired(); // Гарантирует 1 актуальную сессию на пользователя
             
             deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);
