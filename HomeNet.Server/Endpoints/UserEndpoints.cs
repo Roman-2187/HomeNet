@@ -41,8 +41,8 @@ namespace HomeNet.Server.Endpoints
                         return Results.Unauthorized();
                     }
 
-                    // 1. Фиксируем или продлеваем переданную клиентом сессию в таблице device_sync
-                    await deviceSyncRepository.UpsertSessionAsync(request.SessionId, user.Id);
+                  
+                    await deviceSyncRepository.CreateSessionAsync(request.SessionId, user.Id);
 
                     // 2. Возвращаем пользователя с подтвержденным токеном сессии, но без пароля
                     user.SessionId = request.SessionId;
@@ -82,7 +82,7 @@ namespace HomeNet.Server.Endpoints
                     await userRepository.InsertAsync(incomingUser);
 
                     // 2. Открываем сессию в таблице device_sync строго с клиентским SessionId
-                    await deviceSyncRepository.UpsertSessionAsync(incomingUser.SessionId, incomingUser.Id);
+                    await deviceSyncRepository.CreateSessionAsync(incomingUser.SessionId, incomingUser.Id);
 
                     // 3. Подготавливаем безопасный ответ (без пароля)
                     incomingUser.Password = string.Empty;
@@ -106,6 +106,10 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
+
+
+        
+
 
             // === [📥 ПРОВЕРКА СУЩЕСТВОВАНИЯ EMAIL] ===
             endpoints.MapGet("/api/users/check-email", async ([FromServices] IUserRepo repo, [FromQuery] string email) =>
@@ -162,15 +166,24 @@ namespace HomeNet.Server.Endpoints
 
 
 
-
             // === [🚪 LOGOUT (АННУЛИРОВАНИЕ СЕССИИ)] ===
             protectedGroup.MapPost("/logout", async (HttpContext httpContext) =>
             {
-                var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
-                await deviceSyncRepository.DeleteSessionAsync(session.Id);
-                serverLogger.LogInfo($"[API LOGOUT] Сессия {session.Id} закрыта на сервере.");
-                return Results.Ok(new { Success = true });
+                try
+                {
+                    var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+                    await deviceSyncRepository.DeleteSessionAsync(session.Id);
+
+                    serverLogger.LogInfo($"[API LOGOUT] Сессия {session.Id} (UserId: {session.UserId}) закрыта на сервере.");
+                    return Results.Ok(new { Success = true });
+                }
+                catch (Exception ex)
+                {
+                    serverLogger.LogError($"[API LOGOUT] Сбой закрытия сессии: {ex.Message}");
+                    return Results.Problem("Ошибка сервера при выходе из системы");
+                }
             });
+
         }
 
         public record LoginRequest(string Email, string Password, Guid SessionId = default);

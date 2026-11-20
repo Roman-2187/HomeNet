@@ -16,7 +16,7 @@ namespace HomeNetOrm.Schemes
             
             clientSettings.AddColumn(s => s.Id).AsPrimaryKey(); // Единый SessionId
           
-            clientSettings.AddColumn(s => s.UserId).IsRequired().IsUnique();
+            clientSettings.AddColumn(s => s.UserId).IsRequired();
             clientSettings.AddColumn(s => s.Email);
             clientSettings.AddColumn(s => s.IsActive).HasDefault(0, ColumnType.Integer);
             clientSettings.AddColumn(s => s.UpdatedAt);

@@ -112,14 +112,17 @@ namespace HomeNetServices.Identity
                 var settings = _cachedActiveSession;
                 if (settings == null) return;
 
-               
+                // 1. Сначала просим сервер удалить текущую сессию (пока X-Session-Id в заголовке!)
+                await _apiClient.LogoutAsync();
+
+                // 2. Затем деактивируем локально в SQLite
                 settings.IsActive = false;
                 settings.UpdatedAt = DateTimeOffset.UtcNow;
 
                 await _deviceSettingsRepo.SaveSettingsAsync(settings);
                 _cachedActiveSession = null;
 
-                // Сбрасываем заголовок авторизации при выходе
+                // 3. И только теперь стираем заголовок авторизации
                 _apiClient.ClearSessionHeader();
 
                 _logger.LogInfo($"[SettingsService] Сессия для UserId: {settings.UserId} деактивирована.");
@@ -129,5 +132,6 @@ namespace HomeNetServices.Identity
                 _logger.LogError($"[SettingsService] Ошибка очистки сессии: {ex.Message}");
             }
         }
+
     }
 }

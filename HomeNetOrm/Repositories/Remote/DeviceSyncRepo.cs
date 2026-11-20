@@ -53,6 +53,32 @@ namespace HomeNetOrm.Repositories.Remote
             return await db.QueryFirstOrDefaultAsync<DeviceSyncEntity>(cmd.Sql, cmd.Params);
         }
 
+
+
+        /// <summary>
+        /// Создаёт новую независимую сессию при входе с устройства.
+        /// </summary>
+        public async Task<DeviceSyncEntity> CreateSessionAsync(Guid sessionId, Guid userId)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var syncData = new DeviceSyncEntity
+            {
+                Id = sessionId,
+                UserId = userId,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSessionInsert();
+
+            using var db = _connectionFactory();
+            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await db.ExecuteAsync(cmd.Sql, syncData);
+
+            return (await GetByIdAsync(sessionId))!;
+        }
+
+
         /// <summary>
         /// Аннулирует сессию при выходе из аккаунта.
         /// </summary>

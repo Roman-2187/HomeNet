@@ -113,6 +113,25 @@ namespace HomeNet.Network.ApiClient
         }
 
 
+        public async Task<bool> LogoutAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(3)); // Не вешаем UI, если нет сети
+
+                var response = await HttpClient.PostAsync("api/users/logout", null, cts.Token);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"[Logout] Не удалось уведомить сервер о выходе (оффлайн или таймаут): {ex.Message}");
+                return false;
+            }
+        }
+
+
+
         public async Task<bool> DeleteUserAsync(Guid userId)
         {
             try

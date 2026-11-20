@@ -9,6 +9,10 @@ namespace HomeNet.Network.Api
     /// </summary>
     public interface IUserApiClient : IApiClient
     {
+
+        Task<bool> LogoutAsync(CancellationToken cancellationToken = default);
+
+
         /// <summary>
         /// Регистрирует нового пользователя на сервере и возвращает результат с созданной сессией.
         /// </summary>

@@ -32,6 +32,22 @@ namespace HomeNetOrm.Generators.Remote
                 .Build();
         }
 
+
+
+        /// <summary>
+        /// Создаёт новую независимую сессию устройства без перезаписи существующих.
+        /// </summary>
+        public SqlQueryCommand GenerateSessionInsert()
+        {
+            return CreateQuery()
+                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .InsertFields()
+                .Emit(PhraseType.Values)
+                .InsertParameters()
+                .Build();
+        }
+
+
         /// <summary>
         /// Получает полную запись сессии по её Id (для проверки авторизации).
         /// </summary>
