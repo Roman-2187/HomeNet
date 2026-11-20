@@ -62,7 +62,18 @@ namespace HomeNet.Server.Endpoints
                     serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
                     await messageRepository.InsertAsync(incomingMessage);
 
-                    await hubContext.Clients.Group(incomingMessage.ReceiverId.ToString()).SendAsync("ReceiveMessage", incomingMessage);
+
+                    var receiverGroup = incomingMessage.ReceiverId.ToString();
+                    var senderGroup = incomingMessage.SenderId.ToString();
+
+                    await hubContext.Clients.Group(receiverGroup).SendAsync("ReceiveMessage", incomingMessage);
+
+                    if (receiverGroup != senderGroup)
+                    {
+                        await hubContext.Clients.Group(senderGroup).SendAsync("ReceiveMessage", incomingMessage);
+                    }
+
+
                     return Results.Ok(new { Success = true });
                 }
                 catch (Exception ex)
