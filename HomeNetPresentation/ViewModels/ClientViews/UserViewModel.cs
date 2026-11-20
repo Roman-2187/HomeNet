@@ -55,7 +55,7 @@ namespace HomeNetPresentation.ViewModels
                 return;
             }
 
-            _logger.LogInfo($"[UserVM -> OnClientTabChanged] Автобус доставил стейт: {msg.ActiveTab}. Было в модели: {ActiveClientTab}");
+          
             ActiveClientTab = msg.ActiveTab;
             OnPropertyChanged(nameof(ActiveClientTab));
         }

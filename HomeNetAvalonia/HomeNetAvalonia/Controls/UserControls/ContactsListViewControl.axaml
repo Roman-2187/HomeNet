@@ -42,37 +42,45 @@
                     <Grid ColumnDefinitions="Auto, *">
 
                          <Button Content="☰"
-                        
-                        Padding="8,3"
-                        FontSize="14"
+                        Height="35" Width="35"
+                       
+                        FontSize="16"
                         Command="{Binding  ToggleMenuCommand}" />
 
 
                      
-                        
-                        <StackPanel
-                            Height="35"
-                            Grid.Column="1"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Spacing="8" Margin="0,0,5,0">
-                            <TextBlock
-                                Text="СЕТЬ:"
-                                Foreground="#5500F0FF"
-                                FontSize="11" VerticalAlignment="Center"
-                                FontWeight="Bold"/>
-                            <TextBlock
-                                Text="{Binding CurrentUserName, FallbackValue='Авторизация...'}" 
-                                
-                                FontWeight="Bold" 
-                                FontSize="13" 
-                                VerticalAlignment="Center"/>
-                            <Ellipse 
-                                Width="8"
-                                Height="8" 
-                                Fill="#00FF66"
-                                VerticalAlignment="Center"/>
-                        </StackPanel>
+             <StackPanel
+    Height="35"
+    Grid.Column="1"
+    Orientation="Horizontal"
+    HorizontalAlignment="Right"
+    Spacing="8" 
+    Margin="0,0,5,0">
+
+    <!-- Контейнер для аватарки + индикатор онлайна -->
+    <Grid Width="35" Height="35" VerticalAlignment="Center">
+        <Border
+            CornerRadius="3"
+            ClipToBounds="True">
+            <Image
+                Source="{StaticResource BlackCatAvatar}"
+                Stretch="UniformToFill"/>
+        </Border>
+        
+        <Ellipse 
+            Width="8"
+            Height="8" 
+            Fill="#00FF66"
+            Stroke="#1A1A1A"
+            StrokeThickness="1.5"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"/>
+    </Grid>
+
+   
+</StackPanel>
+
+
                     </Grid>
                 </Border>
 

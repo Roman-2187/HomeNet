@@ -30,11 +30,6 @@ namespace HomeNetPresentation.ViewModels
         private void CloseMenu()
         {
             IsMenuOpen = false;
-
-
-            _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Лог-Фильтр]: нажал на скрытие панели "));
-
-
         }
 
         [ObservableProperty] private LogLevelFilter _currentLogFilter = LogLevelFilter.All;
@@ -124,7 +119,7 @@ namespace HomeNetPresentation.ViewModels
         private void SwitchLogFilter(LogLevelFilter targetFilter)
         {
             CurrentLogFilter = targetFilter;
-            _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Лог-Фильтр]: Установлен режим {targetFilter}"));
+          
         }
 
         

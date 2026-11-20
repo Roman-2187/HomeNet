@@ -17,7 +17,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty]
         private string _combinedStatusText = "OFFLINE";
 
-        // 🔥 СЕНЬОРСКОЕ СВОЙСТВО ДЛЯ ДИНАМИЧЕСКОГО ЦВЕТА ИНДИКАТОРА
+        
         [ObservableProperty]
         private string _statusColor = "#FFF5546F"; // Стартуем с тревожного розово-красного
 
