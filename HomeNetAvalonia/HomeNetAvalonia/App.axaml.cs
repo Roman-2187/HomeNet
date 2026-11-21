@@ -9,6 +9,7 @@ using HomeNetOrm.Helpers;
 using HomeNetPresentation.ViewModels;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Linq;
 
 namespace HomeNetAvalonia
 {
@@ -27,6 +28,15 @@ namespace HomeNetAvalonia
 
         public override void OnFrameworkInitializationCompleted()
         {
+            bool isPreviewer = Avalonia.Controls.Design.IsDesignMode 
+                               || Environment.GetCommandLineArgs().Any(arg => arg.Contains("preview", StringComparison.OrdinalIgnoreCase));
+
+            if (isPreviewer)
+            {
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
+
             AppStopwatch.Restart();
 
             try
