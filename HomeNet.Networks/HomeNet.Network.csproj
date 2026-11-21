@@ -16,6 +16,8 @@
     <PackageReference Include="Microsoft.AspNet.SignalR.Client" Version="2.4.3" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0-rc.2.26504.105" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="11.0.0-rc.2.26504.105" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.Text.Json" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>

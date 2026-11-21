@@ -13,4 +13,8 @@
     <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="11.0.0" />
+  </ItemGroup>
+
 </Project>
