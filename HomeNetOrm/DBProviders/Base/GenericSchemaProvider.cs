@@ -38,10 +38,10 @@ namespace HomeNetOrm.DBProviders.Base
             try
             {
                 // 🎯 ЧИСТЫЙ ВЫЗОВ ЧЕРЕЗ ТОЧКУ: Получаем готовый объект команды из инициализатора
-                SqlQueryCommand cmd = _sqlInit.GenerateGetTableStructureSql(tableName);
+                var cmd = _sqlInit.GenerateGetTableStructureSql(tableName);
 
                 // Передаем в Dapper скомпилированную строку и параметры прямо из команды
-                IEnumerable<RawColumnMetadata> rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(cmd.Sql, cmd.Params);
+                var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(cmd.Sql, cmd.Params);
 
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
@@ -72,7 +72,7 @@ namespace HomeNetOrm.DBProviders.Base
             }
 
             
-            TableSchema getSchema = new TableSchema { TableName = tableName, Columns = columns };
+            var getSchema = new TableSchema { TableName = tableName, Columns = columns };
 
             // Вместо чтения удалённого свойства .ColumnNames склеиваем имена для лога прямо на месте
             if (!columns.Any(c => c.IsPrimaryKey))
@@ -81,7 +81,7 @@ namespace HomeNetOrm.DBProviders.Base
             }
             else
             {
-                string columnNamesLog = string.Join(", ", columns.Select(c => c.Name));
+                var columnNamesLog = string.Join(", ", columns.Select(c => c.Name));
                 _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {columnNamesLog}");
             }
 

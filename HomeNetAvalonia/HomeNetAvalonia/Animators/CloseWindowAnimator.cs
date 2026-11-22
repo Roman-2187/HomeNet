@@ -23,23 +23,25 @@ namespace HomeNetAvalonia.Animators
             // Переходим в UI-поток Авалонии
             Dispatcher.UIThread.Post(() =>
             {
-                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    var window = desktop.MainWindow;
-                    if (window == null) return;
-
-                    // 1. Активируем триггер анимации в XAML, просто добавив класс к окну!
-                    window.Classes.Add("exit-anim");
-
-                    // 2. Ждем ровно 500мс (время анимации) и тушим приложение
-                    var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                    timer.Tick += (s, args) =>
-                    {
-                        timer.Stop();
-                        desktop.Shutdown();
-                    };
-                    timer.Start();
+                    return;
                 }
+
+                var window = desktop.MainWindow;
+                if (window == null) return;
+
+                // 1. Активируем триггер анимации в XAML, просто добавив класс к окну!
+                window.Classes.Add("exit-anim");
+
+                // 2. Ждем ровно 500мс (время анимации) и тушим приложение
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                timer.Tick += (s, args) =>
+                {
+                    timer.Stop();
+                    desktop.Shutdown();
+                };
+                timer.Start();
             });
         }
 

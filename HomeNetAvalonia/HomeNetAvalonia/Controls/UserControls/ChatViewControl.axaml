@@ -2,13 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-              xmlns:vm="using:HomeNetPresentation.ViewModels"
-              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
+             xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
             xmlns:models="using:HomeNet.Models.Shared.Entity"
             xmlns:clientViews="clr-namespace:HomeNetPresentation.ViewModels.ClientViews;assembly=HomeNetPresentation"
 
             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
-             x:Class="HomeNetAvalonia.Controls.ChatViewControl"
+             x:Class="HomeNetAvalonia.Controls.UserControls.ChatViewControl"
              x:DataType="clientViews:ChatViewModel" >
 
       <UserControl.Styles>

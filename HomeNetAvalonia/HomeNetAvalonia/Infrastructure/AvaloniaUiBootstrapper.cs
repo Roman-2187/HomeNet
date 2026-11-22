@@ -1,13 +1,8 @@
 ﻿using Dapper;
 using HomeNet.DI;
-using HomeNet.Network.SignalRListeners;
 using HomeNetAvalonia.Animators;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Helpers;
-using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.DbInfrastructure;
-using System;
 using System.Threading.Tasks;
 
 namespace HomeNetAvalonia.Infrastructure
@@ -29,11 +24,11 @@ namespace HomeNetAvalonia.Infrastructure
             AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
             _isInitialized = true;
 
-            AppCompositionRoot root = AppCompositionRoot.Instance;
+            var root = AppCompositionRoot.Instance;
 
            
 
-            if (mode == BackendMode.Real || mode == BackendMode.Local)
+            if (mode is BackendMode.Real or BackendMode.Local)
             {
                 _ = new CloseWindowAnimator(root.EventBus);
                 _ = new MinimizeWindowAnimator(root.EventBus);

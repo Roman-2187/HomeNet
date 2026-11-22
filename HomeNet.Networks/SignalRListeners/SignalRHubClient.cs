@@ -1,7 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network.SignalR;
+using HomeNet.Network.Handlers;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using Microsoft.AspNetCore.SignalR.Client;
 using static HomeNetCore.Interfaces.ViewModels.UserZone.IDeviceSettingsVM;
@@ -27,29 +27,31 @@ namespace HomeNet.Network.SignalRListeners
             _eventBus = eventBus;
             _handlers = handlers;
 
-            _eventBus.Subscribe<SessionPersisted>(OnSessionPersisted);
-            _eventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClient);
+            _eventBus.SubscribeAsync<SessionPersisted>(OnSessionPersisted);
+            _eventBus.SubscribeAsync<IUserVm.LogoutClient>(OnLogoutClient);
         }
 
-        private async void OnSessionPersisted(SessionPersisted msg)
+        private async Task OnSessionPersisted(SessionPersisted msg)
         {
-            if (msg.UserId != Guid.Empty)
+            if (msg.UserId == Guid.Empty)
             {
-                _logger.LogInfo($"[СЕТЬ] Сессия готова ({msg.UserId}). Поднимаем единый SignalR...");
-                await ConnectAsync(msg.UserId);
+                return;
             }
+
+            _logger.LogInfo($"[СЕТЬ] Сессия готова ({msg.UserId}). Поднимаем единый SignalR...");
+            await ConnectAsync(msg.UserId);
         }
 
-        private async void OnLogoutClient(IUserVm.LogoutClient msg)
+        private async Task OnLogoutClient(IUserVm.LogoutClient msg)
         {
             await DisconnectAsync();
         }
 
-        public async Task ConnectAsync(Guid? userId = null)
+        private async Task ConnectAsync(Guid? userId = null)
         {
             await DisconnectAsync();
 
-            string url = userId.HasValue
+            var url = userId.HasValue
                 ? $"{_apiBaseUrl}/chatHub?userId={userId.Value}"
                 : $"{_apiBaseUrl}/chatHub";
 
@@ -96,8 +98,8 @@ namespace HomeNet.Network.SignalRListeners
 
         public async ValueTask DisposeAsync()
         {
-            _eventBus.Unsubscribe<SessionPersisted>(OnSessionPersisted);
-            _eventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutClient);
+            _eventBus.UnsubscribeAsync<SessionPersisted>(OnSessionPersisted);
+            _eventBus.UnsubscribeAsync<IUserVm.LogoutClient>(OnLogoutClient);
             await DisconnectAsync();
         }
     }

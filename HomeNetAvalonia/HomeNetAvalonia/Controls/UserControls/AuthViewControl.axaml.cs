@@ -1,8 +1,6 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
-namespace HomeNetAvalonia.Controls
+namespace HomeNetAvalonia.Controls.UserControls
 {
     public partial class AuthViewControl : UserControl
     {

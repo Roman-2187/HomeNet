@@ -9,6 +9,7 @@ using HomeNetOrm.Schemes;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.MainViews;
 
 namespace HomeNet.DI
 {
@@ -60,7 +61,6 @@ namespace HomeNet.DI
             Ui = new PresentationUiModule(
                 Infrastructure.EventBus,
                 Infrastructure.Logger,
-                Infrastructure.LogQueueManager,
                 Services,
                 Infrastructure.EventBusInspector
             );
@@ -76,22 +76,22 @@ namespace HomeNet.DI
 
         public TGet GetViewModel<TGet>() where TGet : class
         {
-            if (typeof(TGet) == typeof(TableUsersViewModel)) return (Ui.TableUsersVM as TGet)!;
-            if (typeof(TGet) == typeof(UserViewModel)) return (Ui.UserVM as TGet)!;
-            if (typeof(TGet) == typeof(MainViewModel)) return (Ui.MainVM as TGet)!;
-            if (typeof(TGet) == typeof(ChatViewModel)) return (Ui.ChatVM as TGet)!;
-            if (typeof(TGet) == typeof(StatusBarViewModel)) return (Ui.StatusBarVM as TGet)!;
-            if (typeof(TGet) == typeof(SystemButtonsViewModel)) return (Ui.SystemButtonsVM as TGet)!;
-            if (typeof(TGet) == typeof(RegistrationViewModel)) return (Ui.RegistrationVM as TGet)!;
-            if (typeof(TGet) == typeof(AuthenticationViewModel)) return (Ui.AuthenticationVM as TGet)!;
-            if (typeof(TGet) == typeof(TerminalLogsViewModel)) return (Ui.TerminalLogsVM as TGet)!;
-            if (typeof(TGet) == typeof(InspectorViewModel)) return (Ui.InspectorVM as TGet)!;
-            if (typeof(TGet) == typeof(AdminViewModel)) return (Ui.AdminVM as TGet)!;
-            if (typeof(TGet) == typeof(DeleteUsersViewModel)) return (Ui.DeleteUsersVM as TGet)!;
-            if (typeof(TGet) == typeof(TitleBarViewModel)) return (Ui.TitleBarVM as TGet)!;
-            if (typeof(TGet) == typeof(SeedUsersViewModel)) return (Ui.SeedUsersVM as TGet)!;
-            if (typeof(TGet) == typeof(ContactsViewModel)) return (Ui.ContactsVM as TGet)!;
-            if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (Ui.DeviceSettingsVM as TGet)!;
+            if (typeof(TGet) == typeof(TableUsersViewModel)) return (Ui.TableUsersVm as TGet)!;
+            if (typeof(TGet) == typeof(UserViewModel)) return (Ui.UserVm as TGet)!;
+            if (typeof(TGet) == typeof(MainViewModel)) return (Ui.MainVm as TGet)!;
+            if (typeof(TGet) == typeof(ChatViewModel)) return (Ui.ChatVm as TGet)!;
+            if (typeof(TGet) == typeof(StatusBarViewModel)) return (Ui.StatusBarVm as TGet)!;
+            if (typeof(TGet) == typeof(SystemButtonsViewModel)) return (Ui.SystemButtonsVm as TGet)!;
+            if (typeof(TGet) == typeof(RegistrationViewModel)) return (Ui.RegistrationVm as TGet)!;
+            if (typeof(TGet) == typeof(AuthenticationViewModel)) return (Ui.AuthenticationVm as TGet)!;
+            if (typeof(TGet) == typeof(TerminalLogsViewModel)) return (Ui.TerminalLogsVm as TGet)!;
+            if (typeof(TGet) == typeof(InspectorViewModel)) return (Ui.InspectorVm as TGet)!;
+            if (typeof(TGet) == typeof(AdminViewModel)) return (Ui.AdminVm as TGet)!;
+            if (typeof(TGet) == typeof(DeleteUsersViewModel)) return (Ui.DeleteUsersVm as TGet)!;
+            if (typeof(TGet) == typeof(TitleBarViewModel)) return (Ui.TitleBarVm as TGet)!;
+            if (typeof(TGet) == typeof(SeedUsersViewModel)) return (Ui.SeedUsersVm as TGet)!;
+            if (typeof(TGet) == typeof(ContactsViewModel)) return (Ui.ContactsVm as TGet)!;
+            if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (Ui.DeviceSettingsVm as TGet)!;
 
             throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI.");
         }

@@ -5,7 +5,7 @@
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              Width="600" Height="350"
-             x:Class="HomeNetAvalonia.Controls.AuthViewControl">
+             x:Class="HomeNetAvalonia.Controls.UserControls.AuthViewControl">
 
 <ContentControl Classes="CyberpunkInnerContainer" Padding="50,40,50,30" 
                 DataContext="{DynamicResource ComponentHub}"

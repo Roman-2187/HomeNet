@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace HomeNet.Network.SignalR
+namespace HomeNet.Network.Handlers
 {
     public interface IHubHandler
     {

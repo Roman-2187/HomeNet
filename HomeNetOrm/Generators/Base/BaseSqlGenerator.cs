@@ -25,14 +25,14 @@ namespace HomeNetOrm.Generators.Base
             ArgumentNullException.ThrowIfNull(availableSchemas);
 
             // 1. Ищем и адаптируем схему из общего реестра
-            TableSchema foundSchema = FindSchemaOrThrow(availableSchemas);
-            (TableSchema Snake, TableSchema Camel) adapted = AdaptSchemaOrThrow(foundSchema);
+            var foundSchema = FindSchemaOrThrow(availableSchemas);
+            var adapted = AdaptSchemaOrThrow(foundSchema);
 
             _schema = adapted.Snake;
             _camelSchema = adapted.Camel;
 
             // 2. Вытаскиваем валидные пары колонок для маппинга
-            List<DynamicColumnPair> validPairs = ExtractValidColumnPairs();
+            var validPairs = ExtractValidColumnPairs();
 
             // 3. Формируем словари для работы с Dapper и SQL-диалектами
             DbColumns = validPairs.ToDictionary(p => p.Camel.Name!, p => p.Snake.Name!, StringComparer.OrdinalIgnoreCase);
@@ -45,10 +45,10 @@ namespace HomeNetOrm.Generators.Base
 
         private TableSchema FindSchemaOrThrow(IEnumerable<TableSchema> availableSchemas)
         {
-            string targetEntityName = typeof(T).Name;
-            string cleanName = targetEntityName.Replace("Entity", "");
+            var targetEntityName = typeof(T).Name;
+            var cleanName = targetEntityName.Replace("Entity", "");
 
-            TableSchema? foundSchema = availableSchemas.FirstOrDefault(s =>
+            var foundSchema = availableSchemas.FirstOrDefault(s =>
                 !string.IsNullOrEmpty(s.TableName) &&
                 (s.TableName.Equals(cleanName + "s", StringComparison.OrdinalIgnoreCase) ||
                  s.TableName.Equals(cleanName, StringComparison.OrdinalIgnoreCase)));
@@ -65,7 +65,7 @@ namespace HomeNetOrm.Generators.Base
 
         private (TableSchema Snake, TableSchema Camel) AdaptSchemaOrThrow(TableSchema foundSchema)
         {
-            AdaptedSchemas? adapted = foundSchema.ToAdaptedSchemas();
+            var adapted = foundSchema.ToAdaptedSchemas();
             if (adapted.Snake == null || adapted.Camel == null ||
                 adapted.Snake.Columns == null || adapted.Camel.Columns == null)
             {

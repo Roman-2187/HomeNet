@@ -28,7 +28,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
-            TableBuilder<UserEntity> builder = base.BuildUsersSchema();
+            var builder = base.BuildUsersSchema();
             builder.AddColumn(u => u.IsSynced).HasDefault(0, ColumnType.Integer);
             builder.AddColumn(f => f.LocalCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
@@ -37,7 +37,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<MessageEntity> BuildMessagesSchema()
         {
-            TableBuilder<MessageEntity> builder = base.BuildMessagesSchema();
+            var builder = base.BuildMessagesSchema();
             builder.AddColumn(m => m.IsSynced).HasDefault(0, ColumnType.Integer);
             builder.AddColumn(m => m.LocalCreatedAt);
             builder.AddColumn(m => m.UpdatedAt);
@@ -46,7 +46,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<FriendEntity> BuildFriendsSchema()
         {
-            TableBuilder<FriendEntity> builder = base.BuildFriendsSchema();
+            var builder = base.BuildFriendsSchema();
             builder.AddColumn(f => f.IsSynced).HasDefault(0, ColumnType.Integer);
             return builder;
         }

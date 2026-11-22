@@ -22,7 +22,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                 {
                     if (!type.IsClass || type.IsAbstract) continue;
 
-                    string componentName = type.Name.StartsWith("<") && type.DeclaringType != null
+                    var componentName = type.Name.StartsWith("<") && type.DeclaringType != null
                         ? type.DeclaringType.Name
                         : type.Name;
 
@@ -39,7 +39,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                                 continue;
 
                             var body = method.GetMethodBody();
-                            byte[] il = body?.GetILAsByteArray();
+                            var il = body?.GetILAsByteArray();
                             if (il == null || il.Length == 0) continue;
 
                             // Теперь метод статический, вызов сработает корректно
@@ -59,14 +59,14 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
             Func<string, ComponentNode> getOrCreateNode,
             Dictionary<Type, MessageState> registry)
         {
-            int i = 0;
+            var i = 0;
             while (i < il.Length)
             {
-                byte opCode = il[i++];
+                var opCode = il[i++];
                 if (opCode != OpCodeCall && opCode != OpCodeCallVirt) continue;
                 if (i + 4 > il.Length) break;
 
-                int token = BitConverter.ToInt32(il, i);
+                var token = BitConverter.ToInt32(il, i);
                 i += 4;
 
                 try
@@ -75,31 +75,27 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                     // Токен метаданных берется из модуля, а не из массива IL-байтов метода.
                     var called = method.Module.ResolveMethod(token);
 
-                    if (called != null && called.IsGenericMethod)
+                    if (called != null && called is { IsGenericMethod: true, Name: "Publish" or "PublishAsync" or "PublishFact" })
                     {
-                        string name = called.Name;
-                        if (name == "Publish" || name == "PublishAsync" || name == "PublishFact")
-                        {
-                            var genericArgs = called.GetGenericArguments();
-                            if (genericArgs == null || genericArgs.Length == 0) continue;
+                        var genericArgs = called.GetGenericArguments();
+                        if (genericArgs == null || genericArgs.Length == 0) continue;
 
-                            // Достаем первый generic-параметр (тип события)
-                            var eventType = genericArgs[0];
+                        // Достаем первый generic-параметр (тип события)
+                        var eventType = genericArgs[0];
 
-                            // 🔥 Игнорируем системные типы
-                            if (eventType.FullName != null && eventType.FullName.StartsWith("System."))
-                                continue;
+                        // 🔥 Игнорируем системные типы
+                        if (eventType.FullName != null && eventType.FullName.StartsWith("System."))
+                            continue;
 
-                            var node = getOrCreateNode(componentName);
+                        var node = getOrCreateNode(componentName);
 
-                            if (!node.PublishedMessages.Contains(eventType))
-                                node.PublishedMessages.Add(eventType);
+                        if (!node.PublishedMessages.Contains(eventType))
+                            node.PublishedMessages.Add(eventType);
 
-                            if (!registry.ContainsKey(eventType))
-                                registry[eventType] = MessageState.None;
+                        if (!registry.ContainsKey(eventType))
+                            registry[eventType] = MessageState.None;
 
-                            registry[eventType] |= MessageState.Published;
-                        }
+                        registry[eventType] |= MessageState.Published;
                     }
                 }
                 catch

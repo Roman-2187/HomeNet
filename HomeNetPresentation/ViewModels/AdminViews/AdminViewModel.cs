@@ -1,22 +1,21 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IAdminVm;
+using static HomeNetCore.Interfaces.ViewModels.MainZone.ITitleBarVm;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class AdminViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable, IMenuViewModel
+    public partial class AdminViewModel : MainViews.FormViewModelBase,  IMenuViewModel
     {
-        private readonly ILogQueueManager _adminLogQueueManager;
-
         // Локальный стейт вкладки, скопированный из факта навигатора
 
-        [ObservableProperty] private bool _isMenuOpen = false;
+        [ObservableProperty]
+        public partial bool IsMenuOpen { get; set; } = false;
 
         [RelayCommand]
         private void ToggleMenu()
@@ -32,12 +31,13 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             IsMenuOpen = false;
         }
 
-        [ObservableProperty] private LogLevelFilter _currentLogFilter = LogLevelFilter.All;
+        [ObservableProperty]
+        public partial LogLevelFilter CurrentLogFilter { get; set; } = LogLevelFilter.All;
 
-       
 
 
-        [ObservableProperty] private AdminSubTab _activeTab = AdminSubTab.None;
+        [ObservableProperty]
+        public partial AdminSubTab ActiveTab { get; set; } = AdminSubTab.None;
 
 
         // Тексты кнопок читают наше локальное свойство
@@ -47,20 +47,18 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         public string SeedButtonText => ActiveTab == AdminSubTab.SeedUsers ? "Закрыть сидинг" : "Сидинг Users";
         public string InspectorButtonText => ActiveTab == AdminSubTab.EventInspector ? "Закрыть граф" : "Инспектор шины";
 
-        public AdminViewModel(ILogQueueManager logQueueManager,IEventBus eventBus,AdminNavigationManager navigation) : base(eventBus, navigation)
+        public AdminViewModel(IEventBus eventBus,ICastomLogger logger) : base(eventBus,logger)
             
             
             
         {
-            _adminLogQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
-
             // 🔥 ЧИСТОТА ДЛЯ ИНСПЕКТОРА: Ловим факт изменения вкладки именованным методом!
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Subscribe<AdminTabChanged>(OnAdminTabChanged);
         }
 
        
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged? msg)
+        private void OnAdminTabChanged(AdminTabChanged? msg)
         {
             if (msg == null) return;
 
@@ -69,11 +67,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
 
 
-            bool shouldBeWide = (msg.ActiveTab == AdminSubTab.EventInspector ||
-                                msg.ActiveTab == AdminSubTab.Logger || msg.ActiveTab== AdminSubTab.UserTable);
+            var shouldBeWide = msg.ActiveTab is AdminSubTab.EventInspector or AdminSubTab.Logger or AdminSubTab.UserTable;
 
             // Лениво пуляем приказ нашему сервису трансформации окна
-            _eventBus.Publish(this, new ITitleBarVm.ToggleWidescreen(shouldBeWide));
+            EventBus.Publish(this, new ToggleWidescreen(shouldBeWide));
 
             NotifyAllButtonsChanged();
         }
@@ -88,46 +85,38 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             OnPropertyChanged(nameof(SeedButtonText));
             OnPropertyChanged(nameof(InspectorButtonText));
         }
-
-       
-
-
+        
 
         [RelayCommand]
-        private void ShowInspector() =>_eventBus.Publish(this, new IAdminVm.OpenEventInspector());
+        private void ShowInspector() =>EventBus.Publish(this, new OpenEventInspector());
        
         [RelayCommand]
-        private void ShowUserTable() => _eventBus.Publish(this, new IAdminVm.OpenTableUsers());
+        private void ShowUserTable() => EventBus.Publish(this, new OpenTableUsers());
 
         [RelayCommand]
-        private void ShowLogPanel() => _eventBus.Publish(this, new IAdminVm.OpenLogger());
+        private void ShowLogPanel() => EventBus.Publish(this, new OpenLogger());
 
         [RelayCommand]
-        private void ShowDeleteForm() => _eventBus.Publish(this, new IAdminVm.OpenDelete());
+        private void ShowDeleteForm() => EventBus.Publish(this, new OpenDelete());
 
         [RelayCommand]
-        private void ShowSeedForm() => _eventBus.Publish(this, new IAdminVm.OpenSeedUsers());
+        private void ShowSeedForm() => EventBus.Publish(this, new OpenSeedUsers());
 
         [RelayCommand]
         private void Logout()
         {
             IsMenuOpen = false; 
-            _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
+            EventBus.Publish(this, new LogoutAdmin());
         }
 
         [RelayCommand]
-        private void SwitchLogFilter(LogLevelFilter targetFilter)
-        {
-            CurrentLogFilter = targetFilter;
-          
-        }
+        private void SwitchLogFilter(LogLevelFilter targetFilter) => CurrentLogFilter = targetFilter;
 
-        
 
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Unsubscribe<AdminTabChanged>(OnAdminTabChanged);
         }
     }
 }

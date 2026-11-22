@@ -36,7 +36,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
 
             if (defaultValue != null)
             {
-                string valueStr = (type == ColumnType.Varchar || type == ColumnType.DateTimeOffset) ? $"'{defaultValue}'" : defaultValue.ToString()!;
+                var valueStr = type is ColumnType.Varchar or ColumnType.DateTimeOffset ? $"'{defaultValue}'" : defaultValue.ToString()!;
                 features.Add($"DEFAULT {valueStr}");
             }
             else if (isCreatedAt)

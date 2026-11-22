@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace HomeNetAvalonia.Controls
+namespace HomeNetAvalonia.Controls.MainControls
 {
     public partial class StatusBarControl : UserControl
     {

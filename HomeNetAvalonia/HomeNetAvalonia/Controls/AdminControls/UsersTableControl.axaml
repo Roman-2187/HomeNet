@@ -5,7 +5,7 @@
             xmlns:models="using:HomeNet.Models.Shared.Entity"
 
              mc:Ignorable="d" d:DesignWidth="650" d:DesignHeight="500"
-             x:Class="HomeNetAvalonia.Controls.UsersTableControl">
+             x:Class="HomeNetAvalonia.Controls.AdminControls.UsersTableControl">
 
    <!-- 🌌 ОЖИВЛЯЕМ ХАБ: Превьюер видит модель и не слепнет -->
     <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">

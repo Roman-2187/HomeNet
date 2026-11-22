@@ -5,7 +5,7 @@
              xmlns:di="using:HomeNet.DI"
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              mc:Ignorable="d" 
-             x:Class="HomeNetAvalonia.Controls.RegistrationViewControl"
+             x:Class="HomeNetAvalonia.Controls.UserControls.RegistrationViewControl"
              x:DataType="di:ComponentHub" Width="600" Height="450"
              > 
     

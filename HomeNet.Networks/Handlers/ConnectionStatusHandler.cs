@@ -2,15 +2,10 @@
 
 namespace HomeNet.Network.Handlers
 {
-    public class ConnectionStatusHandler : DelegatingHandler
+    public class ConnectionStatusHandler(IEventBus eventBus) : DelegatingHandler
     {
-        private readonly IEventBus _eventBus;
+        private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         private bool? _lastKnownState; // null при старте, чтобы первый запрос точно обновил UI
-
-        public ConnectionStatusHandler(IEventBus eventBus)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-        }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -26,7 +21,7 @@ namespace HomeNet.Network.Handlers
 
                 return response;
             }
-            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
                 // Упала сеть или вышел таймаут — сервер недоступен
                 NotifyStateChanged(isOnline: false);

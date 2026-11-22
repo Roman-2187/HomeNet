@@ -39,8 +39,8 @@ namespace HomeNet.Server
                 .AddJsonFile(localSecretsPath, optional: true, reloadOnChange: true)
                 .AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
-            string postgresConn = builder.Configuration["PostgresConnection"]
-                ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
+            var postgresConn = builder.Configuration["PostgresConnection"]
+                               ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
 
 
             // 2. Создаем движок для PostgreSQL
@@ -50,10 +50,10 @@ namespace HomeNet.Server
             postgresEngine.InitializeRepositories(null);
 
             // 🔥 4. Достаем готовые репозитории из фабрики
-            IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
-            IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
-            DeviceSyncRepo deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepo>();
-            DeletedRecordRepository deletedRecordRepository = postgresEngine.Repositories.GetRepository<DeletedRecordRepository>();
+            var messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
+            var userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
+            var deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepo>();
+            var deletedRecordRepository = postgresEngine.Repositories.GetRepository<DeletedRecordRepository>();
 
             // 🔥 5. РЕГИСТРИРУЕМ ЗАВИСИМОСТИ И ФИЛЬТР АВТОРИЗАЦИИ В DI ASP.NET CORE:
             builder.Services.AddSingleton(userRepository);

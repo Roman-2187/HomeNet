@@ -3,7 +3,8 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IContactsVm;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 
 namespace HomeNetPresentation.Serviсes
 {
@@ -11,31 +12,31 @@ namespace HomeNetPresentation.Serviсes
     /// Автономный менеджер навигации зоны пользователя мессенджера SiberNet.
     /// Рулит гостевыми экранами, мессенджером и открытием чатов через шину событий. 🦾
     /// </summary>
-    public partial class UserNavigationManager : Serviсes.BaseNavigationState
+    public partial class UserNavigationManager : BaseNavigationState
     {
         private ICastomLogger Logger { get; set; }
-        [ObservableProperty] private partial ClientSubTab CurrentClientTab { get; set; } = ClientSubTab.None;
+        [ObservableProperty] public partial ClientSubTab CurrentClientTab { get; set; } = ClientSubTab.None;
 
         public UserNavigationManager(IEventBus eventBus, ICastomLogger logger) : base(eventBus)
         {
             Logger = logger;
-            EventBus.Subscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
-            EventBus.Subscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
-            EventBus.Subscribe<IUserVm.BackToStart>(OnBackToStartRequested);
+            EventBus.Subscribe<OpenAuth>(OnOpenAuthRequested);
+            EventBus.Subscribe<OpenRegistration>(OnOpenRegistrationRequested);
+            EventBus.Subscribe<BackToStart>(OnBackToStartRequested);
 
             // Подписки на успех авторизации/регистрации
-            EventBus.Subscribe<IUserVm.UserSignedIn>(OnUserAuthenticatedRequested);
-            EventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested);
+            EventBus.Subscribe<UserSignedIn>(OnUserAuthenticatedRequested);
+            EventBus.Subscribe<UserSignedUp>(OnUserSignedUpRequested);
 
             // 🔥 ЛОВИМ КЛИК ПО ПОЛЬЗОВАТЕЛЮ ИЗ СПИСКА КОНТАКТОВ!
-            EventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelectedRequested);
+            EventBus.Subscribe<FriendSelected>(OnFriendSelectedRequested);
 
-            EventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
+            EventBus.Subscribe<LogoutClient>(OnLogoutClientRequested);
         }
 
        
 
-        private void OnOpenAuthRequested(IUserVm.OpenAuth msg)
+        private void OnOpenAuthRequested(OpenAuth msg)
         {
             CurrentMainZone = MainTab.ClientZone;
             CurrentClientTab = ClientSubTab.Authentication;
@@ -44,7 +45,7 @@ namespace HomeNetPresentation.Serviсes
             Logger.LogInfo($"Зашли в OnOpenAuthRequested текущий стате {CurrentClientTab}");
         }
 
-        private void OnOpenRegistrationRequested(IUserVm.OpenRegistration msg)
+        private void OnOpenRegistrationRequested(OpenRegistration msg)
         {
             CurrentMainZone = MainTab.ClientZone;
             CurrentClientTab = ClientSubTab.Registration;
@@ -53,14 +54,14 @@ namespace HomeNetPresentation.Serviсes
             Logger.LogInfo($"Зашли в OnOpenRegistrationRequested текущий стате {CurrentClientTab}");
         }
 
-        private void OnBackToStartRequested(IUserVm.BackToStart msg)
+        private void OnBackToStartRequested(BackToStart msg)
         {
             CurrentMainZone = MainTab.StartZone;
             CurrentClientTab = ClientSubTab.None;
             PublishStateDuet();
         }
 
-        private void OnUserAuthenticatedRequested(IUserVm.UserSignedIn msg)
+        private void OnUserAuthenticatedRequested(UserSignedIn msg)
         {
             if (msg?.User == null) return;
 
@@ -70,7 +71,7 @@ namespace HomeNetPresentation.Serviсes
             PublishStateDuet();
         }
 
-        private void OnUserSignedUpRequested(IUserVm.UserSignedUp msg)
+        private void OnUserSignedUpRequested(UserSignedUp msg)
         {
             if (msg?.User == null) return;
 
@@ -83,7 +84,7 @@ namespace HomeNetPresentation.Serviсes
         /// <summary>
         /// 🔥 РЕАКЦИЯ НА КЛИК: Переключаем энум на ЧАТ, когда выбрали друга
         /// </summary>
-        private void OnFriendSelectedRequested(IContactsVm.FriendSelected msg)
+        private void OnFriendSelectedRequested(FriendSelected msg)
         {
             if (msg?.Friend == null) return;
 
@@ -94,7 +95,7 @@ namespace HomeNetPresentation.Serviсes
             PublishStateDuet();
         }
 
-        private void OnLogoutClientRequested(IUserVm.LogoutClient msg)
+        private void OnLogoutClientRequested(LogoutClient msg)
         {
             CurrentUser = null;
             CurrentMainZone = MainTab.StartZone;
@@ -107,22 +108,22 @@ namespace HomeNetPresentation.Serviсes
         private void PublishStateDuet()
         {
             EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            EventBus.Publish(this, new ClientTabChanged(CurrentClientTab));
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            EventBus.Unsubscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
-            EventBus.Unsubscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
-            EventBus.Unsubscribe<IUserVm.BackToStart>(OnBackToStartRequested);
-            EventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticatedRequested);
-            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested);
+            EventBus.Unsubscribe<OpenAuth>(OnOpenAuthRequested);
+            EventBus.Unsubscribe<OpenRegistration>(OnOpenRegistrationRequested);
+            EventBus.Unsubscribe<BackToStart>(OnBackToStartRequested);
+            EventBus.Unsubscribe<UserSignedIn>(OnUserAuthenticatedRequested);
+            EventBus.Unsubscribe<UserSignedUp>(OnUserSignedUpRequested);
 
             // 🔥 Не забываем отписаться
-            EventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelectedRequested);
+            EventBus.Unsubscribe<FriendSelected>(OnFriendSelectedRequested);
 
-            EventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
+            EventBus.Unsubscribe<LogoutClient>(OnLogoutClientRequested);
         }
     }
 }

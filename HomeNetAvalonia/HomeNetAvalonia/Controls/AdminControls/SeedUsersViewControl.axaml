@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:di="using:HomeNet.DI"
+             xmlns:di="using:HomeNet.DI"
              xmlns:vm="using:HomeNetPresentation.ViewModels.AdminViews"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="HomeNetAvalonia.Controls.SeedUsersViewControl"
+             x:Class="HomeNetAvalonia.Controls.AdminControls.SeedUsersViewControl"
              x:CompileBindings="False"
              x:DataType="di:ComponentHub">
 
@@ -44,8 +44,7 @@
                     </Border>
 
                     <!-- КНОПКА ЗАПУСКА КИБЕР-ГЕНЕРАЦИИ -->
-                    <!-- В Авалонии стиль по умолчанию OrangeDefaultButtonStyle подхватится через Classes, 
-                         если он прописан в App.axaml -->
+                    
                     <Button Content="ЗАПУСТИТЬ ГЕНЕРАЦИЮ БАЗЫ (50 USERS)" 
                             Command="{Binding ExecuteDataSeedingCommand}"                   
                             Width="320" Height="45"   HorizontalAlignment="Center"/>

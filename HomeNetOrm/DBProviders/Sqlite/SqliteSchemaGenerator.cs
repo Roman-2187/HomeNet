@@ -21,7 +21,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
             if (string.IsNullOrEmpty(schema.TableName) || schema.Columns == null)
                 return string.Empty;
 
-            var pkColumns = schema.Columns.Where(c => c != null && c.IsPrimaryKey).ToList();
+            var pkColumns = schema.Columns.Where(c => c is { IsPrimaryKey: true }).ToList();
             var sb = new StringBuilder();
 
             // 1. Начало сборки таблицы

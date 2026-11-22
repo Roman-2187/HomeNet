@@ -20,7 +20,7 @@ public class ConsoleLogger : ICastomLogger
 
     public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0)
     {
-        string fullLine = LogFormatter.Format(message, memberName, filePath, lineNumber, isAutoLog: false);
+        var fullLine = LogFormatter.Format(message, memberName, filePath, lineNumber, isAutoLog: false);
 
         Console.ForegroundColor = _colors.TryGetValue(level, out var color) ? color : ConsoleColor.White;
         Console.WriteLine(fullLine);

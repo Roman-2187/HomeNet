@@ -40,15 +40,15 @@ namespace HomeNetOrm.Repositories.Base
             _logger.LogInfo($"=== 🚀 СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
             // 🌟 LINQ-фильтрация: Убираем из цепочки весь мусор, null-объекты и пустые схемы одной декларативной строкой
-            IEnumerable<(TableSchema Raw, AdaptedSchemas Adapted)> validSchemas = _tableSchemas
+            var validSchemas = _tableSchemas
                 .Where(s => !string.IsNullOrEmpty(s.TableName))
                 .Select(s => (Raw: s, Adapted: s.ToAdaptedSchemas()))
                 .Where(x => x.Adapted?.Snake?.TableName != null && x.Adapted?.Camel?.TableName != null);
 
-            foreach ((TableSchema raw, AdaptedSchemas adapted) in validSchemas)
+            foreach ((var raw, var adapted) in validSchemas)
             {
-                string camelName = adapted.Camel.TableName;
-                TableSchema snakeSchema = adapted.Snake;
+                var camelName = adapted.Camel.TableName;
+                var snakeSchema = adapted.Snake;
 
                 try
                 {
@@ -76,11 +76,11 @@ namespace HomeNetOrm.Repositories.Base
 
         private async Task<bool> TableExistsAsync(string dbTableName)
         {
-            SqlQueryCommand cmd = _schemaSqlInitializer.GenerateTableExistsSql(dbTableName);
+            var cmd = _schemaSqlInitializer.GenerateTableExistsSql(dbTableName);
 
             try
             {
-                int result = await _dbConnection.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
+                var result = await _dbConnection.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
                 return result > 0;
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (_dbConnection.State != ConnectionState.Open) await _dbConnection.OpenAsync();
 
-            string createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(snakeSchema);
+            var createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(snakeSchema);
             await _dbConnection.ExecuteAsync(createTableSql);
 
             if (await TableExistsAsync(snakeSchema.TableName))
@@ -112,7 +112,7 @@ namespace HomeNetOrm.Repositories.Base
             if (string.IsNullOrEmpty(snakeSchema.TableName)) return;
             if (_dbConnection.State != ConnectionState.Open) await _dbConnection.OpenAsync();
 
-            TableSchema? expectedSchemaRaw = await _schemaProvider.GetActualTableSchemaAsync(snakeSchema.TableName);
+            var expectedSchemaRaw = await _schemaProvider.GetActualTableSchemaAsync(snakeSchema.TableName);
 
             // Guard Clause: Проверка поврежденной или пустой схемы
             if (expectedSchemaRaw?.Columns == null || expectedSchemaRaw.Columns.Count == 0 || !expectedSchemaRaw.Columns.Any(c => c.IsPrimaryKey))
@@ -122,7 +122,7 @@ namespace HomeNetOrm.Repositories.Base
             }
 
             // 1. Быстрый и чистый вызов статического компарера
-            SchemaDiff? diff = SchemaComparer.Compare(expectedSchemaRaw, snakeSchema);
+            var diff = SchemaComparer.Compare(expectedSchemaRaw, snakeSchema);
 
             if (diff.IsIdentical)
             {
@@ -131,7 +131,7 @@ namespace HomeNetOrm.Repositories.Base
             }
 
             // 2. Делегируем всю черновую работу по разбору логов нашему новому визуализатору
-            List<ColumnSchema>? expectedCamelCols = expectedSchemaRaw.ToAdaptedSchemas()?.Camel?.Columns;
+            var expectedCamelCols = expectedSchemaRaw.ToAdaptedSchemas()?.Camel?.Columns;
             SchemaDiffVisualizer.LogDifferences(_logger, _dbName, camelTableName, diff, expectedCamelCols);
         }
 

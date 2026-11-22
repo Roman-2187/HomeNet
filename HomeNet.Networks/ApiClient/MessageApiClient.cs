@@ -3,55 +3,52 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
-using HomeNet.Network.ApiClient;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 
-public class MessageApiClient : BaseApiClient, IMessageApiClient
+namespace HomeNet.Network.ApiClient
 {
-    private readonly IEventBus _eventBus;
-
-    public MessageApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
-        : base(httpClient, logger)
+    [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
+    public class MessageApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
+        : BaseApiClient(httpClient, logger), IMessageApiClient
     {
-        _eventBus = eventBus;
-    }
-
-    public async Task<bool> PushMessageAsync(MessageEntity message)
-    {
-        try
+        public async Task<bool> PushMessageAsync(MessageEntity message)
         {
-            var response = await HttpClient.PostAsJsonAsync("/api/messages", message);
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                _eventBus.Publish(this, new IMessageApiClient.MessageSentOnServer(message));
-                return true;
+                var response = await HttpClient.PostAsJsonAsync("/api/messages", message);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    eventBus.Publish(this, new IMessageApiClient.MessageSentOnServer(message));
+                    return true;
+                }
+
+                eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, $"HTTP {response.StatusCode}"));
+                return false;
             }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageApiClient] Ошибка отправки: {ex.Message}");
+                eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, ex.Message));
+                return false;
+            }
+        }
 
-            _eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, $"HTTP {response.StatusCode}"));
-            return false;
-        }
-        catch (Exception ex)
+        public async Task<SyncBatchResponse<MessageEntity>> FetchFreshMessagesAsync(long sinceVersion)
         {
-            Logger.LogError($"[MessageApiClient] Ошибка отправки: {ex.Message}");
-            _eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, ex.Message));
-            return false;
+            try
+            {
+                Logger.LogInfo($"[MessageApiClient] Запрос обновлений сообщений с версии {sinceVersion}...");
+                var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<MessageEntity>>($"/api/messages/sync?sinceVersion={sinceVersion}");
+                return response ?? new SyncBatchResponse<MessageEntity>();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageApiClient] Не удалось скачать обновления сообщений: {ex.Message}");
+                return new SyncBatchResponse<MessageEntity>();
+            }
         }
+
     }
-
-    public async Task<SyncBatchResponse<MessageEntity>> FetchFreshMessagesAsync(long sinceVersion)
-    {
-        try
-        {
-            Logger.LogInfo($"[MessageApiClient] Запрос обновлений сообщений с версии {sinceVersion}...");
-            var response = await HttpClient.GetFromJsonAsync<SyncBatchResponse<MessageEntity>>($"/api/messages/sync?sinceVersion={sinceVersion}");
-            return response ?? new SyncBatchResponse<MessageEntity>();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError($"[MessageApiClient] Не удалось скачать обновления сообщений: {ex.Message}");
-            return new SyncBatchResponse<MessageEntity>();
-        }
-    }
-
 }

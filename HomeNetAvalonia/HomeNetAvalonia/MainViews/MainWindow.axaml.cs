@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.MainViews;
 using System;
 
 namespace HomeNetAvalonia.MainViews
@@ -11,8 +12,7 @@ namespace HomeNetAvalonia.MainViews
         {
             InitializeComponent();
         }
-
-
+        
         protected override void OnOpened(EventArgs e)
         {
             base.OnOpened(e);

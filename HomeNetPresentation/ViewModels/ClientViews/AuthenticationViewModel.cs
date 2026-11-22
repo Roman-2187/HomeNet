@@ -5,9 +5,9 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetCore.Validation;
-using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
+using HomeNetPresentation.ViewModels.MainViews;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
@@ -15,29 +15,29 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     /// Стерильная форма авторизации мессенджера SiberNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
     /// </summary>
-    public partial class AuthenticationViewModel : FormViewModelBase<UserNavigationManager>
+    public partial class AuthenticationViewModel : FormViewModelBase
     {
         private readonly IAuthenticateService _loginService;
-        private readonly ICastomLogger _logger;
+       
 
-        [ObservableProperty] private UserEntity _userData = new();
+        [ObservableProperty]
+        public partial UserEntity UserData { get; set; } = new();
 
         public AuthenticationViewModel(
             IAuthenticateService loginService,
             IEventBus eventBus,
-            ICastomLogger logger,
-            UserNavigationManager navigation) : base(eventBus, navigation)
+            ICastomLogger logger) : base(eventBus,logger)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             InitializeInitialHints();
-            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
+            EventBus.SubscribeAsync<UserSignedIn>(OnUserAuthenticated);
         }
 
-        private async void OnUserAuthenticated(IUserVm.UserSignedIn msg)
+        private async Task OnUserAuthenticated(UserSignedIn msg)
         {
-            await Task.Delay(500);
+            await Task.Delay(1200);
             ResetForm();
             InitializeInitialHints();
         }
@@ -77,16 +77,20 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 Message = "Проверка..."
             };
 
-            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
-            checkingDict[TypeField.EmailType] = checkingResult;
+            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults)
+            {
+                [TypeField.EmailType] = checkingResult
+            };
             ValidationResults = checkingDict;
 
             // 2. Проверяем наличие аккаунта через сервис (сработает кэш и переопределение)
             var result = await _loginService.CheckEmailOnBlurAsync(email);
 
             // 3. Обновляем UI финальным вердиктом ("Пользователь найден" или ошибка)
-            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
-            finalDict[TypeField.EmailType] = result;
+            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults)
+            {
+                [TypeField.EmailType] = result
+            };
             ValidationResults = finalDict;
         }
 
@@ -98,36 +102,37 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             try
             {
-                IAuthenticateService.Verdict verdict = await _loginService.CheckUserAsync(UserData);
+                var verdict = await _loginService.CheckUserAsync(UserData);
                 ValidationResults = verdict.Messages.ToDictionary(r => r.Field, r => r);
 
                 if (verdict.IsSuccess)
                 {
                     StatusMessage = "Вход выполнен успешно";
                     SubmitButtonText = "Входим...";
-                    _logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
+                    Logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
                     var finalUser = verdict.User ?? UserData;
-                    _eventBus.Publish(this, new IUserVm.UserSignedIn(finalUser));
+                    // ReSharper disable once MethodHasAsyncOverload
+                    EventBus.Publish(this, new UserSignedIn(finalUser));
                 }
                 else
                 {
                     StatusMessage = "Есть ошибки в полях";
-                    _logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email}");
+                    Logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email}");
                 }
             }
             catch (Exception ex)
             {
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
-                _logger.LogError($"[AuthVM] Критический сбой авторизации: {ex.Message}");
+                Logger.LogError($"[AuthVM] Критический сбой авторизации: {ex.Message}");
             }
         }
 
         [RelayCommand]
         private void OpenRegisterZone()
         {
-            _logger.LogInfo("[AuthVM] Запрос перехода на экран регистрации через EventBus.");
-            _eventBus.Publish(this, new IUserVm.OpenRegistration());
+            Logger.LogInfo("[AuthVM] Запрос перехода на экран регистрации через EventBus.");
+            EventBus.Publish(this, new OpenRegistration());
         }
 
         [RelayCommand]
@@ -135,7 +140,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             ResetForm();
             InitializeInitialHints();
-            _eventBus.Publish(this, new IUserVm.BackToStart());
+            EventBus.Publish(this, new BackToStart());
         }
 
         #endregion
@@ -143,7 +148,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
+            EventBus.SubscribeAsync<UserSignedIn>(OnUserAuthenticated);
         }
     }
 }

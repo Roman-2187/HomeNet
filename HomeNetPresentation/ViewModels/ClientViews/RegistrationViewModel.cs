@@ -5,60 +5,29 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetCore.Validation;
-using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
+using HomeNetPresentation.ViewModels.MainViews;
+using static HomeNetCore.Enums.TypeField;
+using static HomeNetCore.Enums.ValidationState;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
-    /// Чистая форма регистрации мессенджера SiberNet.
+    /// Чистая форма регистрации мессенджера HomeNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
     /// </summary>
-    public partial class RegistrationViewModel : FormViewModelBase<UserNavigationManager>
+    public partial class RegistrationViewModel(
+        IRegistrationService registerService,
+        IEventBus eventBus,
+        ICastomLogger logger)
+        : FormViewModelBase(eventBus, logger)
     {
-        private readonly IRegistrationService _registerService;
-        private readonly ICastomLogger _logger;
-        [ObservableProperty] private UserEntity _userData = new();
-
+        [ObservableProperty]
+        // ReSharper disable once MemberCanBePrivate.Global
+        public partial UserEntity UserData { get; set; } = new();
 
         
-
-        public RegistrationViewModel(
-            IRegistrationService registerService,
-            IEventBus eventBus,
-            ICastomLogger logger,
-            UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в базу
-        {
-            _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            InitializeInitialHints();
-        }
-
-        private void InitializeInitialHints()
-        {
-            var initialHints = new List<ValidationResult>
-            {
-                new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
-                new(TypeField.PasswordType, "Пароль должен содержать 8 символов буквы и цифры", ValidationState.Info, true),
-                new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
-                new(TypeField.ConfirmedPasswordType, "Пароли должны совпадать", ValidationState.Info, true)
-            };
-            UpdateValidation(initialHints);
-            SubmitButtonText = "Создать ID";
-        }
-
-        private void ResetForm()
-        {
-            UserData = new UserEntity();
-            StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
-        }
-
-        #region 🦾 НАНО-КОМАНДЫ ДЛЯ КНОПОК РЕГИСТРАЦИИ (CommunityToolkit)
-
-
         [RelayCommand]
         private async Task CheckEmailAsync()
         {
@@ -69,28 +38,24 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             // Создаем временный результат
             var checkingResult = new ValidationResult
             {
-                Field = TypeField.EmailType,
-                State = ValidationState.Info,
+                Field = EmailType,
+                State = Info,
                 Message = "Проверка..."
             };
 
             // Создаем новый словарь и кладем туда "Проверка..."
-            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
-            checkingDict[TypeField.EmailType] = checkingResult;
+            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults) { [EmailType] = checkingResult };
             ValidationResults = checkingDict;
 
             // 2. Дергаем сервис (он будет ждать ответа или таймаута)
-            var result = await _registerService.CheckEmailOnBlurAsync(email);
+            var result = await registerService.CheckEmailOnBlurAsync(email);
 
             // 3. Создаем ЕЩЕ ОДИН словарь уже с реальным результатом
-            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
-            finalDict[TypeField.EmailType] = result;
+            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults) { [EmailType] = result };
             ValidationResults = finalDict;
         }
 
-
-
-
+        
         [RelayCommand]
         private async Task RegisterAsync()
         {
@@ -98,66 +63,82 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             try
             {
-                // 1. Спрашиваем бэкенд
-                IRegistrationService.Verdict verdict = await _registerService.RegisterUserAsync(UserData);
-
-                // 2. ХАРД-РЕЗЕТ ГРАФИКИ: Сначала полностью очищаем словарь и UI от старых хинтов
-                ValidationResults = new Dictionary<TypeField, ValidationResult>();
-                UpdateValidation(new List<ValidationResult>());
-
-                // 3. Заливаем в словарь чистый результат бэкенда
-                ValidationResults = verdict.Results.ToDictionary(r => r.Field, r => r);
-
-                // 4. Проталкиваем результаты бэкенда в UI
-                UpdateValidation(verdict.Results);
+                var verdict = await registerService.RegisterUserAsync(UserData);
+                ApplyValidationResults(verdict.Results);
 
                 if (verdict.IsValid)
-                {
-                    StatusMessage = "Вы успешно зарегистрированы";
-                    SubmitButtonText = "Готово!";
-                    _logger.LogInfo($"[RegisterVM] Пользователь {verdict.VerifiedUser?.Email ?? UserData.Email} успешно прошёл СУБД.");
-
-                    var finalUser = verdict.VerifiedUser ?? UserData;
-
-                   
-
-                    // 🔥 Публикуем факт успешного SignUp (Регистрация)
-                    _eventBus.Publish(this, new IUserVm.UserSignedUp(finalUser));
-
-
-
-                    await Task.Delay(500);
-                    ResetForm();
-                    InitializeInitialHints();
-                }
-
-
-
-              
-
+                    await CompleteRegistrationAsync(verdict.VerifiedUser ?? UserData);
                 else
-                {
-                    StatusMessage = "Есть ошибки в полях";
-                    _logger.LogWarning($"[RegisterVM] Ошибка заполнения полей регистрации для: {UserData.Email}");
-                }
+                    HandleValidationFailure();
             }
             catch (Exception ex)
             {
                 StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";
-                _logger.LogError($"[RegisterVM] Критический сбой регистрации: {ex.Message}");
+                Logger.LogError($"[RegisterVM] Критический сбой регистрации: {ex.Message}");
             }
         }
 
+        
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
-
             // 🔥 ЧИСТОТА: Отправляем реактивный рекорд отмены. Навигатор сам вернет нас в абсолютный ноль гостя
-            _eventBus.Publish(this, new IUserVm.BackToStart());
+            EventBus.Publish(this, new BackToStart());
+        }
+        
+        
+        private void ResetForm()
+        {
+            UserData = new UserEntity();
+            StatusMessage = string.Empty;
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
         }
 
-        #endregion
+        
+        private void ApplyValidationResults(IEnumerable<ValidationResult> results)
+        {
+            var list = results.ToList();
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+
+            UpdateValidation([]);
+
+            ValidationResults = list.ToDictionary(r => r.Field, r => r);
+            UpdateValidation(list);
+        }
+
+        private async Task CompleteRegistrationAsync(UserEntity finalUser)
+        {
+            StatusMessage = "Вы успешно зарегистрированы";
+            SubmitButtonText = "Готово!";
+            Logger.LogInfo($"[RegisterVM] Пользователь {finalUser.Email} успешно прошёл СУБД.");
+
+            EventBus.Publish(this, new UserSignedUp(finalUser));
+
+            await Task.Delay(500);
+            ResetForm();
+            InitializeInitialHints();
+        }
+
+        private void HandleValidationFailure()
+        {
+            StatusMessage = "Есть ошибки в полях";
+            Logger.LogWarning($"[RegisterVM] Ошибка заполнения полей регистрации для: {UserData.Email}");
+        }
+
+        
+        private void InitializeInitialHints()
+        {
+            var initialHints = new List<ValidationResult>
+            {
+                new(EmailType, "Введите email например 'User@example.com'", Info, true),
+                new(PasswordType, "Пароль должен содержать 8 символов буквы и цифры", Info, true),
+                new(NameType, "Имя пользователя должно содержать 3 буквы подряд", Info, true),
+                new(ConfirmedPasswordType, "Пароли должны совпадать", Info, true)
+            };
+            UpdateValidation(initialHints);
+            SubmitButtonText = "Создать ID";
+        }
     }
 }

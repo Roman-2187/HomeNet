@@ -4,7 +4,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
@@ -12,15 +12,15 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     /// Тотально изолированная и чистая панель пользователя HomeNet.
     /// Больше не содержит внутри себя ссылки на другие вью-модели! 🧼
     /// </summary>
-    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>,IUserVm
+    public partial class UserViewModel : MainViews.FormViewModelBase,IUserVm
     {
         private readonly ICastomLogger _logger;
 
         [ObservableProperty]
         public partial ClientSubTab ActiveClientTab { get; set; } = ClientSubTab.None;
 
-        public UserViewModel(ICastomLogger logger, IEventBus eventBus, UserNavigationManager navigation)
-            : base(eventBus, navigation)
+        public UserViewModel(ICastomLogger logger, IEventBus eventBus)  : base(eventBus,logger)
+          
         {
             _logger = logger;
             InitializeBusSubscriptions();
@@ -30,52 +30,38 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         private void InitializeBusSubscriptions()
         {      
-            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Subscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);       
+            EventBus.Subscribe<ClientTabChanged>(OnClientTabChanged);       
         }
 
-
-        // Добавь CommunityToolkit.Mvvm.Input в юзинги
+        
         [RelayCommand]
         private void LogoutDevice()
         {
             _logger.LogInfo("[UserVM] Пользователь инициировал глобальный выход из системы.");
 
             // Просто стреляем в шину. Мы никого не ждем, вьюмодель пользователя чиста!
-            _eventBus.Publish(this, new IUserVm.LogoutClient());
+            EventBus.Publish(this, new LogoutClient());
         }
 
 
-        private void OnClientTabChanged(IUserVm.ClientTabChanged? msg)
+        private void OnClientTabChanged(ClientTabChanged? msg)
         {
             if (msg == null)
             {
                 _logger.LogError("[UserVM] OnClientTabChanged вызван, но сообщение msg == NULL!");
                 return;
             }
-
-          
+            
             ActiveClientTab = msg.ActiveTab;
             OnPropertyChanged(nameof(ActiveClientTab));
         }
 
-        private void OnUserSignedIn(IUserVm.UserSignedIn msg)
-        {
-            if (msg?.User == null) return;
-        }
-
-        private void OnUserSignedUp(IUserVm.UserSignedUp msg)
-        {
-            if (msg?.User == null) return;
-        }
+       
 
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Unsubscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);
+            EventBus.Unsubscribe<ClientTabChanged>(OnClientTabChanged);
         }
     }
 }

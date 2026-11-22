@@ -17,14 +17,14 @@ namespace HomeNet.Synchronization.Sinc
             IEventBus eventBus,
             ICastomLogger logger)
         {
-            _items = items.OrderBy(i => i.Order).ToList();
+            _items = [.. items.OrderBy(i => i.Order)];
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _eventBus.Subscribe<SessionPersisted>(OnSessionPersisted);
         }
 
-        public async Task RunAllAsync(CancellationToken ct = default)
+        private async Task RunAllAsync(CancellationToken ct = default)
         {
             if (!await _lock.WaitAsync(0, ct))
             {

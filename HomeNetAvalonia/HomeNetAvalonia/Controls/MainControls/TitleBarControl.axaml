@@ -4,13 +4,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:enums="using:HomeNetCore.Enums.Navigation"
-    xmlns:vm="using:HomeNetPresentation.ViewModels"
     xmlns:conv="using:HomeNetAvalonia.Converters"
     xmlns:di="using:HomeNet.DI" 
     mc:Ignorable="d"
     x:Class="HomeNetAvalonia.Controls.TitleBarControl"        
     x:DataType="di:ComponentHub">
- 
+    
     <UserControl.Resources>
         <conv:EqualityConverter x:Key="EqualityConverter"/>
     </UserControl.Resources>
@@ -18,7 +17,8 @@
   
 
      <!-- Корневой Грид шапки (высота 50), завязанный на ComponentHub -->
-    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False" HorizontalAlignment="Right"> 
+    <Grid DataContext="{DynamicResource ComponentHub}" 
+          x:CompileBindings="False" HorizontalAlignment="Right"> 
         <StackPanel DataContext="{Binding TitleBarViewModel}"
                     Orientation="Horizontal"
                     VerticalAlignment="Center"
@@ -27,8 +27,12 @@
             <StackPanel Orientation="Horizontal">
                 <StackPanel.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
-                        <Binding Path="CurrentMainZone" Converter="{StaticResource EqualityConverter}" ConverterParameter="{x:Static enums:MainTab.StartZone}"/>
-                        <Binding Path="CurrentClientTab" Converter="{StaticResource EqualityConverter}" ConverterParameter="{x:Static enums:ClientSubTab.None}"/>
+                        <Binding Path="CurrentMainZone" 
+                                 Converter="{StaticResource EqualityConverter}" 
+                                 ConverterParameter="{x:Static enums:MainTab.StartZone}"/>
+                        <Binding Path="CurrentClientTab" 
+                                 Converter="{StaticResource EqualityConverter}" 
+                                 ConverterParameter="{x:Static enums:ClientSubTab.None}"/>
                     </MultiBinding>
                 </StackPanel.IsVisible>
              

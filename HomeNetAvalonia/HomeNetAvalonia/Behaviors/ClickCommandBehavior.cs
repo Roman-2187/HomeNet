@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using HomeNetAvalonia.Controls;
 using System.Windows.Input;
+using SideMenuControl = HomeNetAvalonia.Controls.MainControls.SideMenuControl;
 
 namespace HomeNetAvalonia.Behaviors
 {
@@ -34,26 +35,17 @@ namespace HomeNetAvalonia.Behaviors
 
         private static void OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (sender is Control control)
+            if (sender is not Control control) return;
+
+            if (e.Source is Control source && source.FindAncestorOfType<SideMenuControl>() != null)
+                return;
+
+            var command = GetCommand(control);
+            if (command?.CanExecute(null) == true)
             {
-                // 🔥 Проверяем, куда был клик
-                if (e.Source is Control source)
-                {
-                    // Если клик был по SideMenuControl (меню) или по ListBox — не выполняем
-                    if (source.FindAncestorOfType<SideMenuControl>() != null)
-                        return;
-
-                    // Можно добавить другие исключения:
-                    // if (source.FindAncestorOfType<ListBox>() != null)
-                    //     return;
-                }
-
-                var command = GetCommand(control);
-                if (command?.CanExecute(null) == true)
-                {
-                    command.Execute(null);
-                }
+                command.Execute(null);
             }
         }
+
     }
 }

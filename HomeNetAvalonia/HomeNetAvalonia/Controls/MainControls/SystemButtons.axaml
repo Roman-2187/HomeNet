@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"           
            xmlns:di="using:HomeNet.DI"
              mc:Ignorable="d" 
-             x:Class="HomeNetAvalonia.Controls.SystemButtons">
+             x:Class="HomeNetAvalonia.Controls.MainControls.SystemButtons">
 
     
 

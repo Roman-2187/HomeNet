@@ -6,7 +6,9 @@
              xmlns:controls="using:HomeNetAvalonia.Controls"
              xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
-             x:Class="HomeNetAvalonia.Controls.AdminMenuControl"
+             xmlns:adminControls="clr-namespace:HomeNetAvalonia.Controls.AdminControls"
+             xmlns:mainControls="clr-namespace:HomeNetAvalonia.Controls.MainControls"
+             x:Class="HomeNetAvalonia.Controls.AdminControls.AdminMenuControl"
              mc:Ignorable="d" d:DesignWidth="740" d:DesignHeight="500">
 
     <UserControl.Resources>
@@ -113,9 +115,9 @@
                 </Grid>
             </ContentControl>
 
-               <controls:SideMenuControl 
-                         
-                          HorizontalAlignment="Stretch"
+               <mainControls:SideMenuControl
+
+                   Grid.Column="0" HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch" />
 
 
@@ -140,7 +142,7 @@
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.UserTable}}">
-                    <controls:UsersTableControl   />
+                    <adminControls:UsersTableControl   />
                 </ContentControl>
 
                 <!-- Блок Б: Панель Логов -->
@@ -149,7 +151,7 @@
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.Logger}}">
-                    <controls:LogRenderControl
+                    <adminControls:LogRenderControl
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"/>
                 </ContentControl>
@@ -187,7 +189,7 @@
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.EventInspector}}">
-                    <controls:InspectorViewControl/>
+                    <adminControls:InspectorViewControl/>
                 </ContentControl>
 
                 <!-- Блок Д: Модуль сидинга (Исправлено навешиванием tab-content) -->
@@ -196,7 +198,7 @@
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.SeedUsers}}">
-                    <controls:SeedUsersViewControl/>
+                    <adminControls:SeedUsersViewControl/>
 
                    
                 </ContentControl>

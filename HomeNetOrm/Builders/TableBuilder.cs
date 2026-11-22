@@ -10,7 +10,7 @@ namespace HomeNetOrm.Builders
     public class TableBuilder<TEntity>(string tableName)
         where TEntity : class
     {
-        private readonly List<ColumnBuilder<TEntity>> _columnBuilders = new();
+        private readonly List<ColumnBuilder<TEntity>> _columnBuilders = [];
         private bool _useVersionTrigger;
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace HomeNetOrm.Builders
         /// </summary>
         public TableSchema Generate()
         {
-            List<ColumnSchema> columns = _columnBuilders
+            var columns = _columnBuilders
                 .Select(builder => builder.Build())
                 .ToList();
 

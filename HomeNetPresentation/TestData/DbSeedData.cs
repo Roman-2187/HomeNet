@@ -26,7 +26,7 @@ namespace HomeNetPresentation.TestData
             var generatedUsers = new List<UserEntity>();
 
             // Цикл теперь крутится ровно столько раз, сколько ты попросишь
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var fName = firstNames[i % firstNames.Length];
                 var lName = lastNames[i % lastNames.Length];

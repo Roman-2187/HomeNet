@@ -1,13 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
-using HomeNetCore.Interfaces.ViewModels.MainZone;
 using static HomeNet.Network.Handlers.ConnectionStatusHandler;
-using BaseNavigationState = HomeNetPresentation.Serviсes.BaseNavigationState;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IUsersTableVm;
+using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.MainViews
 {
-    public partial class StatusBarViewModel : FormViewModelBase<BaseNavigationState>
+    public partial class StatusBarViewModel : FormViewModelBase
     {
         private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
@@ -20,12 +20,11 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty]
         public partial string StatusColor { get; set; } = "#FFF5546F";
 
-        public StatusBarViewModel(IEventBus eventBus, BaseNavigationState navigation)
-            : base(eventBus, navigation)
+        public StatusBarViewModel(IEventBus eventBus,ICastomLogger logger) : base(eventBus, logger)
         {
-            _eventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
-            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
-            _eventBus.Subscribe<ServerStatusChangedEvent>(OnServerStatusChanged);
+            EventBus.Subscribe<TextChanged>(OnTextChanged);
+            EventBus.Subscribe<Refreshed>(OnUsersTableRefreshed);
+            EventBus.Subscribe<ServerStatusChangedEvent>(OnServerStatusChanged);
         }
 
         private void OnServerStatusChanged(ServerStatusChangedEvent? msg)
@@ -44,13 +43,13 @@ namespace HomeNetPresentation.ViewModels
             StatusColor = isOnline ? "#FF4CAF50" : "#FFF5546F";
         }
 
-        private void OnTextChanged(IStatusBarViewModel.TextChanged? msg)
+        private void OnTextChanged(TextChanged? msg)
         {
             if (msg == null) return;
             StatusText = msg.NewStatus;
         }
 
-        private void OnUsersTableRefreshed(IUsersTableVm.Refreshed? msg)
+        private void OnUsersTableRefreshed(Refreshed? msg)
         {
             if (msg == null) return;
 
@@ -63,9 +62,9 @@ namespace HomeNetPresentation.ViewModels
 
         public override void Dispose()
         {
-            _eventBus.Unsubscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
-            _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
-            _eventBus.Unsubscribe<ServerStatusChangedEvent>(OnServerStatusChanged);
+            EventBus.Unsubscribe<TextChanged>(OnTextChanged);
+            EventBus.Unsubscribe<Refreshed>(OnUsersTableRefreshed);
+            EventBus.Unsubscribe<ServerStatusChangedEvent>(OnServerStatusChanged);
             base.Dispose();
         }
 

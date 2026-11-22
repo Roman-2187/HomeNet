@@ -1,8 +1,6 @@
 ﻿using Avalonia.Data.Converters;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 
 namespace HomeNetAvalonia.Converters
 {
@@ -11,7 +9,7 @@ namespace HomeNetAvalonia.Converters
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             // value — это размер (ширина или высота) экрана/окна
-            if (value is double actualSize && parameter is string percentStr && double.TryParse(percentStr, out double percent))
+            if (value is double actualSize && parameter is string percentStr && double.TryParse(percentStr, CultureInfo.InvariantCulture, out var percent))
             {
                 return actualSize * (percent / 100.0);
             }

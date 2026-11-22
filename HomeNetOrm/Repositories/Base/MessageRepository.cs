@@ -38,7 +38,7 @@ namespace HomeNetOrm.Repositories.Base
         {
             if (message.Id == Guid.Empty) message.Id = Guid.NewGuid();
 
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateInsert();
+            var cmd = _messageSqlGenerator.GenerateInsert();
 
             
 
@@ -66,9 +66,9 @@ namespace HomeNetOrm.Repositories.Base
         public async Task UpdateAsync(MessageEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateUpdate();
+            var cmd = _messageSqlGenerator.GenerateUpdate();
 
-            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity)));
 
             if (rowsAffected > 0)
@@ -79,9 +79,9 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task DeleteByIdAsync(Guid id)
         {
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateDelete(id);
+            var cmd = _messageSqlGenerator.GenerateDelete(id);
 
-            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)
@@ -92,7 +92,7 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
         {
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateSelectById(id);
+            var cmd = _messageSqlGenerator.GenerateSelectById(id);
 
            
 
@@ -104,7 +104,7 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<IEnumerable<MessageEntity>> GetAllAsync()
         {
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateSelectAll();
+            var cmd = _messageSqlGenerator.GenerateSelectAll();
 
           
 
@@ -114,11 +114,11 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
-            SqlQueryCommand cmd = _messageSqlGenerator.GenerateClearChatHistory(senderId, receiverId);
+            var cmd = _messageSqlGenerator.GenerateClearChatHistory(senderId, receiverId);
 
             Logger.LogDebug($"[Sql] {cmd.Sql}");
 
-            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)

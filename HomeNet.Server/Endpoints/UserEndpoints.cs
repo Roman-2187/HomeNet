@@ -78,7 +78,7 @@ namespace HomeNet.Server.Endpoints
 
                     serverLogger.LogInfo($"[API PUSH] Регистрация пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
-                    // 1. Записываем нового пользователя в PostgreSQL
+                    // 1. Записываем нового пользователя в PostgresSQL
                     await userRepository.InsertAsync(incomingUser);
 
                     // 2. Открываем сессию в таблице device_sync строго с клиентским SessionId
@@ -186,6 +186,6 @@ namespace HomeNet.Server.Endpoints
 
         }
 
-        public record LoginRequest(string Email, string Password, Guid SessionId = default);
+        private record LoginRequest(string Email, string Password, Guid SessionId = default);
     }
 }

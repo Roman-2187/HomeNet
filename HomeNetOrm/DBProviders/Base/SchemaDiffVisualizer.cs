@@ -15,21 +15,21 @@ namespace HomeNetOrm.DBProviders.Base
 
             logger.LogWarning($"[{dbName} ⚠️] ВНИМАНИЕ: Обнаружены расхождения в структуре '{camelTableName}':");
 
-            foreach (ColumnSchema missing in diff.MissingColumns.Where(m => !string.IsNullOrEmpty(m.Name)))
+            foreach (var missing in diff.MissingColumns.Where(m => !string.IsNullOrEmpty(m.Name)))
             {
                 logger.LogWarning($"   [-] ❌ Отсутствует колонка: {GetLogName(missing.Name)}");
             }
 
-            foreach (ColumnSchema extra in diff.ExtraColumns.Where(e => !string.IsNullOrEmpty(e.Name)))
+            foreach (var extra in diff.ExtraColumns.Where(e => !string.IsNullOrEmpty(e.Name)))
             {
                 logger.LogWarning($"   [+] 🛑 Обнаружена лишняя колонка: {GetLogName(extra.Name)}");
             }
 
             {
-                IEnumerable<ColumnMismatch> validMismatches = diff.MismatchedColumns.Where(m => !string.IsNullOrEmpty(m.ColumnName));
-                foreach (ColumnMismatch mismatch in validMismatches)
+                var validMismatches = diff.MismatchedColumns.Where(m => !string.IsNullOrEmpty(m.ColumnName));
+                foreach (var mismatch in validMismatches)
                 {
-                    string reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
+                    var reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
 
                     if (mismatch.Expected.IsNullable != mismatch.Actual.IsNullable)
                         reason += $" [Nullable: {mismatch.Expected.IsNullable} vs {mismatch.Actual.IsNullable}]";

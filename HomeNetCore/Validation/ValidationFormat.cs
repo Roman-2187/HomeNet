@@ -32,7 +32,7 @@ namespace HomeNetCore.Validation
                 return false;
 
             // Вычищаем вообще ВСЕ пробелы (и внутри, и по краям), заменяя их на пустую строку
-            string cleanedEmail = email.Replace(" ", "");
+            var cleanedEmail = email.Replace(" ", "");
 
             // Валидируем уже абсолютно чистую строку
             return EmailRegex.IsMatch(cleanedEmail);
@@ -49,7 +49,7 @@ namespace HomeNetCore.Validation
             !string.IsNullOrWhiteSpace(phone) && PhoneRegex.IsMatch(phone.Trim());
 
         /// <summary> Проверка кастомного статуса в профиле (не более 100 символов, без переносов) </summary>
-        public static bool IsValidStatus(string status) =>
+        public static bool IsValidStatus(string? status) =>
             status == null || StatusRegex.IsMatch(status);
 
         /// <summary> Проверка ссылки на личный сайт или блог в профиле </summary>

@@ -29,13 +29,13 @@ namespace HomeNet.Infrastructure.Shared.Routing
         private void RegisterSubscriber(Type messageType, object handler, object? target, System.Reflection.MethodInfo method)
         {
             if (handler == null) throw new ArgumentNullException(nameof(handler));
-            if (!_subscribers.ContainsKey(messageType)) _subscribers[messageType] = new List<object>();
+            if (!_subscribers.ContainsKey(messageType)) _subscribers[messageType] = [];
             if (!_subscribers[messageType].Contains(handler)) _subscribers[messageType].Add(handler);
 
             try
             {
-                Type subscriberType = target?.GetType() ?? method.DeclaringType ?? typeof(object);
-                string componentName = subscriberType.Name.StartsWith("<") && subscriberType.DeclaringType != null
+                var subscriberType = target?.GetType() ?? method.DeclaringType ?? typeof(object);
+                var componentName = subscriberType.Name.StartsWith("<") && subscriberType.DeclaringType != null
                     ? subscriberType.DeclaringType.Name : subscriberType.Name;
                 Inspector.RecordSubscribe(componentName, messageType, method.Name, subscriberType);
             }

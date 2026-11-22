@@ -9,11 +9,11 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
         {
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
-            string className = string.IsNullOrEmpty(filePath)
+            var className = string.IsNullOrEmpty(filePath)
                 ? "UnknownClass"
                 : Path.GetFileNameWithoutExtension(filePath).Split('.').Last() ?? "Unknown";
 
-            string detectedNamespace = "Core";
+            var detectedNamespace = "Core";
             if (!string.IsNullOrEmpty(filePath))
             {
                 var directory = Path.GetDirectoryName(filePath);
@@ -27,7 +27,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
             memberName = memberName.Replace('_', ' ').Trim();
 
             // Если это автологгер-интерцептор, вшиваем твою плашку [АВТОЛОГ]
-            string prefix = isAutoLog ? " [АВТОЛОГ]" : "";
+            var prefix = isAutoLog ? " [АВТОЛОГ]" : "";
 
             return $"[{timestamp}]{prefix} [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {rawMessage}";
         }

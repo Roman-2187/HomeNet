@@ -14,7 +14,7 @@
             Directory.CreateDirectory(DbFolder);
 
             // Формируем полный путь
-            string fullPath = Path.Combine(DbFolder, dbFileName);
+            var fullPath = Path.Combine(DbFolder, dbFileName);
 
             // Создаем файл, если его нет
             if (!File.Exists(fullPath))

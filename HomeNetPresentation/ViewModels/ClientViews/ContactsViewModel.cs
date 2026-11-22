@@ -21,11 +21,15 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     {
         private readonly IEventBus _eventBus;
 
-        [ObservableProperty] private bool _isMenuOpen;
+        [ObservableProperty]
+        public partial bool IsMenuOpen { get; set; }
+
         private UserEntity? _currentUser;
 
-        [ObservableProperty] private UserEntity? _selectedFriend;
-        [ObservableProperty] private ObservableCollection<UserEntity> _friends = [];
+        [ObservableProperty]
+        public partial UserEntity? SelectedFriend { get; set; }
+        [ObservableProperty]
+        public partial ObservableCollection<UserEntity> Friends { get; set; } = [];
 
         [ObservableProperty] private string _currentUserName = "Авторизация...";
 
@@ -76,7 +80,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             if (msg?.Users == null) return;
 
-            // ReSharper disable once SuggestVarOrType_Elsewhere
+            
             var filtered = msg.Users
                 .Where(u => _currentUserId == null || u.Id != _currentUserId.Value)
                 .Select(u =>
@@ -142,7 +146,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             _eventBus.Publish(this, new FriendSelected(value, _currentUserId ?? Guid.Empty));
 
-            _eventBus.Publish(this, new TextChanged($"собеседник: {_selectedFriend?.FirstName??"unknown"}"));
+            _eventBus.Publish(this, new TextChanged($"собеседник: {SelectedFriend?.FirstName??"unknown"}"));
         }
 
         public void SetCurrentUser(UserEntity? currentUser)

@@ -13,13 +13,13 @@ namespace HomeNetOrm.DBProviders.Base
             if (!expected.TableName.Equals(actual.TableName, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Нельзя сравнивать разные таблицы: '{expected.TableName}' и '{actual.TableName}'");
 
-            SchemaDiff diff = new SchemaDiff { TableName = expected.TableName };
+            var diff = new SchemaDiff { TableName = expected.TableName };
 
-            Dictionary<string, ColumnSchema> expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
+            var expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
 
-            foreach (ColumnSchema actualCol in actual.Columns)
+            foreach (var actualCol in actual.Columns)
             {
-                if (!expectedMap.Remove(actualCol.Name, out ColumnSchema? expectedCol))
+                if (!expectedMap.Remove(actualCol.Name, out var expectedCol))
                 {
                     diff.MissingColumns.Add(actualCol);
                     continue;
@@ -36,7 +36,7 @@ namespace HomeNetOrm.DBProviders.Base
                 }
             }
 
-            diff.ExtraColumns = expectedMap.Values.ToList();
+            diff.ExtraColumns = [.. expectedMap.Values];
             return diff;
         }
 
@@ -63,8 +63,8 @@ namespace HomeNetOrm.DBProviders.Base
 
         private static bool IsTypeCompatible(string typeA, string typeB)
         {
-            string a = typeA.ToLowerInvariant();
-            string b = typeB.ToLowerInvariant();
+            var a = typeA.ToLowerInvariant();
+            var b = typeB.ToLowerInvariant();
 
             return (NumericAndBoolTypes.Any(a.Contains) && NumericAndBoolTypes.Any(b.Contains)) ||
                    (TextAndGuidTypes.Any(a.Contains) && TextAndGuidTypes.Any(b.Contains)) ||
@@ -73,8 +73,8 @@ namespace HomeNetOrm.DBProviders.Base
 
         private static bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
         {
-            string expStr = NormalizeDefaultValue(expected?.ToString() ?? string.Empty);
-            string actStr = NormalizeDefaultValue(actual?.ToString() ?? string.Empty);
+            var expStr = NormalizeDefaultValue(expected?.ToString() ?? string.Empty);
+            var actStr = NormalizeDefaultValue(actual?.ToString() ?? string.Empty);
 
             if (expStr == actStr) return true;
 
@@ -86,7 +86,7 @@ namespace HomeNetOrm.DBProviders.Base
 
         private static string NormalizeDefaultValue(string value)
         {
-            string str = value?.Trim().Trim('\'', '(', ')') ?? string.Empty;
+            var str = value?.Trim().Trim('\'', '(', ')') ?? string.Empty;
             return (string.IsNullOrEmpty(str) || str == "0" || str.Equals("false", StringComparison.CurrentCultureIgnoreCase)) ? "0" : str;
         }
 

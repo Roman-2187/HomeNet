@@ -30,7 +30,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 
         public void RecordPublish(object sender, Type messageType)
         {
-            string name = sender != null ? (sender is string str ? str : sender.GetType().Name) : "UnknownSource";
+            var name = sender != null ? (sender is string str ? str : sender.GetType().Name) : "UnknownSource";
             if (name == "Object" && sender is string sName) name = sName;
 
             var node = GetOrCreateNode(name);
@@ -51,7 +51,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
         public void RecordSubscribe(string componentName, Type messageType, string methodName, Type subscriberType)
         {
             var node = GetOrCreateNode(componentName);
-            string targetClass = subscriberType?.Name ?? "UnknownClass";
+            var targetClass = subscriberType?.Name ?? "UnknownClass";
 
             if (!node.Subscriptions.Any(s => s.MessageType == messageType && s.MethodName == methodName && s.TargetClassName == targetClass))
             {

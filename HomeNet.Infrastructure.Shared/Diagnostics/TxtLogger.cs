@@ -15,7 +15,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
 
         public TxtLogger(string logName = "app_debug")
         {
-            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug");
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug");
 
             _filePath = Path.Combine(folder, $"{logName}.txt");
 
@@ -34,7 +34,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
         public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0)
         {
             // Форматируем строку один раз через наш общий LogFormatter
-            string fullLine = LogFormatter.Format(message, memberName, filePath, lineNumber, isAutoLog: false);
+            var fullLine = LogFormatter.Format(message, memberName, filePath, lineNumber, isAutoLog: false);
 
             lock (_lock)
             {

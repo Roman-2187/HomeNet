@@ -20,10 +20,10 @@ namespace HomeNetOrm.Repositories.Remote
 
         public async Task<IEnumerable<DeletedRecordEntity>> GetDeletedSinceVersionAsync(string entityType, long lastVersion)
         {
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
 
-            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectSinceVersion(entityType, lastVersion);
+            var cmd = _sqlGenerator.GenerateSelectSinceVersion(entityType, lastVersion);
             return await db.QueryAsync<DeletedRecordEntity>(cmd.Sql, new { EntityType = entityType, Version = lastVersion });
         }
     }

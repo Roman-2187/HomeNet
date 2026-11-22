@@ -1,7 +1,6 @@
-using System;
 using Avalonia.Controls;
 
-namespace HomeNetAvalonia.Controls
+namespace HomeNetAvalonia.Controls.AdminControls
 {
     public partial class LogRenderControl : UserControl
     {

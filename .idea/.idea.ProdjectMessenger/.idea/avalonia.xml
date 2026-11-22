@@ -4,8 +4,25 @@
     <option name="projectPerEditor">
       <map>
         <entry key="HomeNetAvalonia/HomeNetAvalonia/App.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/AdminMenuControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/DeleteUsersControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/InspectorViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/LogRenderControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/SeedUsersViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/AdminControls/UsersTableControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/MainControls/StatusBarControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/MainControls/SystemButtons.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/MainControls/TitleBarControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/AuthViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/ChatViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/ContactsListViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/RegistrationViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/MainViews/MainView.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/MainViews/MainWindow.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Themes/ActionButtons.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Themes/Containers.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Themes/Fields.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Themes/SystemButtons.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
       </map>
     </option>
   </component>

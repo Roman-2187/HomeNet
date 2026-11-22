@@ -16,7 +16,7 @@ namespace HomeNetServices.Identity
             try
             {
                 // Инициализируем модель с новыми Guid-идентификаторами сущностей
-                FriendEntity friendLink = new FriendEntity
+                var friendLink = new FriendEntity
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
@@ -25,7 +25,7 @@ namespace HomeNetServices.Identity
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
 
-                bool success = await _friendRepository.AddFriendAsync(friendLink);
+                var success = await _friendRepository.AddFriendAsync(friendLink);
 
                 if (success)
                 {
@@ -45,7 +45,7 @@ namespace HomeNetServices.Identity
         {
             try
             {
-                IEnumerable<UserEntity> friends = await _friendRepository.GetFriendsForUserAsync(userId);
+                var friends = await _friendRepository.GetFriendsForUserAsync(userId);
                 _logger.LogInfo($"[Контакты] Список друзей для пользователя с GUID {userId} успешно извлечён из SQLite.");
                 return friends;
             }

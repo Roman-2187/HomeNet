@@ -5,9 +5,8 @@
               xmlns:di="using:HomeNet.DI"
            xmlns:models="using:HomeNet.Models.Shared.Entity"
 
-             xmlns:vm="using:HomeNetPresentation.ViewModels.AdminViews"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
-             x:Class="HomeNetAvalonia.Controls.DeleteUsersControl"
+             x:Class="HomeNetAvalonia.Controls.AdminControls.DeleteUsersControl"
             
              x:DataType="di:ComponentHub">
 
@@ -15,13 +14,8 @@
     <ContentControl DataContext="{StaticResource ComponentHub}" x:CompileBindings="False">
         
         <!-- 🔥 А вот здесь включаем жесткую типизацию обратно, но уже СТРОГО для вьюмодели удаления! -->
-        <Grid DataContext="{Binding DeleteUsersViewModel}" >
-            
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            
+        <Grid DataContext="{Binding DeleteUsersViewModel}" RowDefinitions="*,Auto">
+
             <Grid Grid.Row="0" >
                 <Grid.ColumnDefinitions>
                     <!-- Бан сжатия левой части меньше 200 -->
@@ -31,12 +25,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- ================= ЛЕВАЯ ЧАСТЬ (ЕДИНЫЙ ГРИД) ================= -->
-                <Grid Grid.Column="0" Margin="0,0,5,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <Grid Grid.Column="0" Margin="0,0,5,0" RowDefinitions="Auto,Auto,*">
 
                     <!-- 👑 ЗАГОЛОВОК -->
                     <TextBlock Grid.Row="0"
@@ -147,11 +136,7 @@
             </Grid>
 
             <!-- 🔥 НИЖНЯЯ ПАНЕЛЬ СТАТУСА И УПРАВЛЕНИЯ -->
-            <Grid Grid.Row="1" Margin="15,10,15,15">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <Grid Grid.Row="1" Margin="15,10,15,15" ColumnDefinitions="*,Auto">
 
                 <TextBlock Grid.Column="0"
                            Text="{Binding StatusMessage}"

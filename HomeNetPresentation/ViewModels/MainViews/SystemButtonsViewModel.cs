@@ -2,8 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.MainViews
 {
     /// <summary>
     /// Изолированная вьюмодель для системных кнопок окна (Свернуть, Развернуть, Закрыть).

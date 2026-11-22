@@ -3,11 +3,13 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Dto;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using static HomeNet.Network.Api.IUserApiClient;
 
 namespace HomeNet.Network.ApiClient
 {
+    [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
     public class UserApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus) : BaseApiClient(httpClient, logger), IUserApiClient
     {
         private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -30,7 +32,7 @@ namespace HomeNet.Network.ApiClient
                     return new AuthResponse(true, createdUser, null);
                 }
 
-                string errorMessage = response.StatusCode switch
+                var errorMessage = response.StatusCode switch
                 {
                     System.Net.HttpStatusCode.Conflict => "Этот Email уже занят.",
                     System.Net.HttpStatusCode.BadRequest => "Некорректные данные при регистрации.",
@@ -89,7 +91,7 @@ namespace HomeNet.Network.ApiClient
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Logger.LogWarning($"[UserApiClient] Сервер отклонил вход ({(int)response.StatusCode}): {errorContent}");
 
-                string errorMessage = response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                var errorMessage = response.StatusCode == System.Net.HttpStatusCode.Unauthorized
                     ? "Неверный Email или пароль."
                     : $"Ошибка сервера ({(int)response.StatusCode}).";
 
@@ -193,12 +195,12 @@ namespace HomeNet.Network.ApiClient
             {
                 Logger.LogInfo("[UserApiClient] Запрос всех пользователей...");
                 var response = await HttpClient.GetFromJsonAsync<List<UserEntity>>("/api/users");
-                return response ?? new List<UserEntity>();
+                return response ?? [];
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[UserApiClient] Ошибка получения списка: {ex.Message}");
-                return Array.Empty<UserEntity>();
+                return [];
             }
         }
 

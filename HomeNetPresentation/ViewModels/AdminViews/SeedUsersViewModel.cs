@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
@@ -7,15 +8,16 @@ using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetPresentation.TestData;
-using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
     /// <summary>
-    /// Вьюмодель модуля автоматического сидинга базы данных SiberNet.
+    /// Вьюмодель модуля автоматического сидинга базы данных HomeNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера навигации админки.
     /// </summary>
-    public partial class SeedUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    public partial class SeedUsersViewModel : MainViews.FormViewModelBase, IDisposable
     {
         private readonly IUserRepo _userRepository;
 
@@ -25,14 +27,14 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         [ObservableProperty]
         public partial bool IsSeedInProgress { get; set; }
 
-        public SeedUsersViewModel(IEventBus eventBus, IUserRepo userRepository, AdminNavigationManager navigation)
-            : base(eventBus, navigation)
+        public SeedUsersViewModel(IEventBus eventBus,ICastomLogger logger,IUserRepo userRepository )
+            : base(eventBus, logger)
         {
            _userRepository = userRepository;
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК 🧼
+       
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged? msg)
         {
@@ -44,8 +46,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        #endregion
-
+        
         [RelayCommand]
         private async Task ExecuteDataSeedingAsync()
         {
@@ -53,15 +54,15 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
             IsSeedInProgress = true;
             SeedStatusText = "⚡ Запуск сидинга... Инициализация транзакций...";
-            int addedCount = 0;
+            var addedCount = 0;
 
             try
             {
-                List<UserEntity> testUsers = DbSeedData.GetGeneratedUsers();
+                var testUsers = DbSeedData.GetGeneratedUsers();
 
-                foreach (UserEntity user in testUsers)
+                foreach (var user in testUsers)
                 {
-                    bool emailExists = await _userRepository.EmailExistsAsync(user.Email);
+                    var emailExists = await _userRepository.EmailExistsAsync(user.Email);
                     if (emailExists)
                     {
                         continue;
@@ -77,27 +78,26 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                     ? $"⚔️ Дисциплина наведена! База успешно заселена. Добавлено: {addedCount} юзеров."
                     : "🔒 Сидинг отклонён: Все тестовые пользователи уже находятся в SQLite.";
 
-                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged(SeedStatusText));
+                EventBus.Publish(this, new IStatusBarViewModel.TextChanged(SeedStatusText));
             }
             catch (Exception ex)
             {
                 SeedStatusText = $"❌ Критический сбой сидинга: {ex.Message}";
-                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged(SeedStatusText));
+                EventBus.Publish(this, new IStatusBarViewModel.TextChanged(SeedStatusText));
             }
             finally
             {
                 IsSeedInProgress = false;
             }
         }
-
-        #region 🛡️ СТЕРЕЛИЗАТОР ПАМЯТИ
+        
 
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
 
-        #endregion
+       
     }
 }

@@ -19,21 +19,21 @@ namespace HomeNetOrm.Schemes
         private void BuildCommonSchemas()
         {
             // 1. СХЕМА ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ (Users)
-            TableBuilder<UserEntity> users = BuildUsersSchema();
+            var users = BuildUsersSchema();
             Schemas.Add(users.Generate());
 
             // 2. СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (Messages)
-            TableBuilder<MessageEntity> messages = BuildMessagesSchema();
+            var messages = BuildMessagesSchema();
             Schemas.Add(messages.Generate());
 
             // 3. СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (Friends)
-            TableBuilder<FriendEntity> friends = BuildFriendsSchema();
+            var friends = BuildFriendsSchema();
             Schemas.Add(friends.Generate());
         }
 
         protected virtual TableBuilder<UserEntity> BuildUsersSchema()
         {
-            TableBuilder<UserEntity> builder = new TableBuilder<UserEntity>("Users");
+            var builder = new TableBuilder<UserEntity>("Users");
             builder.AddColumn(u => u.Id).AsPrimaryKey();
            
             builder.AddColumn(u => u.FirstName).HasLength(50).IsRequired();
@@ -48,7 +48,7 @@ namespace HomeNetOrm.Schemes
 
         protected virtual TableBuilder<MessageEntity> BuildMessagesSchema()
         {
-            TableBuilder<MessageEntity> builder = new TableBuilder<MessageEntity>("Messages");
+            var builder = new TableBuilder<MessageEntity>("Messages");
             builder.AddColumn(m => m.Id).AsPrimaryKey();
             builder.AddColumn(m => m.SenderId).IsRequired();
             builder.AddColumn(m => m.ReceiverId).IsRequired();
@@ -63,7 +63,7 @@ namespace HomeNetOrm.Schemes
 
         protected virtual TableBuilder<FriendEntity> BuildFriendsSchema()
         {
-            TableBuilder<FriendEntity> builder = new TableBuilder<FriendEntity>("Friends");
+            var builder = new TableBuilder<FriendEntity>("Friends");
             builder.AddColumn(f => f.Id).AsPrimaryKey();
             builder.AddColumn(f => f.UserId).IsRequired();
             builder.AddColumn(f => f.FriendId).IsRequired();

@@ -2,9 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-              xmlns:vm="using:HomeNetPresentation.ViewModels.AdminViews"
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="750"
-             x:Class="HomeNetAvalonia.Controls.InspectorViewControl">
+             x:Class="HomeNetAvalonia.Controls.AdminControls.InspectorViewControl">
 
     <!-- 📡 Подвязываем DataContext к твоей чистой InspectorViewModel из Хаба ресурсов -->
   <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">

@@ -41,14 +41,14 @@ namespace HomeNet.Server.Endpoints
 
                     var tombstones = (await deletedRecordRepository.GetDeletedSinceVersionAsync("Users", sinceVersion)).ToList();
 
-                    long maxUserVersion = updatedUsers.Count > 0 ? updatedUsers.Max(u => u.Version) : sinceVersion;
-                    long maxDeletedVersion = tombstones.Count > 0 ? tombstones.Max(d => d.Version) : sinceVersion;
-                    long latestVersion = Math.Max(sinceVersion, Math.Max(maxUserVersion, maxDeletedVersion));
+                    var maxUserVersion = updatedUsers.Count > 0 ? updatedUsers.Max(u => u.Version) : sinceVersion;
+                    var maxDeletedVersion = tombstones.Count > 0 ? tombstones.Max(d => d.Version) : sinceVersion;
+                    var latestVersion = Math.Max(sinceVersion, Math.Max(maxUserVersion, maxDeletedVersion));
 
                     var batch = new SyncBatchResponse<UserEntity>
                     {
                         UpdatedItems = updatedUsers,
-                        DeletedIds = tombstones.Select(t => t.Id).ToList(),
+                        DeletedIds = [.. tombstones.Select(t => t.Id)],
                         LatestVersion = latestVersion
                     };
 

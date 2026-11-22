@@ -35,9 +35,9 @@ namespace HomeNetOrm.DBProviders.Postgres
         {
             if (schema == null) throw new ArgumentNullException(nameof(schema));
 
-            string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
-            string triggerName = $"trg_{cleanTableName}_version";
-            string formattedTable = translator.FormatTable(schema);
+            var cleanTableName = schema.TableName.Replace("\"", "").ToLower();
+            var triggerName = $"trg_{cleanTableName}_version";
+            var formattedTable = translator.FormatTable(schema);
 
             var sb = new StringBuilder();
             sb.Append($"{translator.Translate(Create)} {translator.Translate(CmdType.Trigger)} {triggerName} ")

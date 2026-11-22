@@ -18,7 +18,7 @@ namespace HomeNetOrm.Extensions
         {
             ArgumentNullException.ThrowIfNull(expression);
 
-            MemberExpression? memberExpression = expression.Body as MemberExpression;
+            var memberExpression = expression.Body as MemberExpression;
 
             // Снимаем Boxing-обертку для значимых типов (int, bool, DateTime, Guid, Enums)
             if (memberExpression == null && expression.Body is UnaryExpression unaryExpression)
@@ -32,13 +32,13 @@ namespace HomeNetOrm.Extensions
             }
 
             // 🔥 ФИКС: Убираем затертый OriginalName. Оставляем только чистое C# имя поля
-            ColumnSchema schema = new ColumnSchema
+            var schema = new ColumnSchema
             {
                 Name = propertyInfo.Name // Адаптер в слое конвертации позже переведет это в нужный регистр на лету 🐍
             };
 
             // Распаковываем базовый тип, если свойство обернуто в Nullable<T>
-            Type propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+            var propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
 
             // 🔥 АВТОМАТИЗАЦИЯ ЕНАМОВ: Если свойство является Enum — сохраняем его в БД как Integer (число)
             if (propertyType.IsEnum)

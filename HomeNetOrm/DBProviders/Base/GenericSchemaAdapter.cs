@@ -1,6 +1,7 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,7 +11,7 @@ namespace HomeNetOrm.DBProviders.Base
     /// 🛠️ Статический адаптер схем.
     /// Единственный турникет системы. За один проход штампует иммутабельный пакет схем и собирает дефиниции.
     /// </summary>
-    internal static class GenericSchemaAdapter
+    internal static partial class GenericSchemaAdapter
     {
         private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
         private const string NotNull = "NOT NULL";
@@ -61,51 +62,55 @@ namespace HomeNetOrm.DBProviders.Base
         /// </summary>
         public static List<string> GetColumnDefinitions(IDbProviderSpecification spec, TableSchema schema)
         {
-            int primaryKeysCount = schema.Columns.Count(c => c.IsPrimaryKey);
+            var primaryKeysCount = schema.Columns.Count(c => c.IsPrimaryKey);
 
-            return schema.Columns.Select(col =>
-            {
-                if (col.Type == ColumnType.Unspecified)
-                    throw new InvalidOperationException($"Колонка '{col.Name}' не имеет заданного типа.");
-
-                // 🔥 ФИКС: Больше никакой самодеятельности с конвертацией регистров на лету!
-                // Имя берется "как есть" из схемы, потому что схема уже прошла через ToAdaptedSchemas()
-                var name = $"\"{col.Name}\"";
-
-                string sqlType = spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
-                var constraints = new List<string>();
-
-                if (col.DefaultValue != null)
+            return
+            [
+                .. schema.Columns.Select(col =>
                 {
-                    string defaultValue = col.Type switch
+                    if (col.Type == ColumnType.Unspecified)
+                        throw new InvalidOperationException($"Колонка '{col.Name}' не имеет заданного типа.");
+
+                    // 🔥 ФИКС: Больше никакой самодеятельности с конвертацией регистров на лету!
+                    // Имя берется "как есть" из схемы, потому что схема уже прошла через ToAdaptedSchemas()
+                    var name = $"\"{col.Name}\"";
+
+                    var sqlType = spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
+                    var constraints = new List<string>();
+
+                    if (col.DefaultValue != null)
                     {
-                        ColumnType.Varchar or ColumnType.DateTime => $"'{col.DefaultValue}'",
-                        _ => col.DefaultValue.ToString() ?? throw new InvalidOperationException()
-                    };
-                    constraints.Add($"DEFAULT {defaultValue}");
-                }
-                else if (col.IsCreatedAt)
-                {
-                    constraints.Add(DefaultCurrentTimestamp);
-                }
+                        var defaultValue = col.Type switch
+                        {
+                            ColumnType.Varchar or ColumnType.DateTime => $"'{col.DefaultValue}'",
+                            _ => col.DefaultValue.ToString() ?? throw new InvalidOperationException()
+                        };
+                        constraints.Add($"DEFAULT {defaultValue}");
+                    }
+                    else if (col.IsCreatedAt)
+                    {
+                        constraints.Add(DefaultCurrentTimestamp);
+                    }
 
-                if (!col.IsNullable) constraints.Add(NotNull);
+                    if (!col.IsNullable) constraints.Add(NotNull);
 
-                if (col.IsPrimaryKey && primaryKeysCount == 1)
-                    constraints.Add(PrimaryKey);
+                    if (col.IsPrimaryKey && primaryKeysCount == 1)
+                        constraints.Add(PrimaryKey);
 
-                if (col.IsPrimaryKey && col.IsAutoIncrement && sqlType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
-                {
-                    constraints.Add("AUTOINCREMENT");
-                }
+                    if (col is { IsPrimaryKey: true, IsAutoIncrement: true } &&
+                        sqlType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
+                    {
+                        constraints.Add("AUTOINCREMENT");
+                    }
 
-                if (col.IsUnique) constraints.Add(Unique);
+                    if (col.IsUnique) constraints.Add(Unique);
 
-                var parts = new List<string> { name, sqlType };
-                if (constraints.Any()) parts.Add(string.Join(" ", constraints));
+                    var parts = new List<string> { name, sqlType };
+                    if (constraints.Count != 0) parts.Add(string.Join(" ", constraints));
 
-                return string.Join(" ", parts);
-            }).ToList();
+                    return string.Join(" ", parts);
+                })
+            ];
         }
 
         // --- ВНУТРЕННИЕ ПРИВАТНЫЕ КИШКИ ТРАНСФОРМАЦИИ СТРОК ---
@@ -115,13 +120,13 @@ namespace HomeNetOrm.DBProviders.Base
             if (string.IsNullOrEmpty(name)) return name;
 
             var builder = new StringBuilder();
-            for (int i = 0; i < name.Length; i++)
+            for (var i = 0; i < name.Length; i++)
             {
-                char c = name[i];
+                var c = name[i];
                 if (char.IsUpper(c))
                 {
                     if (i > 0) builder.Append('_');
-                    builder.Append(char.ToLower(c));
+                    builder.Append(char.ToLower(c, CultureInfo.InvariantCulture));
                 }
                 else
                 {
@@ -133,18 +138,15 @@ namespace HomeNetOrm.DBProviders.Base
 
         private static string? ToCamelCase(string? name)
         {
-            if (string.IsNullOrEmpty(name)) return name;
+            if (string.IsNullOrEmpty(name) || !name.Contains('_') && char.IsUpper(name[0])) return name;
 
-            if (!name.Contains('_') && char.IsUpper(name[0]))
-                return name;
+            var safeName = char.ToUpper(name[0], CultureInfo.InvariantCulture) + name[1..];
 
-            string safeName = char.ToUpper(name[0]) + name.Substring(1);
+            return MyRegex().Replace(safeName, match => match.Groups[1].Value.ToUpperInvariant()).Replace("_", "");
 
-            return Regex.Replace(
-                safeName,
-                @"_([a-zA-Z])",
-                match => match.Groups[1].Value.ToUpper()
-            ).Replace("_", "");
         }
+
+        [GeneratedRegex(@"_([a-zA-Z])")]
+        private static partial Regex MyRegex();
     }
 }

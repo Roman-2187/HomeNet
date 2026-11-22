@@ -7,8 +7,10 @@
              xmlns:di="using:HomeNet.DI" 
               xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:controls="using:HomeNetAvalonia.Controls"
+             xmlns:userControls="clr-namespace:HomeNetAvalonia.Controls.UserControls"
+             xmlns:adminControls="clr-namespace:HomeNetAvalonia.Controls.AdminControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
-             x:Class="HomeNetAvalonia.Controls.MainContentZoneControl"
+             x:Class="HomeNetAvalonia.Controls.MainControls.MainContentZoneControl"
              x:DataType="di:ComponentHub">
 
     <UserControl.Resources>
@@ -40,7 +42,7 @@
                 Converter={StaticResource EqualityConverter},
                 ConverterParameter={x:Static enums:MainTab.AdminZone}}">
                 
-                <controls:AdminMenuControl />
+                <adminControls:AdminMenuControl />
             </Border>
 
             <!-- 🖥️ МАКРО-ЭКРАН 3: ГЛАВНЫЙ ОБЩИЙ ХОЛСТ КЛИЕНТА (Вход, Регистрация, Чат) -->
@@ -53,7 +55,7 @@
                 ConverterParameter={x:Static enums:MainTab.ClientZone}}">
                 
                 <!-- 🦾 А здесь UserViewControl теперь без проблем подхватит ComponentHub.UserViewModel! -->
-                <controls:UserViewControl HorizontalAlignment="Stretch" 
+                <userControls:UserViewControl HorizontalAlignment="Stretch" 
                                           VerticalAlignment="Stretch"/>
             </Border>
             

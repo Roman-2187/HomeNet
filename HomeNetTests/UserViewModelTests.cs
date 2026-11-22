@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetPresentation.Serviсes;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.MainViews;
 using Moq;
 using Assert = Xunit.Assert;
 
@@ -46,7 +47,7 @@ namespace HomeNetTests
 
             // Инициализируем систему (они сами подписываются на мок шины)
             UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
-            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Проверяем, что все подписки успешно перехвачены моком
             Assert.NotNull(navigatorOpenRegCallback);
@@ -95,7 +96,7 @@ namespace HomeNetTests
 
             // Инициализируем компоненты
             UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
-            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Проверяем, что подписки успешно перехвачены
             Assert.NotNull(navigatorOpenAuthCallback);
@@ -128,7 +129,7 @@ namespace HomeNetTests
             // Каждый раз, когда кто-то (Навигатор или ЮзерВМ) вызывает Subscribe, мы добавляем его колбэк в список.
             eventBusMock
                 .Setup(bus => bus.Subscribe(It.IsAny<Action<IUserVm.UserSignedIn>>()))
-                .Callback<Action<IUserVm.UserSignedIn>>(action => signedInCallbacks.Add(action));
+                .Callback<Action<IUserVm.UserSignedIn>>(signedInCallbacks.Add);
 
             // Перехватываем подписку UserViewModel на изменение вкладок
             eventBusMock
@@ -149,7 +150,7 @@ namespace HomeNetTests
 
             // Инициализируем компоненты (они внутри себя вызовут Subscribe, и наши списки заполнятся)
             UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
-            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Создаем реальные объекты данных для отправки
             UserEntity realUser = new();
@@ -157,7 +158,7 @@ namespace HomeNetTests
 
             // 2. ACT (Действие)
             // Имитируем падение события UserSignedIn в шину — оповещаем ВСЕХ зарегистрированных подписчиков
-            foreach (Action<IUserVm.UserSignedIn> callback in signedInCallbacks)
+            foreach (var callback in signedInCallbacks)
             {
                 callback.Invoke(realMessage);
             }

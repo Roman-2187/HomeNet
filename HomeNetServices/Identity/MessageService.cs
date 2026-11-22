@@ -15,7 +15,7 @@ namespace HomeNetServices.Identity
             if (string.IsNullOrWhiteSpace(text))
                 return new ChatVerdict(false, "Сообщение не может быть пустым", null);
 
-            MessageEntity entity = new MessageEntity
+            var entity = new MessageEntity
             {
                 Id = Guid.NewGuid(),
                 SenderId = senderId,
@@ -30,7 +30,7 @@ namespace HomeNetServices.Identity
             try
             {
                 // 🔥 Отправляем через API (API опубликует факт, SyncService запишет в SQLite)
-                bool success = await _apiClient.PushMessageAsync(entity);
+                var success = await _apiClient.PushMessageAsync(entity);
 
                 return success
                     ? new ChatVerdict(true, string.Empty, entity) 
@@ -45,7 +45,7 @@ namespace HomeNetServices.Identity
         public async Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId)
         {
           
-                IEnumerable<MessageEntity> allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
+                var allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
             
            

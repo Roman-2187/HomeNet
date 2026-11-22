@@ -29,23 +29,22 @@ namespace HomeNetAvalonia.Behaviors
 
         private static void OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (sender is Control control)
+            if (sender is not Control control)
             {
-                // 🔥 Переводим фокус на сам элемент (клик по фону)
-                // Это автоматически снимет фокус с TextBox
-                if (control.Focusable)
-                {
-                    control.Focus();
-                }
-                else
-                {
-                    // Если элемент не фокусируемый, ищем родительское окно
-                    var topLevel = TopLevel.GetTopLevel(control);
-                    if (topLevel != null)
-                    {
-                        topLevel.FocusManager?.Focus(null); // или используем другой фокусируемый элемент
-                    }
-                }
+                return;
+            }
+
+            // 🔥 Переводим фокус на сам элемент (клик по фону)
+            // Это автоматически снимет фокус с TextBox
+            if (control.Focusable)
+            {
+                control.Focus();
+            }
+            else
+            {
+                // Если элемент не фокусируемый, ищем родительское окно
+                var topLevel = TopLevel.GetTopLevel(control);
+                topLevel?.FocusManager?.Focus(null); // или используем другой фокусируемый элемент
             }
         }
     }

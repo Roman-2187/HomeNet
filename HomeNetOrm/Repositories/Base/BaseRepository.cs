@@ -36,14 +36,14 @@ namespace HomeNetOrm.Repositories.Base
         // 🔥 УПРАВЛЕНИЕ ПУЛОМ СОЕДИНЕНИЙ: Чисто, асинхронно, без утечек
         public async Task<TResult> ExecuteAsync<TResult>(Func<DbConnection, Task<TResult>> query)
         {
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await query(db);
         }
 
         public async Task ExecuteAsync(Func<DbConnection, Task> command)
         {
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             await command(db);
         }

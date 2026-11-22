@@ -20,9 +20,9 @@ namespace HomeNetServices.Identity
 
         public virtual async Task<ValidationResult> CheckEmailOnBlurAsync(string email)
         {
-            string cleanEmail = email?.Replace(" ", "").Trim() ?? string.Empty;
+            var cleanEmail = email?.Replace(" ", "").Trim() ?? string.Empty;
 
-            ValidationResult formatCheck = ValidateEmailFormat(cleanEmail);
+            var formatCheck = ValidateEmailFormat(cleanEmail);
             if (formatCheck.State == Error)
             {
                 ClearEmailCache();
@@ -39,8 +39,8 @@ namespace HomeNetServices.Identity
             // Если раньше была ошибка (или это новый Email) — идем в API проверять заново
             try
             {
-                bool exists = await ApiClient.CheckEmailExistsAsync(cleanEmail);
-                ValidationResult result = InterpretEmailExistence(exists);
+                var exists = await ApiClient.CheckEmailExistsAsync(cleanEmail);
+                var result = InterpretEmailExistence(exists);
 
                 if (result.State == Success) CacheEmailResult(cleanEmail, result);
                 else ClearEmailCache();

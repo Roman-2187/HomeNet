@@ -15,7 +15,7 @@ namespace HomeNetOrm.Schemes
 
 
 
-            TableBuilder<DeviceSyncEntity> deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
+            var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
             deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Актуальный SessionId
             deviceSync.AddColumn(d => d.UserId).IsRequired(); // Гарантирует 1 актуальную сессию на пользователя
@@ -27,7 +27,7 @@ namespace HomeNetOrm.Schemes
 
 
             // 2. Серверная таблица надгробий (Tombstones) с отслеживанием версий
-            TableBuilder<DeletedRecordEntity> deletedRecords = new TableBuilder<DeletedRecordEntity>("DeletedRecords")
+            var deletedRecords = new TableBuilder<DeletedRecordEntity>("DeletedRecords")
                 .WithVersionTracking();
 
             deletedRecords.AddColumn(d => d.Id).AsPrimaryKey();
@@ -40,7 +40,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
-            TableBuilder<UserEntity> builder = base.BuildUsersSchema().WithVersionTracking();
+            var builder = base.BuildUsersSchema().WithVersionTracking();
             builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
             builder.AddColumn(f => f.ServerCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
@@ -50,7 +50,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<MessageEntity> BuildMessagesSchema()
         {
-            TableBuilder<MessageEntity> builder = base.BuildMessagesSchema().WithVersionTracking();
+            var builder = base.BuildMessagesSchema().WithVersionTracking();
 
             builder.AddColumn(m => m.ServerCreatedAt);
             builder.AddColumn(m => m.UpdatedAt);
@@ -60,7 +60,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<FriendEntity> BuildFriendsSchema()
         {
-            TableBuilder<FriendEntity> builder = base.BuildFriendsSchema().WithVersionTracking();
+            var builder = base.BuildFriendsSchema().WithVersionTracking();
             builder.AddColumn(f => f.Version);
             return builder;
         }

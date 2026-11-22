@@ -17,7 +17,7 @@ namespace HomeNetAvalonia.Behaviors
         static AutoScrollBehavior()
         {
             // Регистрируем глобальный перехватчик изменений этого свойства для ScrollViewer
-            EnableAutoScrollProperty.Changed.AddClassHandler<ScrollViewer>((scrollViewer, args) => OnEnableAutoScrollChanged(scrollViewer, args));
+            EnableAutoScrollProperty.Changed.AddClassHandler<ScrollViewer>(OnEnableAutoScrollChanged);
         }
 
         public static bool GetEnableAutoScroll(ScrollViewer element) => element.GetValue(EnableAutoScrollProperty);
@@ -25,30 +25,34 @@ namespace HomeNetAvalonia.Behaviors
 
         private static void OnEnableAutoScrollChanged(ScrollViewer scrollViewer, AvaloniaPropertyChangedEventArgs e)
         {
-            if (e.NewValue is bool newValue)
+            if (e.NewValue is not bool newValue)
             {
-                if (newValue)
-                {
-                    // 🔥 В Avalonia вместо изменения размера панели мы ловим ивент изменения прокрутки самого ScrollViewer
-                    scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
-                }
-                else
-                {
-                    scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
-                }
+                return;
+            }
+
+            if (newValue)
+            {
+                // 🔥 В Avalonia вместо изменения размера панели мы ловим ивент изменения прокрутки самого ScrollViewer
+                scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
+            }
+            else
+            {
+                scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
             }
         }
 
         private static void ScrollViewer_ScrollChanged(object? sender, ScrollChangedEventArgs e)
         {
-            if (sender is ScrollViewer scrollViewer)
+            if (sender is not ScrollViewer scrollViewer)
             {
-                // Если размер контента по вертикали изменился (прилетело новое сообщение)
-                if (e.ExtentDelta.Y != 0)
-                {
-                    // Мёртвый автоскролл до упора вниз встроенным методом Авалонии
-                    scrollViewer.ScrollToEnd();
-                }
+                return;
+            }
+
+            // Если размер контента по вертикали изменился (прилетело новое сообщение)
+            if (e.ExtentDelta.Y != 0)
+            {
+                // Мёртвый автоскролл до упора вниз встроенным методом Авалонии
+                scrollViewer.ScrollToEnd();
             }
         }
     }

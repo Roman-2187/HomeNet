@@ -22,7 +22,7 @@ namespace HomeNetOrm.DBProviders.Postgres
             if (string.IsNullOrEmpty(schema.TableName) || schema.Columns == null)
                 return string.Empty;
 
-            var pkColumns = schema.Columns.Where(c => c != null && c.IsPrimaryKey).ToList();
+            var pkColumns = schema.Columns.Where(c => c is { IsPrimaryKey: true }).ToList();
             var sb = new StringBuilder();
 
             // 🧙‍♂️ Чистый, читаемый SQL без лишней шелухи транслятора
@@ -48,7 +48,7 @@ namespace HomeNetOrm.DBProviders.Postgres
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Имя таблицы пустое", nameof(tableName));
 
-            string cleanName = tableName.Trim('"', '\'').ToLower();
+            var cleanName = tableName.Trim('"', '\'').ToLower();
 
             // Идеально плоский текст, который Dapper выполнит со скоростью света
             var sql = $"SELECT COUNT(*) FROM {MetaTablesRegistry} WHERE table_schema = '{DefaultSchemaName}' AND table_name = @CleanName;";

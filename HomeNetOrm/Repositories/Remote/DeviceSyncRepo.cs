@@ -24,8 +24,8 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task<DeviceSyncEntity> UpsertSessionAsync(Guid sessionId, Guid userId)
         {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            DeviceSyncEntity syncData = new DeviceSyncEntity
+            var now = DateTimeOffset.UtcNow;
+            var syncData = new DeviceSyncEntity
             {
                 Id = sessionId,
                 UserId = userId,
@@ -33,9 +33,9 @@ namespace HomeNetOrm.Repositories.Remote
                 UpdatedAt = now
             };
 
-            SqlQueryCommand cmd = _sqlGenerator.GenerateSessionUpsert();
+            var cmd = _sqlGenerator.GenerateSessionUpsert();
 
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
 
@@ -47,9 +47,9 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task<DeviceSyncEntity?> GetByIdAsync(Guid sessionId)
         {
-            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectById(sessionId);
+            var cmd = _sqlGenerator.GenerateSelectById(sessionId);
 
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<DeviceSyncEntity>(cmd.Sql, cmd.Params);
         }
@@ -61,8 +61,8 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task<DeviceSyncEntity> CreateSessionAsync(Guid sessionId, Guid userId)
         {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            DeviceSyncEntity syncData = new DeviceSyncEntity
+            var now = DateTimeOffset.UtcNow;
+            var syncData = new DeviceSyncEntity
             {
                 Id = sessionId,
                 UserId = userId,
@@ -70,9 +70,9 @@ namespace HomeNetOrm.Repositories.Remote
                 UpdatedAt = now
             };
 
-            SqlQueryCommand cmd = _sqlGenerator.GenerateSessionInsert();
+            var cmd = _sqlGenerator.GenerateSessionInsert();
 
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
 
@@ -85,9 +85,9 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task DeleteSessionAsync(Guid sessionId)
         {
-            SqlQueryCommand cmd = _sqlGenerator.GenerateDeleteById(sessionId);
+            var cmd = _sqlGenerator.GenerateDeleteById(sessionId);
 
-            await using DbConnection db = _connectionFactory();
+            await using var db = _connectionFactory();
             if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }

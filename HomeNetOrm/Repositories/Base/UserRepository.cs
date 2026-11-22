@@ -39,7 +39,7 @@ namespace HomeNetOrm.Repositories.Base
         {
             if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
 
-            SqlQueryCommand cmd = _userSqlGenerator.GenerateInsert();
+            var cmd = _userSqlGenerator.GenerateInsert();
 
            
 
@@ -66,9 +66,9 @@ namespace HomeNetOrm.Repositories.Base
         public async Task UpdateAsync(UserEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
-            SqlQueryCommand cmd = _userSqlGenerator.GenerateUpdate();
+            var cmd = _userSqlGenerator.GenerateUpdate();
 
-            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity)));
 
             if (rowsAffected > 0)
@@ -79,9 +79,9 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task DeleteByIdAsync(Guid id)
         {
-            SqlQueryCommand cmd = _userSqlGenerator.GenerateDelete(id);
+            var cmd = _userSqlGenerator.GenerateDelete(id);
 
-            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)
@@ -92,7 +92,7 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
-            SqlQueryCommand cmd = _userSqlGenerator.GenerateSelectById(id);
+            var cmd = _userSqlGenerator.GenerateSelectById(id);
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params)));
@@ -103,7 +103,7 @@ namespace HomeNetOrm.Repositories.Base
 
            
 
-            SqlQueryCommand cmd = _userSqlGenerator.GenerateSelectAll();
+            var cmd = _userSqlGenerator.GenerateSelectAll();
 
            
 

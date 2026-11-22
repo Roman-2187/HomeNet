@@ -35,7 +35,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         // ReSharper disable once MemberCanBePrivate.Global
         public partial Guid? SelectedFriendId { get; set; }
 
-        [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
+        [ObservableProperty] private ObservableCollection<MessageEntity> _messages = [];
 
         public ChatViewModel(IEventBus eventBus, IMessageService messageService)
         {
@@ -49,7 +49,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
+            _eventBus.SubscribeAsync<IContactsVm.FriendSelected>(OnFriendSelected);
             _eventBus.Subscribe<IMessageRepo.Saved>(OnMessageSaved);
             
             // 🔥 Подписываемся на логаут, чтобы вычистить чат
@@ -100,7 +100,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
-        private async void OnFriendSelected(IContactsVm.FriendSelected msg)
+        private async Task  OnFriendSelected(IContactsVm.FriendSelected msg)
         {
             if (msg?.Friend == null) return;
 
@@ -113,15 +113,17 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             try
             {
-                IEnumerable<MessageEntity> history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
-                foreach (MessageEntity m in history)
+                var history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
+                var messageEntities = history.ToList();
+                foreach (var m in messageEntities)
                 {
                     m.IsOutgoing = m.SenderId == CurrentUserId;
                 }
-                Messages = new ObservableCollection<MessageEntity>(history);
+                Messages = [.. messageEntities];
             }
             catch (Exception ex)
             {
+                // ReSharper disable once MethodHasAsyncOverload
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ИСТОРИИ]: {ex.Message}"));
             }
         }
@@ -138,6 +140,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
             if (!verdict.IsValid)
             {
+                // ReSharper disable once MethodHasAsyncOverload
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ЧАТА]: {verdict.ErrorMessage}"));
             }
         }
@@ -146,15 +149,17 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
-            if ((msg.Message.SenderId == SelectedFriendId.Value && msg.Message.ReceiverId == CurrentUserId) ||
-                (msg.Message.SenderId == CurrentUserId && msg.Message.ReceiverId == SelectedFriendId.Value))
+            if ((msg.Message.SenderId != SelectedFriendId.Value || msg.Message.ReceiverId != CurrentUserId) &&
+                (msg.Message.SenderId != CurrentUserId || msg.Message.ReceiverId != SelectedFriendId.Value))
             {
-                msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
+                return;
+            }
 
-                if (!Enumerable.Any<MessageEntity>(Messages, m => m.Id == msg.Message.Id))
-                {
-                    Messages.Add(msg.Message);
-                }
+            msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
+
+            if (Messages.All(m => m.Id != msg.Message.Id))
+            {
+                Messages.Add(msg.Message);
             }
         }
 
@@ -167,7 +172,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
+            _eventBus.UnsubscribeAsync<IContactsVm.FriendSelected>(OnFriendSelected);
+
             _eventBus.Unsubscribe<IMessageRepo.Saved>(OnMessageSaved);
             _eventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogout);
         }

@@ -27,21 +27,16 @@ namespace HomeNetAvalonia.Animators
         {
             Dispatcher.UIThread.Post(() =>
             {
-                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    var window = desktop.MainWindow;
-                    if (window == null) return;
-
-                    // Простое переключение состояний: если развернуто — сжимаем, если нормальное — на весь экран
-                    if (window.WindowState == WindowState.Maximized)
-                    {
-                        window.WindowState = WindowState.Normal;
-                    }
-                    else
-                    {
-                        window.WindowState = WindowState.Maximized;
-                    }
+                    return;
                 }
+
+                var window = desktop.MainWindow;
+                if (window == null) return;
+
+                // Простое переключение состояний: если развернуто — сжимаем, если нормальное — на весь экран
+                window.WindowState = window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
             });
         }
 

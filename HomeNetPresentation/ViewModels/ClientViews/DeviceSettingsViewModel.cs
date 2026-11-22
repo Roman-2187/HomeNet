@@ -1,14 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
-using HomeNetCore.Interfaces.ViewModels.MainZone;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetPresentation.ViewModels.MainViews;
+using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IDeviceSettingsVM;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
-using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
+
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
@@ -16,41 +17,45 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     /// Вьюмодель экрана настроек устройства и управления активной сессией.
     /// Перехватывает события авторизации, управляет автовходом и очисткой сессии! 🧼
     /// </summary>
-    public partial class DeviceSettingsViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
+    public partial class DeviceSettingsViewModel : FormViewModelBase
     {
         private readonly IDeviceSettingsService _deviceSettingsService;
-        private readonly ICastomLogger _logger;
         private readonly IUserRepo _userRepository;
 
-        [ObservableProperty] private bool _isRememberMeChecked = true;
-        [ObservableProperty] private string _deviceIdDisplay = "Загрузка...";
-        [ObservableProperty] private string _currentSessionEmail = "Гостевой режим";
+        [ObservableProperty]
+        
+        public partial bool IsRememberMeChecked { get; set; } = true;
+
+        [ObservableProperty]
+        public partial string DeviceIdDisplay { get; set; } = "Загрузка...";
+
+        [ObservableProperty]
+        public partial string CurrentSessionEmail { get; set; } = "Гостевой режим";
 
         public DeviceSettingsViewModel(
-            IDeviceSettingsService deviceSettingsService,
-            IUserRepo userRepository,
             IEventBus eventBus,
             ICastomLogger logger,
-            UserNavigationManager navigation) : base(eventBus, navigation)
+            IDeviceSettingsService deviceSettingsService,
+            IUserRepo userRepository) : base(eventBus,logger)
         {
             _deviceSettingsService = deviceSettingsService;
           _userRepository = userRepository;
-            _logger = logger;
+            Logger = logger;
 
             // Подписываемся на успех входа/регистрации
-            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSessionActivated);
-            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSessionActivated);
+            EventBus.SubscribeAsync<UserSignedIn>(OnUserSessionActivated);
+            EventBus.SubscribeAsync<UserSignedUp>(OnUserSessionActivated);
 
             // 🔥 Обязательно слушаем разлогин, чтобы обнулить данные сессии
-            _eventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutRequested);
+            EventBus.Subscribe<LogoutClient>(OnLogoutRequested);
             // Оставляешь старые подписки как есть
-            _eventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutRequested);
+            EventBus.Subscribe<LogoutClient>(OnLogoutRequested);
 
             // 🔥 Для админа подписываешься через лямбду, передавая null вместо клиентского сообщения
-            _eventBus.Subscribe<IAdminVm.LogoutAdmin>(_ => OnLogoutRequested(null!));
+            EventBus.Subscribe<IAdminVm.LogoutAdmin>(_ => OnLogoutRequested(null!));
 
 
-            _eventBus.Subscribe<InfrastructureReady>(OnInfrastructureReady);
+            EventBus.Subscribe<InfrastructureReady>(OnInfrastructureReady);
 
            
         }
@@ -58,7 +63,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         private void OnInfrastructureReady(InfrastructureReady msg)
         {
-            _logger.LogInfo("[AutoLogin] Получен сигнал, что база готова. Запускаем проверку сессии.");
+            Logger.LogInfo("[AutoLogin] Получен сигнал, что база готова. Запускаем проверку сессии.");
 
          // Инициализация железа
             Task.Run(LoadHardwareIdAsync);
@@ -70,17 +75,17 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         private async Task LoadHardwareIdAsync()
         {
-            Guid deviceId = await _deviceSettingsService.GetDeviceIdAsync();
-            DeviceIdDisplay = deviceId.ToString().ToUpper();
+            var deviceId = await _deviceSettingsService.GetDeviceIdAsync();
+            DeviceIdDisplay = deviceId.ToString().ToUpperInvariant();
         }
 
         private async Task TryAutoLoginAsync()
         {
             try
             {
-                _logger.LogInfo("[AutoLogin] Проверяем наличие сохраненной сессии на устройстве...");
+                Logger.LogInfo("[AutoLogin] Проверяем наличие сохраненной сессии на устройстве...");
 
-                SettingsEntity? settings = await _deviceSettingsService.GetCurrentSettingsAsync();
+                var settings = await _deviceSettingsService.GetCurrentSettingsAsync();
 
                 // Проверяем наличие активной сессии без пароля!
                 if (settings == null ||
@@ -88,39 +93,39 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                     settings.UserId == Guid.Empty ||
                     string.IsNullOrEmpty(settings.Email))
                 {
-                    _logger.LogInfo("[AutoLogin] Чистый запуск. Сохраненной сессии пользователя нет.");
+                    Logger.LogInfo("[AutoLogin] Чистый запуск. Сохраненной сессии пользователя нет.");
                     return;
                 }
 
-                _logger.LogInfo($"[AutoLogin] Найдена сессия {settings.Id} для {settings.Email}. Загружаем профиль из SQLite...");
+                Logger.LogInfo($"[AutoLogin] Найдена сессия {settings.Id} для {settings.Email}. Загружаем профиль из SQLite...");
 
-                UserEntity? localUser = await _userRepository.GetByIdAsync(settings.UserId);
+                var localUser = await _userRepository.GetByIdAsync(settings.UserId);
 
                 if (localUser != null)
                 {
                     localUser.SessionId = settings.Id;
-                    _logger.LogInfo("[AutoLogin] Сессия валидна. Генерируем событие входа для всей экосистемы SiberNet.");
+                    Logger.LogInfo("[AutoLogin] Сессия валидна. Генерируем событие входа для всей экосистемы SiberNet.");
 
-                    _eventBus.Publish(this, new IUserVm.UserSignedIn(localUser));
-                    _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("[AutoLogin] выполнен вход"));
+                    EventBus.Publish(this, new UserSignedIn(localUser));
+                    EventBus.Publish(this, new TextChanged("[AutoLogin] выполнен вход"));
                 }
                 else
                 {
-                    _logger.LogWarning("[AutoLogin] Профиль пользователя не найден в локальной базе.");
+                    Logger.LogWarning("[AutoLogin] Профиль пользователя не найден в локальной базе.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[AutoLogin] Сбой авто-авторизации: {ex.Message}");
+                Logger.LogError($"[AutoLogin] Сбой авто-авторизации: {ex.Message}");
             }
         }
 
-        private async void OnUserSessionActivated(object msg)
+        private async Task OnUserSessionActivated(object msg)
         {
-            UserEntity? user = msg switch
+            var user = msg switch
             {
-                IUserVm.UserSignedIn signIn => signIn.User,
-                IUserVm.UserSignedUp signUp => signUp.User,
+                UserSignedIn signIn => signIn.User,
+                UserSignedUp signUp => signUp.User,
                 _ => null
             };
 
@@ -131,7 +136,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 if (CurrentSessionEmail == user.Email) return;
 
                 CurrentSessionEmail = user.Email ?? "Авторизован";
-                Guid appDeviceId = await _deviceSettingsService.GetDeviceIdAsync();
+                var appDeviceId = await _deviceSettingsService.GetDeviceIdAsync();
 
                 // Если регистрация прошла с сервером — помечаем как синхронизированного, чтобы SyncBatchFactory не слал дубль!
                 if (user.SessionId != Guid.Empty)
@@ -146,13 +151,13 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                     await _deviceSettingsService.SaveSessionAsync(user.SessionId, user.Id, user.Email!);
                 }
 
-                _logger.LogInfo($"[Сессия -> VM] Локальный SQLite обновлен (SessionId: {user.SessionId}). Даем отмашку синхронизатору.");
+                Logger.LogInfo($"[Сессия -> VM] Локальный SQLite обновлен (SessionId: {user.SessionId}). Даем отмашку синхронизатору.");
 
-                _eventBus.Publish(this, new IDeviceSettingsVM.SessionPersisted(appDeviceId, user.Id));
+                EventBus.Publish(this, new SessionPersisted(appDeviceId, user.Id));
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Сессия -> VM] Ошибка при обработке активации сессии: {ex.Message}");
+                Logger.LogError($"[Сессия -> VM] Ошибка при обработке активации сессии: {ex.Message}");
             }
         }
 
@@ -161,11 +166,11 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         /// <summary>
         /// 🔥 Перехватчик ЛОГАУТА: Обнуляет записанные данные в текущей сессии
         /// </summary>
-        private async void OnLogoutRequested(IUserVm.LogoutClient msg)
+        private async void OnLogoutRequested(LogoutClient msg)
         {
             try
             {
-                _logger.LogInfo("[Сессия -> VM] Поймали LogoutClient. Выжигаем сохраненную сессию из настроек.");
+                Logger.LogInfo("[Сессия -> VM] Поймали LogoutClient. Выжигаем сохраненную сессию из настроек.");
 
                 // Стираем данные из таблицы настроек устройства
                 await _deviceSettingsService.ClearSessionAsync();
@@ -174,7 +179,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Сессия -> VM] Ошибка при очистке сессии при разлогине: {ex.Message}");
+                Logger.LogError($"[Сессия -> VM] Ошибка при очистке сессии при разлогине: {ex.Message}");
             }
         }
 
@@ -182,9 +187,9 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSessionActivated);
-            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSessionActivated);
-            _eventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutRequested);
+            EventBus.UnsubscribeAsync<UserSignedIn>(OnUserSessionActivated);
+            EventBus.UnsubscribeAsync<UserSignedUp>(OnUserSessionActivated);
+            EventBus.Unsubscribe<LogoutClient>(OnLogoutRequested);
         }
     }
 }

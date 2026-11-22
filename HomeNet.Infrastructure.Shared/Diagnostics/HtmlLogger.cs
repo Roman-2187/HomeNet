@@ -24,7 +24,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
         /// </summary>
         public HtmlLogger(string logName = "app_debug")
         {
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             _debugFolderPath = Path.Combine(desktopPath, "debug");
             _htmlPath = Path.Combine(_debugFolderPath, $"{logName}.html");
 
@@ -43,12 +43,12 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
         public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0)
         {
             // 1. Вытаскиваем имя класса из пути к файлу
-            string className = string.IsNullOrEmpty(filePath)
+            var className = string.IsNullOrEmpty(filePath)
                 ? "UnknownClass"
                 : Path.GetFileNameWithoutExtension(filePath).Split('.').Last() ?? "Unknown";
 
             // 2. Вытаскиваем имя папки (Наш архитектурный Namespace) прямо на месте вызова
-            string detectedNamespace = "Core";
+            var detectedNamespace = "Core";
             if (!string.IsNullOrEmpty(filePath))
             {
                 var directory = Path.GetDirectoryName(filePath);
@@ -71,11 +71,11 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
                     // КАНАЛ ВЫВОДА: Пишем строго в интерактивный HTML-журнал с оригинальной красотой
                     EnsureHtmlHeaderInitialized(Path.GetFileNameWithoutExtension(_htmlPath));
 
-                    string cssClass = level.ToString().ToLower();
-                    string safeMessage = message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
-                    string htmlLine = $"        <span class='log-row {cssClass}'>[{timestamp}] [{levelStr}] [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {safeMessage}</span>{Environment.NewLine}";
+                    var cssClass = level.ToString().ToLower();
+                    var safeMessage = message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+                    var htmlLine = $"        <span class='log-row {cssClass}'>[{timestamp}] [{levelStr}] [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {safeMessage}</span>{Environment.NewLine}";
 
-                    byte[] bytes = Encoding.UTF8.GetBytes(htmlLine);
+                    var bytes = Encoding.UTF8.GetBytes(htmlLine);
                     using var stream = new FileStream(_htmlPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096, FileOptions.WriteThrough);
                     stream.Write(bytes, 0, bytes.Length);
                 }

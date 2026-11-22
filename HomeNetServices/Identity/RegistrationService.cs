@@ -18,7 +18,7 @@ namespace HomeNetServices.Identity
 
         public async Task<Verdict> RegisterUserAsync(UserEntity user)
         {
-            List<ValidationResult> validationResults = ValidateInput(user);
+            var validationResults = ValidateInput(user);
             ApplyCachedEmailCheck(user.Email, validationResults);
 
             if (HasErrors(validationResults))
@@ -31,7 +31,7 @@ namespace HomeNetServices.Identity
             user.SessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(user.Id);
 
             // 2. Отправляем полностью подготовленного юзера на сервер
-            IUserApiClient.AuthResponse pushResult = await ApiClient.RegisterUserAsync(user);
+            var pushResult = await ApiClient.RegisterUserAsync(user);
 
             if (pushResult is { IsSuccess: true, User: not null })
             {
@@ -39,18 +39,18 @@ namespace HomeNetServices.Identity
                 return new Verdict(true, validationResults, pushResult.User);
             }
 
-            ValidationResult errorResult = SetResult(EmailType,Error,pushResult.ErrorMessage 
-                                                                     ?? "Не удалось зарегистрировать аккаунт.");
+            var errorResult = SetResult(EmailType,Error,pushResult.ErrorMessage 
+                                                        ?? "Не удалось зарегистрировать аккаунт.");
             
             return new Verdict(false, [errorResult]);
         }
 
         private List<ValidationResult> ValidateInput(UserEntity input)
         {
-            List<ValidationResult> results = new List<ValidationResult>();
+            var results = new List<ValidationResult>();
 
-            ValidationResult nameRes = ValidateUserName(input.FirstName);
-            ValidationResult emailRes = ValidateEmailFormat(input.Email);
+            var nameRes = ValidateUserName(input.FirstName);
+            var emailRes = ValidateEmailFormat(input.Email);
             results.Add(nameRes);
             results.Add(emailRes);
 

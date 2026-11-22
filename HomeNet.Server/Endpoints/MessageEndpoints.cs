@@ -26,7 +26,7 @@ namespace HomeNet.Server.Endpoints
                     serverLogger.LogInfo($"[API PULL] Юзер {session.UserId} запрашивает свои СМС с версии {sinceVersion}...");
 
                     var freshMessages = (await messageRepository.GetMessagesSinceVersionAsync(session.UserId, sinceVersion)).ToList();
-                    long latestVersion = freshMessages.Count > 0 ? freshMessages.Max(m => m.Version) : sinceVersion;
+                    var latestVersion = freshMessages.Count > 0 ? freshMessages.Max(m => m.Version) : sinceVersion;
 
                     var batch = new SyncBatchResponse<MessageEntity>
                     {

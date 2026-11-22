@@ -2,13 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             x:Class="HomeNetAvalonia.Controls.UserViewControl"
+             x:Class="HomeNetAvalonia.Controls.UserControls.UserViewControl"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
              xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:vm="using:HomeNetPresentation.ViewModels"
              xmlns:di="using:HomeNet.DI" 
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:controls="using:HomeNetAvalonia.Controls"
+             xmlns:userControls="clr-namespace:HomeNetAvalonia.Controls.UserControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:DataType="di:ComponentHub"  x:CompileBindings="False" >
 
@@ -45,7 +46,7 @@
             IsVisible="{Binding UserViewModel.ActiveClientTab,
             Converter={StaticResource EqualityConverter},
             ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
-            <controls:AuthViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <userControls:AuthViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </ContentControl>
 
         <!-- Под-экран Б: Форма Регистрации -->
@@ -53,7 +54,7 @@
             IsVisible="{Binding UserViewModel.ActiveClientTab,
             Converter={StaticResource EqualityConverter},
             ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
-            <controls:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <userControls:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </ContentControl>
 
                 <!-- ============================================================= -->
@@ -76,7 +77,7 @@
             </Grid.IsVisible>
             
             <!-- ЛЕВАЯ ЧАСТЬ: Список контактов -->
-            <controls:ContactsListViewControl
+            <userControls:ContactsListViewControl
                 Grid.Column="0"  DataContext="{Binding ContactsViewModel}"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
@@ -102,7 +103,7 @@
                 </Border>
 
                 <!-- Блок Б: Настоящий контрол чата (Стейт = Chat) -->
-                <controls:ChatViewControl    
+                <userControls:ChatViewControl    
                         IsVisible="{Binding UserViewModel.ActiveClientTab,
                         Converter={StaticResource EqualityConverter},
                         ConverterParameter={x:Static enums:ClientSubTab.Chat}}"

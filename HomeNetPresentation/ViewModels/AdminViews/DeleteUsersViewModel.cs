@@ -5,17 +5,16 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
-using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
-using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IAdminVm;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IUsersTableVm;
+using static HomeNetOrm.Interfaces.Repositories.IUserRepo;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    public partial class DeleteUsersViewModel : MainViews.FormViewModelBase
     {
         private readonly IDeleteService _srv;
-        private readonly ICastomLogger _log;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
@@ -23,31 +22,30 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
-        private UserEntity? _selectedUser;
-
+        public partial UserEntity? SelectedUser { get; set; }
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
         public partial string TargetUserEmail { get; set; } = string.Empty;
         public ObservableCollection<string> DeletedUsersHistory { get; } = [];
 
-        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ICastomLogger log, AdminNavigationManager nav)
-            : base(bus, nav)
+        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ICastomLogger log)
+            : base(bus,log)
         {
             _srv = srv ?? throw new ArgumentNullException(nameof(srv));
-            _log = log ?? throw new ArgumentNullException(nameof(log));
+           
             SubmitButtonText = "Удалить";
 
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
-            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
+            EventBus.Subscribe<AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Subscribe<Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПОДПИСКА НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ ОТ ОРМ
-            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeleted);
+            EventBus.Subscribe<Deleted>(OnUserDeleted);
 
             ResetForm();
         }
 
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
+        private void OnAdminTabChanged(AdminTabChanged msg)
         {
             if (msg?.ActiveTab != AdminSubTab.DeleteUsers)
             {
@@ -55,34 +53,31 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
 
             ResetForm();
-            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+            EventBus.Publish(this, new RefreshRequest());
         }
 
-        private void OnUsersRefreshed(IUsersTableVm.Refreshed? msg)
+        private void OnUsersRefreshed(Refreshed? msg)
         {
             if (msg == null) return;
-            FoundUsers = new ObservableCollection<UserEntity>(msg.Users);
+            FoundUsers = [.. msg.Users];
         }
-
-        // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(IUserRepo.Deleted msg)
+        
+        private void OnUserDeleted(Deleted msg)
         {
-            UserEntity? userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
+            var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
             if (userToRemove != null)
             {
                 FoundUsers.Remove(userToRemove);
             }
         }
 
-       
-
-       
+        
 
         [RelayCommand(CanExecute = nameof(CanSearch))]
         private async Task SearchAsync()
         {
             StatusMessage = "Поиск...";
-            IDeleteService.SearchVerdict verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
+            var verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
             StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
             if (verdict is { IsValid: true, FoundUser: not null })
@@ -102,7 +97,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             {
                 StatusMessage = "Удаление...";
 
-                IDeleteService.DeleteVerdict verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
+                var verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
                 UpdateValidation(verdict.Results);
                 StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
@@ -116,7 +111,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
                     await Task.Delay(500);
                     ResetForm();
-                    _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+                    EventBus.Publish(this, new RefreshRequest());
                 }
             }
             catch (Exception ex)
@@ -173,27 +168,26 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                _selectedUser = null;
+                SelectedUser = null;
                 OnPropertyChanged(nameof(SelectedUser));
                 return;
             }
 
-            UserEntity? match = FoundUsers.FirstOrDefault(u => string.Equals(u.Email?.Trim(), value.Trim(), StringComparison.OrdinalIgnoreCase));
-            _selectedUser = match;
+            var match = FoundUsers.FirstOrDefault(u => string.Equals(u.Email?.Trim(), value.Trim(), StringComparison.OrdinalIgnoreCase));
+            SelectedUser = match;
             OnPropertyChanged(nameof(SelectedUser));
 
             if (match == null)
                 StatusMessage = $"Введён сторонний Email: {value}. Нажмите 'Поиск'.";
         }
-
-       
+        
 
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
-            _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeleted);
+            EventBus.Unsubscribe<AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Unsubscribe<Refreshed>(OnUsersRefreshed);
+            EventBus.Unsubscribe<Deleted>(OnUserDeleted);
         }
     }
 }

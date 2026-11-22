@@ -59,7 +59,7 @@ namespace HomeNetOrm.Infrastructure
 
         public T GetRepository<T>() where T : class
         {
-            if (Repositories.TryGetValue(typeof(T), out object? repo))
+            if (Repositories.TryGetValue(typeof(T), out var repo))
                 return (T)repo;
 
             throw new InvalidOperationException($"Репозиторий {typeof(T).Name} не зарегистрирован в фабрике.");

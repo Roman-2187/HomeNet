@@ -3,7 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 public class AggregateLogger : ICastomLogger
 {
-    private readonly List<ICastomLogger> _loggers = new();
+    private readonly List<ICastomLogger> _loggers = [];
 
     public AggregateLogger(params ICastomLogger[] loggers)
     {

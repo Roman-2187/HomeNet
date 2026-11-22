@@ -17,24 +17,24 @@ namespace HomeNetServices.Identity
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
             // 🔥 Выгружаем актуальный список всех юзеров с сервера (API)
-            IReadOnlyCollection<UserEntity>? users = await _apiClient.GetAllUsersAsync();
+            var users = await _apiClient.GetAllUsersAsync();
             return users;
         }
 
 
         public async Task<SearchVerdict> SearchUserAsync(string targetUserId)
         {
-            List<ValidationResult> validationResults = ValidateIdInput(targetUserId);
+            var validationResults = ValidateIdInput(targetUserId);
 
             if (validationResults.Any(r => r.State == Error))
                 return new SearchVerdict(false, validationResults, null);
 
-            Guid id = Guid.Parse(targetUserId);
+            var id = Guid.Parse(targetUserId);
             try
             {
                 // 🔥 Ищем на сервере (API)
-                UserEntity? user = await _apiClient.GetUserByIdAsync(id);
-                ValidationResult res = validationResults.First();
+                var user = await _apiClient.GetUserByIdAsync(id);
+                var res = validationResults.First();
 
                 if (user != null)
                 {
@@ -54,7 +54,7 @@ namespace HomeNetServices.Identity
 
         public async Task<DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
-            Guid id = selectedUser?.Id ?? (Guid.TryParse(targetUserId, out Guid parsedId) ? parsedId : Guid.Empty);
+            var id = selectedUser?.Id ?? (Guid.TryParse(targetUserId, out var parsedId) ? parsedId : Guid.Empty);
 
             List<ValidationResult> validationResults = [];
             ValidationResult idRes = new() { Field = TypeField.IdType, State = Success };
@@ -68,12 +68,12 @@ namespace HomeNetServices.Identity
 
             try
             {
-                string userInfo = selectedUser != null
+                var userInfo = selectedUser != null
                     ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
                     : $"ID {id} (Точечно)";
 
                 // 🔥 Удаляем на сервере (API)
-                bool success = await _apiClient.DeleteUserAsync(id);
+                var success = await _apiClient.DeleteUserAsync(id);
 
                 if (!success)
                 {
@@ -82,12 +82,12 @@ namespace HomeNetServices.Identity
                 }
 
                 // 🔥 После удаления запрашиваем актуальный список с сервера
-                IReadOnlyCollection<UserEntity> allUsers = await _apiClient.GetAllUsersAsync();
+                var allUsers = await _apiClient.GetAllUsersAsync();
                 _logger.LogDebug($"В системе {allUsers.Count} пользователей (после удаления)");
 
                 idRes.Update(Success, $"Пользователь с ID {id} успешно удален.");
 
-                string readyHistoryLine = $"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}";
+                var readyHistoryLine = $"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}";
 
                 DeleteVerdict verdict = new(true, validationResults, id, allUsers)
                 {
@@ -105,7 +105,7 @@ namespace HomeNetServices.Identity
 
         private List<ValidationResult> ValidateIdInput(string targetUserId)
         {
-            ValidationResult res = new ValidationResult { Field = TypeField.IdType };
+            var res = new ValidationResult { Field = TypeField.IdType };
 
             if (string.IsNullOrWhiteSpace(targetUserId))
                 return [res.Update(Error, "Ошибка: ID не может быть пустым!")];

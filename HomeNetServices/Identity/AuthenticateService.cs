@@ -33,14 +33,14 @@ namespace HomeNetServices.Identity
                 return new IAuthenticateService.Verdict(false, validationResults, null);
 
             // Всегда генерируем свежий токен сессии на базе текущего устройства
-            Guid sessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(Guid.NewGuid());
+            var sessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(Guid.NewGuid());
 
-            IUserApiClient.AuthResponse authResult = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
+            var authResult = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
 
             if (authResult is { IsSuccess: true, User: not null })
                 return new IAuthenticateService.Verdict(true, validationResults, authResult.User);
 
-            ValidationResult errorResult = SetResult(
+            var errorResult = SetResult(
                 TypeField.PasswordType,
                 ValidationState.Error,
                 authResult.ErrorMessage ?? "Не удалось выполнить вход.");

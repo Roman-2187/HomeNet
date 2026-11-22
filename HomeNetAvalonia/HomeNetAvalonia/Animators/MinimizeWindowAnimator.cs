@@ -26,14 +26,16 @@ namespace HomeNetAvalonia.Animators
             // Переходим в UI-поток Авалонии, чтобы безопасно дернуть окно ОС
             Dispatcher.UIThread.Post(() =>
             {
-                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    var window = desktop.MainWindow;
-                    if (window == null) return;
-
-                    // Классическое моментальное сворачивание силами операционной системы
-                    window.WindowState = WindowState.Minimized;
+                    return;
                 }
+
+                var window = desktop.MainWindow;
+                if (window == null) return;
+
+                // Классическое моментальное сворачивание силами операционной системы
+                window.WindowState = WindowState.Minimized;
             });
         }
 

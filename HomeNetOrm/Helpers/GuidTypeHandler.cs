@@ -15,7 +15,7 @@ namespace HomeNetOrm.Helpers
             return value switch
             {
                 Guid guid => guid,
-                string str when Guid.TryParse(str, out Guid parsedGuid) => parsedGuid,
+                string str when Guid.TryParse(str, out var parsedGuid) => parsedGuid,
                 _ => Guid.Empty
             };
         }

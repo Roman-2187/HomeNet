@@ -22,7 +22,7 @@ namespace HomeNetOrm.Helpers
             {
                 // Если из SQLite прилетела строка — парсим её стандартными средствами .NET,
                 // которые, в отличие от Dapper, переваривают любую длину миллисекунд!
-                string str when DateTimeOffset.TryParse(str, CultureInfo.InvariantCulture, out DateTimeOffset parsed) =>
+                string str when DateTimeOffset.TryParse(str, CultureInfo.InvariantCulture, out var parsed) =>
                     parsed,
                 DateTime dt => new DateTimeOffset(dt),
                 _ => DateTimeOffset.MinValue

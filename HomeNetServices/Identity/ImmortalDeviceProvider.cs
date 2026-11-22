@@ -34,8 +34,8 @@ namespace HomeNetServices.Identity
         /// </summary>
         public static Guid CreatePairSessionId(Guid deviceId, Guid userId)
         {
-            byte[] inputBytes = Encoding.UTF8.GetBytes($"{deviceId:N}:{userId:N}");
-            byte[] hashBytes = MD5.HashData(inputBytes);
+            var inputBytes = Encoding.UTF8.GetBytes($"{deviceId:N}:{userId:N}");
+            var hashBytes = MD5.HashData(inputBytes);
             return new Guid(hashBytes);
         }
 
@@ -45,8 +45,8 @@ namespace HomeNetServices.Identity
             {
                 if (File.Exists(IdentityFilePath))
                 {
-                    string json = File.ReadAllText(IdentityFilePath);
-                    DeviceIdentity? identity = JsonSerializer.Deserialize<DeviceIdentity>(json);
+                    var json = File.ReadAllText(IdentityFilePath);
+                    var identity = JsonSerializer.Deserialize<DeviceIdentity>(json);
                     if (identity != null && identity.DeviceId != Guid.Empty)
                     {
                         return identity.DeviceId;
@@ -58,14 +58,14 @@ namespace HomeNetServices.Identity
                 // Если файл повреждён — пересоздадим ниже
             }
 
-            DeviceIdentity newIdentity = new DeviceIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
-            string? directory = Path.GetDirectoryName(IdentityFilePath);
+            var newIdentity = new DeviceIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
+            var directory = Path.GetDirectoryName(IdentityFilePath);
             if (!string.IsNullOrEmpty(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            string serialized = JsonSerializer.Serialize(newIdentity, new JsonSerializerOptions { WriteIndented = true });
+            var serialized = JsonSerializer.Serialize(newIdentity, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(IdentityFilePath, serialized);
 
             return newIdentity.DeviceId;

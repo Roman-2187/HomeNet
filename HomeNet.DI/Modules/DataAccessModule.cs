@@ -3,7 +3,6 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.Api;
 using HomeNet.Network.ApiClient;
 using HomeNet.Network.Handlers;
-using HomeNet.Network.SignalR;
 using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Items;

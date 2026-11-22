@@ -2,7 +2,7 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNet.Network.SignalR;
+using HomeNet.Network.Handlers;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HomeNet.Network.SignalRListeners

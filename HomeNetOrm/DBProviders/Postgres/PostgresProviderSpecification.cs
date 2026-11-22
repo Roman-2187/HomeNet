@@ -43,7 +43,7 @@ namespace HomeNetOrm.DBProviders.Postgres
 
             if (defaultValue != null)
             {
-                string valueStr = (type == ColumnType.Varchar || type == ColumnType.DateTimeOffset || type == ColumnType.Guid) ? $"'{defaultValue}'" : defaultValue.ToString()!;
+                var valueStr = type is ColumnType.Varchar or ColumnType.DateTimeOffset or ColumnType.Guid ? $"'{defaultValue}'" : defaultValue.ToString()!;
                 features.Add($"DEFAULT {valueStr}");
             }
             else if (isCreatedAt)

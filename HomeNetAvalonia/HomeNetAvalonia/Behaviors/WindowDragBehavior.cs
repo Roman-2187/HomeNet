@@ -6,7 +6,7 @@ using Avalonia.Input;
 namespace HomeNetAvalonia.Behaviors
 {
     /// <summary>
-    /// Стерильный прикрепляемый перетаскиватель окон мессенджера SiberNet.
+    /// Стерильный прикрепляемый перетаскиватель окон мессенджера HomeNet.
     /// </summary>
     public static class WindowDragBehavior
     {
@@ -16,7 +16,7 @@ namespace HomeNetAvalonia.Behaviors
 
         static WindowDragBehavior()
         {
-            EnableDragProperty.Changed.AddClassHandler<InputElement>((element, args) => OnEnableDragChanged(element, args));
+            EnableDragProperty.Changed.AddClassHandler<InputElement>(OnEnableDragChanged);
         }
 
         public static bool GetEnableDrag(InputElement element) => element.GetValue(EnableDragProperty);

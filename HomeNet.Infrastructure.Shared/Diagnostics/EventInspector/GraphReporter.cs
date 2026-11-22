@@ -69,7 +69,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
         {
             try
             {
-                string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug");
+                var debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug");
                 if (!Directory.Exists(debugPath)) Directory.CreateDirectory(debugPath);
 
                 // Аккуратно пилим логику по разделителю заголовка ленты событий
@@ -109,7 +109,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
             sb.AppendLine("<body>");
             sb.AppendLine($"    <h1>{title}</h1>");
 
-            bool isInCard = false;
+            var isInCard = false;
 
             foreach (var line in lines)
             {
@@ -129,12 +129,12 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                     continue;
                 }
 
-                string cssClass = "state-none";
+                var cssClass = "state-none";
                 if (line.State == MessageState.Live) cssClass = "state-live";
                 else if (line.State == MessageState.Published) cssClass = "state-published";
                 else if (line.State == MessageState.Subscribed) cssClass = "state-subscribed";
 
-                string padding = isInCard ? "        " : "    ";
+                var padding = isInCard ? "        " : "    ";
                 sb.AppendLine($"{padding}<span class='line {cssClass}'>{HtmlEncode(line.Text)}</span>");
             }
 

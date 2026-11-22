@@ -9,22 +9,19 @@ using static HomeNetOrm.Enums.Sql;
 namespace HomeNetOrm.Builders
 {
     // 🔥 1. Добавляем <TEntity>, чтобы билдер знал структуру нашей C#-модели!
-    internal class TokenQueryBuilder<TEntity> where TEntity : class
+    internal class TokenQueryBuilder<TEntity>(
+        ISqlDialectTranslator tr,
+        TableSchema snakeSchema,
+        TableSchema camelSchema,
+        IReadOnlyDictionary<string, string> cols)
+        where TEntity : class
     {
-        private readonly ISqlDialectTranslator _tr;
-        private readonly TableSchema _snakeSchema;
-        private readonly TableSchema _camelSchema;
-        private readonly IReadOnlyDictionary<string, string> _cols;
+        private readonly ISqlDialectTranslator _tr = tr ?? throw new ArgumentNullException(nameof(tr));
+        private readonly TableSchema _snakeSchema = snakeSchema ?? throw new ArgumentNullException(nameof(snakeSchema));
+        private readonly TableSchema _camelSchema = camelSchema ?? throw new ArgumentNullException(nameof(camelSchema));
+        private readonly IReadOnlyDictionary<string, string> _cols = cols ?? throw new ArgumentNullException(nameof(cols));
         private readonly StringBuilder _sb = new();
         private readonly DynamicParameters _params = new();
-
-        public TokenQueryBuilder(ISqlDialectTranslator tr, TableSchema snakeSchema, TableSchema camelSchema, IReadOnlyDictionary<string, string> cols)
-        {
-            _tr = tr ?? throw new ArgumentNullException(nameof(tr));
-            _snakeSchema = snakeSchema ?? throw new ArgumentNullException(nameof(snakeSchema));
-            _camelSchema = camelSchema ?? throw new ArgumentNullException(nameof(camelSchema));
-            _cols = cols ?? throw new ArgumentNullException(nameof(cols));
-        }
 
         // 🔥 Все методы Emit теперь возвращают TokenQueryBuilder<TEntity>
         public TokenQueryBuilder<TEntity> Emit(CmdType cmd) { _sb.Append($"{_tr.Translate(cmd)} "); return this; }
@@ -39,7 +36,7 @@ namespace HomeNetOrm.Builders
         // Выбор колонки через лямбду: .Col(u => u.Email)
         public TokenQueryBuilder<TEntity> Col(Expression<Func<TEntity, object?>> propertyExpression)
         {
-            string propName = GetPropertyName(propertyExpression);
+            var propName = GetPropertyName(propertyExpression);
             if (_cols.TryGetValue(propName, out var dbName))
             {
                 _sb.Append($"{_tr.FormatColumnName(dbName)} ");
@@ -50,7 +47,7 @@ namespace HomeNetOrm.Builders
         // Выбор колонки с приведением к тексту: .ColAsText(u => u.Id)
         public TokenQueryBuilder<TEntity> ColAsText(Expression<Func<TEntity, object?>> propertyExpression)
         {
-            string propName = GetPropertyName(propertyExpression);
+            var propName = GetPropertyName(propertyExpression);
             if (_cols.TryGetValue(propName, out var dbName))
             {
                 _sb.Append($"{_tr.FormatCastToText(dbName)} ");
@@ -63,7 +60,7 @@ namespace HomeNetOrm.Builders
         // Стандартный параметр: .Param(u => u.Email, email) -> создаст @Email
         public TokenQueryBuilder<TEntity> Param(Expression<Func<TEntity, object?>> propertyExpression, object val)
         {
-            string paramName = GetPropertyName(propertyExpression);
+            var paramName = GetPropertyName(propertyExpression);
             _params.Add(paramName, val);
             _sb.Append($"@{paramName} ");
             return this;
@@ -73,8 +70,8 @@ namespace HomeNetOrm.Builders
         // Вызов: .Param(m => m.SenderId, "1", senderId) -> создаст @SenderId1
         public TokenQueryBuilder<TEntity> Param(Expression<Func<TEntity, object?>> propertyExpression, string suffix, object val)
         {
-            string baseParamName = GetPropertyName(propertyExpression);
-            string uniqueParamName = baseParamName + suffix;
+            var baseParamName = GetPropertyName(propertyExpression);
+            var uniqueParamName = baseParamName + suffix;
 
             _params.Add(uniqueParamName, val);
             _sb.Append($"@{uniqueParamName} ");
@@ -165,7 +162,7 @@ namespace HomeNetOrm.Builders
         private string GetPropertyName(Expression<Func<TEntity, object?>> expression)
         {
             ArgumentNullException.ThrowIfNull(expression);
-            Expression body = expression.Body;
+            var body = expression.Body;
 
             // Раздеваем UnaryExpression (Convert) для Guid, DateTimeOffset, int и т.д.
             if (body is UnaryExpression unaryExpression)
@@ -173,13 +170,12 @@ namespace HomeNetOrm.Builders
                 body = unaryExpression.Operand;
             }
 
-            if (body is MemberExpression memberExpression &&
-                (memberExpression.Member is PropertyInfo || memberExpression.Member is FieldInfo))
+            if (body is MemberExpression { Member: PropertyInfo or FieldInfo } memberExpression)
             {
                 return memberExpression.Member.Name;
             }
 
-            throw new ArgumentException($"[SiberNet ORM] Невалидная лямбда '{expression}'. Ожидается свойство класса {typeof(TEntity).Name}.");
+            throw new ArgumentException($"[HomeNet ORM] Невалидная лямбда '{expression}'. Ожидается свойство класса {typeof(TEntity).Name}.");
         }
     }
 }

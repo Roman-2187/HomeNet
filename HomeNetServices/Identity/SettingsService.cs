@@ -28,7 +28,7 @@ namespace HomeNetServices.Identity
             {
                 if (_cachedActiveSession == null)
                 {
-                    Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
+                    var deviceId = ImmortalDeviceProvider.CurrentDeviceId;
                     _cachedActiveSession = await _deviceSettingsRepo.GetActiveSessionAsync();
 
                     // Если нашли активную сессию в SQLite при старте — сразу ставим заголовок X-Session-Id для всех запросов
@@ -65,14 +65,14 @@ namespace HomeNetServices.Identity
         {
             try
             {
-                Guid deviceId = ImmortalDeviceProvider.CurrentDeviceId;
-                Guid activeSessionId = sessionId != Guid.Empty
+                var deviceId = ImmortalDeviceProvider.CurrentDeviceId;
+                var activeSessionId = sessionId != Guid.Empty
                     ? sessionId
                     : ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(userId);
 
-                SettingsEntity? existing = await _deviceSettingsRepo.GetBySessionIdAsync(activeSessionId);
+                var existing = await _deviceSettingsRepo.GetBySessionIdAsync(activeSessionId);
 
-                SettingsEntity settings = existing ?? new SettingsEntity
+                var settings = existing ?? new SettingsEntity
                 {
                     Id = activeSessionId,
                     DeviceId = deviceId,
@@ -103,7 +103,7 @@ namespace HomeNetServices.Identity
             {
                 await EnsureActiveSessionLoadedAsync();
 
-                SettingsEntity? settings = _cachedActiveSession;
+                var settings = _cachedActiveSession;
                 if (settings == null) return;
 
                 // 1. Сначала просим сервер удалить текущую сессию (пока X-Session-Id в заголовке!)

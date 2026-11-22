@@ -16,16 +16,16 @@ namespace HomeNetOrm.Generators.Base
             public SqlQueryCommand GenerateInsert()
             {
                 // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
-                BaseSqlGenerator<T> baseGen = (BaseSqlGenerator<T>)generator;
+                var baseGen = (BaseSqlGenerator<T>)generator;
 
-                TokenQueryBuilder<T> builder = generator.CreateQuery()
+                var builder = generator.CreateQuery()
                     .Emit(Insert).Emit(Into).Table()
                     .InsertFields()
                     .Emit(Values)
                     .InsertParameters();
 
                 // Теперь Translator пробивается со строгой типизацией
-                string returningSql = baseGen.Translator.FormatReturningId("id");
+                var returningSql = baseGen.Translator.FormatReturningId("id");
 
                 return builder.Raw(returningSql).Build();
             }
@@ -33,7 +33,7 @@ namespace HomeNetOrm.Generators.Base
             public SqlQueryCommand GenerateUpdate()
             {
                 // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
-                BaseSqlGenerator<T> baseGen = (BaseSqlGenerator<T>)generator;
+                var baseGen = (BaseSqlGenerator<T>)generator;
 
                 return generator.CreateQuery()
                     .Emit(Update).Table()

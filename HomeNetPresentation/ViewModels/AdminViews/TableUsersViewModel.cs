@@ -9,16 +9,15 @@ using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
-using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
 
 
-   namespace HomeNetPresentation.ViewModels.AdminViews
+namespace HomeNetPresentation.ViewModels.AdminViews
 {
     /// <summary>
-    /// Административная таблица пользователей SiberNet.
+    /// Административная таблица пользователей HomeNet.
     /// Благодаря сквозному конвейеру бутстраппера вычищена от локов и потоковых костылей! 🧼
     /// </summary>
-    public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>
+    public partial class TableUsersViewModel : MainViews.FormViewModelBase
     {
         private readonly IUserRepo _userRepo;
         private readonly ICastomLogger? _logger;
@@ -27,21 +26,17 @@ using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationMana
         [ObservableProperty]
         public partial ObservableCollection<UserEntity> Users { get; set; } = [];
 
-        public TableUsersViewModel(
-            IEventBus eventBus,
-            IUserRepo userRepo,
-            AdminNavigationManager navigation,
-            ICastomLogger? logger = null)
-            : base(eventBus, navigation)
+        public TableUsersViewModel(IEventBus eventBus,ICastomLogger logger ,IUserRepo userRepo)
+            : base(eventBus,logger)
         {
             _userRepo = userRepo;
             _logger = logger;
 
-            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
-            _eventBus.Subscribe<IUserRepo.Updated>(OnUserUpdated);
-            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
-            _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+            EventBus.Subscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
+            EventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
+            EventBus.Subscribe<IUserRepo.Updated>(OnUserUpdated);
+            EventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
+            EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
         }
 
         private void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg) =>
@@ -64,7 +59,8 @@ using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationMana
             catch (Exception ex)
             {
                 _logger?.Log(LogLevel.Error, $"Ошибка старта таблицы: {ex.Message}");
-                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка старта таблицы: {ex.Message}"));
+                // ReSharper disable once MethodHasAsyncOverload
+                EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка старта таблицы: {ex.Message}"));
             }
         }
 
@@ -121,15 +117,15 @@ using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationMana
         }
 
         private void BroadcastRefreshed() =>
-            _eventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
+            EventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
 
         public override void Dispose()
         {
-            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
-            _eventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
-            _eventBus.Unsubscribe<IUserRepo.Updated>(OnUserUpdated);
-            _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
-            _eventBus.Unsubscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+            EventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
+            EventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
+            EventBus.Unsubscribe<IUserRepo.Updated>(OnUserUpdated);
+            EventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
+            EventBus.Unsubscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
             base.Dispose();
         }
     }

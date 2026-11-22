@@ -2,6 +2,7 @@
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.MainViews;
 
 namespace HomeNet.DI
 {

@@ -8,6 +8,7 @@ using HomeNetAvalonia.MainViews;
 using HomeNetCore.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.MainViews;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
@@ -29,8 +30,8 @@ namespace HomeNetAvalonia
 
         public override void OnFrameworkInitializationCompleted()
         {
-            bool isPreviewer = Avalonia.Controls.Design.IsDesignMode 
-                               || Environment.GetCommandLineArgs().Any(arg => arg.Contains("preview", StringComparison.OrdinalIgnoreCase));
+            var isPreviewer = Avalonia.Controls.Design.IsDesignMode 
+                              || Environment.GetCommandLineArgs().Any(arg => arg.Contains("preview", StringComparison.OrdinalIgnoreCase));
 
             if (isPreviewer)
             {
@@ -58,20 +59,20 @@ namespace HomeNetAvalonia
                 var config = configBuilder.Build();
 
                 // 2. Берём значения (если нет — кидаем исключение, чтобы не было "молчаливого" хардкода)
-                string apiBaseUrl = config["ApiBaseUrl"]
-                    ?? throw new InvalidOperationException("В конфиге отсутствует ApiBaseUrl");
+                var apiBaseUrl = config["ApiBaseUrl"]
+                                 ?? throw new InvalidOperationException("В конфиге отсутствует ApiBaseUrl");
 
-                string databaseName = config["DatabaseName"]
-                    ?? throw new InvalidOperationException("В конфиге отсутствует DatabaseName");
+                var databaseName = config["DatabaseName"]
+                                   ?? throw new InvalidOperationException("В конфиге отсутствует DatabaseName");
 
-                string backendModeStr = config["BackendMode"]
-                    ?? throw new InvalidOperationException("В конфиге отсутствует BackendMode");
+                var backendModeStr = config["BackendMode"]
+                                     ?? throw new InvalidOperationException("В конфиге отсутствует BackendMode");
 
-                BackendMode currentMode = Enum.Parse<BackendMode>(backendModeStr);
+                var currentMode = Enum.Parse<BackendMode>(backendModeStr);
 
                 // 3. Путь к базе (только имя, путь строится внутри)
-                string dbPath = DatabasePathHelper.GetDatabasePath(databaseName);
-                string sqliteConnectionString = $"Data Source={dbPath}";
+                var dbPath = DatabasePathHelper.GetDatabasePath(databaseName);
+                var sqliteConnectionString = $"Data Source={dbPath}";
 
                 // 4. Запускаем сборщик
                 _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(

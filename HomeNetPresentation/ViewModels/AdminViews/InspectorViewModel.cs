@@ -4,32 +4,34 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
-using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
 
-// ... остальные using ...
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class InspectorViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    public partial class InspectorViewModel : MainViews.FormViewModelBase
     {
         private readonly EventBusInspector _inspector;
 
         // 🔥 Запоминаем контекст UI-потока при создании ViewModel
         private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
-        [ObservableProperty] private List<IEventInspector.Line> _graphLines = new();
-        [ObservableProperty] private bool _isScanning;
-        [ObservableProperty] private string _loadingMessage = string.Empty;
+        [ObservableProperty]
+        public partial List<IEventInspector.Line> GraphLines { get; set; } = [];
+        [ObservableProperty]
+        public partial bool IsScanning { get; set; }
 
-        public InspectorViewModel(IEventBus eventBus, IEventInspector inspector, AdminNavigationManager navigation)
-            : base(eventBus, navigation)
+        [ObservableProperty]
+        public partial string LoadingMessage { get; set; } = string.Empty;
+
+        public InspectorViewModel(IEventBus eventBus,ICastomLogger logger, IEventInspector inspector)
+            : base(eventBus,logger)
         {
             _inspector = inspector as EventBusInspector ?? throw new ArgumentNullException(nameof(inspector));
 
             // 🔥 Подписываемся на событие сканирования
             _inspector.ScanCompleted += OnScanCompleted;
 
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             UpdateReport();
         }
 
@@ -64,7 +66,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             {
                 IsScanning = true;
                 LoadingMessage = "⌛ Идёт сканирование сборок... Пожалуйста, подождите.";
-                GraphLines = new List<IEventInspector.Line>();
+                GraphLines = [];
                 return;
             }
 
@@ -78,7 +80,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             base.Dispose();
             _inspector.ScanCompleted -= OnScanCompleted; // 🔥 Отписываемся
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            EventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
     }
 }

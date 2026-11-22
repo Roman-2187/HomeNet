@@ -41,16 +41,16 @@ namespace HomeNetServices.Diagnostics
             {
                 while (await _channel.Reader.WaitToReadAsync(token))
                 {
-                    while (_channel.Reader.TryRead(out LogQueueEntry logEntry))
+                    while (_channel.Reader.TryRead(out var logEntry))
                     {
                         token.ThrowIfCancellationRequested();
 
-                        string cleanMessage = logEntry.Message.TrimEnd('\r', '\n');
+                        var cleanMessage = logEntry.Message.TrimEnd('\r', '\n');
                         if (string.IsNullOrEmpty(cleanMessage)) continue;
 
-                        StringBuilder currentTextBuilder = new StringBuilder();
+                        var currentTextBuilder = new StringBuilder();
 
-                        foreach (char c in cleanMessage)
+                        foreach (var c in cleanMessage)
                         {
                             token.ThrowIfCancellationRequested();
                             currentTextBuilder.Append(c);
