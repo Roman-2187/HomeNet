@@ -2,7 +2,7 @@
 {
     public enum DatabaseType
     {
-        SQLite,
-        PostGreSQL
+        SqLite,
+        PostGreSql
     }
 }

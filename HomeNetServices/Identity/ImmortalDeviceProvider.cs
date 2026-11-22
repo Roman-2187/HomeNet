@@ -13,12 +13,12 @@ namespace HomeNetServices.Identity
             "HomeNet",
             "device_identity.json");
 
-        private static readonly Lazy<Guid> _cachedDeviceId = new(LoadOrCreateDeviceId);
+        private static readonly Lazy<Guid> CachedDeviceId = new(LoadOrCreateDeviceId);
 
         /// <summary>
         /// Постоянный GUID текущего устройства (выживает даже при сносе локального SQLite).
         /// </summary>
-        public static Guid CurrentDeviceId => _cachedDeviceId.Value;
+        public static Guid CurrentDeviceId => CachedDeviceId.Value;
 
         /// <summary>
         /// Генерирует детерминированный SessionId для указанного пользователя на текущем устройстве.
@@ -45,8 +45,8 @@ namespace HomeNetServices.Identity
             {
                 if (File.Exists(IdentityFilePath))
                 {
-                    var json = File.ReadAllText(IdentityFilePath);
-                    var identity = (DeviceIdentity?)JsonSerializer.Deserialize(json, typeof(DeviceIdentity));
+                    string json = File.ReadAllText(IdentityFilePath);
+                    DeviceIdentity? identity = JsonSerializer.Deserialize<DeviceIdentity>(json);
                     if (identity != null && identity.DeviceId != Guid.Empty)
                     {
                         return identity.DeviceId;
@@ -58,14 +58,14 @@ namespace HomeNetServices.Identity
                 // Если файл повреждён — пересоздадим ниже
             }
 
-            var newIdentity = new DeviceIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
-            var directory = Path.GetDirectoryName(IdentityFilePath);
+            DeviceIdentity newIdentity = new DeviceIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
+            string? directory = Path.GetDirectoryName(IdentityFilePath);
             if (!string.IsNullOrEmpty(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            var serialized = JsonSerializer.Serialize(newIdentity, new JsonSerializerOptions { WriteIndented = true });
+            string serialized = JsonSerializer.Serialize(newIdentity, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(IdentityFilePath, serialized);
 
             return newIdentity.DeviceId;

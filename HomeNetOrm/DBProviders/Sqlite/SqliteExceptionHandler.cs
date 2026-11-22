@@ -1,4 +1,4 @@
-﻿using HomeNetOrm.Exeptions;
+﻿using HomeNetOrm.Exceptions;
 using HomeNetOrm.Infrastructure;
 using Microsoft.Data.Sqlite;
 
@@ -7,7 +7,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
     public class SqliteExceptionHandler : IDbExceptionHandler
     {
         public bool IsDuplicateKeyException(Exception ex)
-            => ex is SqliteException sqliteEx && sqliteEx.SqliteErrorCode == 19;
+            => ex is SqliteException { SqliteErrorCode: 19 };
 
         public Exception Translate(Exception ex)
         {

@@ -2,13 +2,14 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres;
-using HomeNetOrm.Generators.Base;
+using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
 using Microsoft.Data.Sqlite;
 using Npgsql;
+using System.Data;
 using System.Data.Common;
 
 namespace HomeNetOrm.Infrastructure
@@ -55,15 +56,15 @@ namespace HomeNetOrm.Infrastructure
             switch (engineType)
             {
                 case DbEngineType.SQLiteSQLClient:
-                    _translator = new DBProviders.Sqlite.SqliteDialectTranslator();
-                    _spec = new DBProviders.Sqlite.SqliteProviderSpecification();
-                    _schemaGenerator = new DBProviders.Sqlite.SqliteSchemaGenerator(_spec);
+                    _translator = new SqliteDialectTranslator();
+                    _spec = new SqliteProviderSpecification();
+                    _schemaGenerator = new SqliteSchemaGenerator(_spec);
                     break;
 
                 case DbEngineType.PostgreSQLServer:
-                    _translator = new DBProviders.Postgres.PostgresDialectTranslator();
-                    _spec = new DBProviders.Postgres.PostgresProviderSpecification();
-                    _schemaGenerator = new DBProviders.Postgres.PostgresSchemaSqlGenerator(_spec);
+                    _translator = new PostgresDialectTranslator();
+                    _spec = new PostgresProviderSpecification();
+                    _schemaGenerator = new PostgresSchemaSqlGenerator(_spec);
                     break;
 
                 default:
@@ -108,7 +109,7 @@ namespace HomeNetOrm.Infrastructure
         {
             using (var baseConnection = ConnectionFactory())
             {
-                if (baseConnection.State != System.Data.ConnectionState.Open)
+                if (baseConnection.State != ConnectionState.Open)
                 {
                     await baseConnection.OpenAsync();
                 }

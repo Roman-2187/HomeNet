@@ -1,11 +1,11 @@
-﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+﻿using Dapper;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNetOrm.Exceptions;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
-using Dapper;
-using HomeNetOrm.Exeptions;
 
 namespace HomeNetOrm.DBProviders.Base
 {
@@ -13,24 +13,17 @@ namespace HomeNetOrm.DBProviders.Base
     /// Универсальный поставщик актуальных схем данных из СУБД.
     /// Оркеструет вычитку метаданных на основе чистых SQL-запросов и Dapper.
     /// </summary>
-    internal class GenericSchemaProvider : ISchemaProvider
+    internal class GenericSchemaProvider(
+        ISchemaSqlGenerator sqlInit,
+        DbConnection connection,
+        IDbProviderSpecification spec,
+        ICastomLogger logger)
+        : ISchemaProvider
     {
-        private readonly ISchemaSqlGenerator _sqlInit;
-        private readonly DbConnection _requiredConnection;
-        private readonly IDbProviderSpecification _spec;
-        private readonly ICastomLogger _logger;
-
-        public GenericSchemaProvider(
-            ISchemaSqlGenerator sqlInit,
-            DbConnection connection,
-            IDbProviderSpecification spec,
-            ICastomLogger logger)
-        {
-            _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
-            _spec = spec ?? throw new ArgumentNullException(nameof(spec));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+        private readonly ISchemaSqlGenerator _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
+        private readonly DbConnection _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
+        private readonly IDbProviderSpecification _spec = spec ?? throw new ArgumentNullException(nameof(spec));
+        private readonly ICastomLogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         public async Task<TableSchema> GetActualTableSchemaAsync(string? tableName)
         {
@@ -45,10 +38,10 @@ namespace HomeNetOrm.DBProviders.Base
             try
             {
                 // 🎯 ЧИСТЫЙ ВЫЗОВ ЧЕРЕЗ ТОЧКУ: Получаем готовый объект команды из инициализатора
-                var cmd = _sqlInit.GenerateGetTableStructureSql(tableName);
+                SqlQueryCommand cmd = _sqlInit.GenerateGetTableStructureSql(tableName);
 
                 // Передаем в Dapper скомпилированную строку и параметры прямо из команды
-                var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(cmd.Sql, cmd.Params);
+                IEnumerable<RawColumnMetadata> rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(cmd.Sql, cmd.Params);
 
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
@@ -64,9 +57,11 @@ namespace HomeNetOrm.DBProviders.Base
         {
             // 🔥 ФИКС: Используем наш чистый кастомный конструктор!
             // Он сам забирает типы, Nullable и PK из метаданных на лету, убирая кашу
-            var columns = rawRows
-                .Select(row => new ColumnSchema(row, dbType => _spec.ParsePropertyType(dbType)))
-                .ToList();
+            List<ColumnSchema> columns =
+            [
+                .. rawRows
+                    .Select(row => new ColumnSchema(row, dbType => _spec.ParsePropertyType(dbType)))
+            ];
 
             _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
 
@@ -77,7 +72,7 @@ namespace HomeNetOrm.DBProviders.Base
             }
 
             
-            var getSchema = new TableSchema { TableName = tableName, Columns = columns };
+            TableSchema getSchema = new TableSchema { TableName = tableName, Columns = columns };
 
             // Вместо чтения удалённого свойства .ColumnNames склеиваем имена для лога прямо на месте
             if (!columns.Any(c => c.IsPrimaryKey))

@@ -4,7 +4,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
 using HomeNet.Network.SignalRListeners;
-using HomeNetOrm.Exeptions;
+using HomeNetOrm.Exceptions;
 using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Synchronization.Sinc

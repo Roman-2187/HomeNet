@@ -3,15 +3,16 @@ using HomeNet.Network.Api;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-
+using static HomeNetCore.Enums.TypeField;
+using static HomeNetCore.Enums.ValidationState;
 namespace HomeNetServices.Identity
 {
     public class AuthenticateService(IUserApiClient apiClient) : BaseValidationService(apiClient), IAuthenticateService
     {
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
             exists
-                ? SetResult(TypeField.EmailType, ValidationState.Success, "Пользователь найден")
-                : SetResult(TypeField.EmailType, ValidationState.Error, "Аккаунт с таким Email не найден");
+                ? SetResult(EmailType, Success, "Пользователь найден")
+                : SetResult(EmailType, Error, "Аккаунт с таким Email не найден");
 
         public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
         {
@@ -20,11 +21,11 @@ namespace HomeNetServices.Identity
             if (!string.IsNullOrWhiteSpace(userInput.Email))
                 userInput.Email = userInput.Email.Replace(" ", "");
 
-                var validationResults = new List<ValidationResult>
-                {
-                    ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
-                    ValidatePasswordFormat(userInput.Password, checkComplexity: false)
-                };
+            List<ValidationResult> validationResults =
+            [
+                ValidateEmailFormat(userInput.Email, ValidationState.Success, "Email принят"),
+                ValidatePasswordFormat(userInput.Password, checkComplexity: false)
+            ];
 
             ApplyCachedEmailCheck(userInput.Email, validationResults);
 
@@ -34,12 +35,12 @@ namespace HomeNetServices.Identity
             // Всегда генерируем свежий токен сессии на базе текущего устройства
             Guid sessionId = ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(Guid.NewGuid());
 
-            var authResult = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
+            IUserApiClient.AuthResponse authResult = await ApiClient.AuthenticateAsync(userInput.Email!, userInput.Password!, sessionId);
 
-            if (authResult.IsSuccess && authResult.User != null)
+            if (authResult is { IsSuccess: true, User: not null })
                 return new IAuthenticateService.Verdict(true, validationResults, authResult.User);
 
-            var errorResult = SetResult(
+            ValidationResult errorResult = SetResult(
                 TypeField.PasswordType,
                 ValidationState.Error,
                 authResult.ErrorMessage ?? "Не удалось выполнить вход.");

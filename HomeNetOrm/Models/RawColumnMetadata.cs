@@ -6,17 +6,16 @@
     /// </summary>
     public class RawColumnMetadata
     {
-        public string Name { get; set; } = string.Empty;
-        public string DataType { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string DataType { get; init; } = string.Empty;
 
         // ⚡ Ставим bool, так как мы скорректировали SQL под выдачу флагов 1/0 и true/false
-        public bool IsNullable { get; set; }
+        public bool IsNullable { get; init; }
 
-        public string KeyType { get; set; } = string.Empty;
-        public string ExtraInfo { get; set; } = string.Empty;
+        public string KeyType { get; init; } = string.Empty;
+        public string ExtraInfo { get; init; } = string.Empty;
 
         // Пустой конструктор для Dapper — теперь он скомпилирует объект без единого писка!
-        public RawColumnMetadata() { }
     }
 }
 

@@ -4,31 +4,32 @@ using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators.HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Remote
 {
-    internal class DeviceSyncSqlGenerator : BaseSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
+    internal class DeviceSyncSqlGenerator(
+        IEnumerable<TableSchema> schemas,
+        ISqlDialectTranslator translator,
+        ICastomLogger logger)
+        : BaseSqlGenerator<DeviceSyncEntity>(schemas, translator, logger), IRemoteDeviceSyncSqlGenerator
     {
-        public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
-            : base(schemas, translator, logger) { }
-
         /// <summary>
         /// Регистрирует сессию или перезаписывает токен (Id) при повторном входе того же UserId.
         /// </summary>
         public SqlQueryCommand GenerateSessionUpsert()
         {
             return CreateQuery()
-                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .Emit(Insert).Emit(Into).Table()
                 .InsertFields()
-                .Emit(PhraseType.Values)
+                .Emit(Values)
                 .InsertParameters()
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict)
-                    .Emit(OpType.OpenBracket).Col(d => d.UserId).Emit(OpType.CloseBracket)
-                .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(d => d.Id).Emit(OpType.Equal).Raw("EXCLUDED.\"id\"")
-                    .Emit(OpType.Comma)
-                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Raw(Translator.FormatNow())
+                .Emit(On).Emit(Conflict)
+                    .Emit(OpenBracket).Col(d => d.UserId).Emit(CloseBracket)
+                .Emit(Do).Emit(Update).Emit(Set)
+                    .Col(d => d.Id).Emit(Equal).Raw("EXCLUDED.\"id\"")
+                    .Emit(Comma)
+                    .Col(d => d.UpdatedAt).Emit(Equal)
+                .Raw(Translator.FormatNow())
                 .Build();
         }
 
@@ -40,9 +41,9 @@ namespace HomeNetOrm.Generators.Remote
         public SqlQueryCommand GenerateSessionInsert()
         {
             return CreateQuery()
-                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .Emit(Insert).Emit(Into).Table()
                 .InsertFields()
-                .Emit(PhraseType.Values)
+                .Emit(Values)
                 .InsertParameters()
                 .Build();
         }
@@ -53,9 +54,9 @@ namespace HomeNetOrm.Generators.Remote
         /// </summary>
         public SqlQueryCommand GenerateSelectById(Guid sessionId) =>
             CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                    .Col(d => d.Id).Emit(OpType.Equal)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where)
+                    .Col(d => d.Id).Emit(Equal)
                     .Param(d => d.Id, sessionId)
                 .Raw(Translator.FormatLimit(1))
                 .Build();
@@ -65,9 +66,10 @@ namespace HomeNetOrm.Generators.Remote
         /// </summary>
         public SqlQueryCommand GenerateDeleteById(Guid sessionId) =>
             CreateQuery()
-                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                    .Col(d => d.Id).Emit(OpType.Equal).Param(d => d.Id, sessionId)
+                .Emit(Delete).Emit(From).Table()
+                .Emit(Where)
+                    .Col(d => d.Id)
+                .Emit(Equal).Param(d => d.Id, sessionId)
                 .Build();
     }
 }

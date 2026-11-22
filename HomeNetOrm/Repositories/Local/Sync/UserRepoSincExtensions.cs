@@ -1,9 +1,10 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Generators.Local.Sync;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Generators.Extensions; // Подключаем UserSyncSqlGeneratorExtensions
 using HomeNetOrm.Repositories.Base;
+// Подключаем UserSyncSqlGeneratorExtensions
 
 namespace HomeNetOrm.Repositories.Local.Sync
 {

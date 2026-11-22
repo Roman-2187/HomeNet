@@ -7,27 +7,20 @@ using static HomeNetCore.Interfaces.Diagnostics.ILogQueueManager;
 
 namespace HomeNetServices.Diagnostics
 {
-    public class LogQueueManager : IDisposable, ILogQueueManager
+    public class LogQueueManager(IEventBus eventBus, int typingDelayMs = 0) : IDisposable, ILogQueueManager
     {
         // 🔥 Никаких кортежей — только наше строгое DTO
-        private readonly Channel<LogQueueEntry> _channel;
+        private readonly Channel<LogQueueEntry> _channel = Channel.CreateUnbounded<LogQueueEntry>(new UnboundedChannelOptions
+        {
+            SingleReader = true
+        });
         private readonly CancellationTokenSource _cts = new();
-        private readonly int _typingDelayMs;
-        private readonly IEventBus _eventBus;
+        private readonly int _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
+        private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         private bool _isReady;
         private Task? _processingTask;
 
-        public LogQueueManager(IEventBus eventBus, int typingDelayMs = 0)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
-
-            // Канал завязан на рекорды
-            _channel = Channel.CreateUnbounded<LogQueueEntry>(new UnboundedChannelOptions
-            {
-                SingleReader = true
-            });
-        }
+        // Канал завязан на рекорды
 
         public void SetReady()
         {
@@ -48,14 +41,14 @@ namespace HomeNetServices.Diagnostics
             {
                 while (await _channel.Reader.WaitToReadAsync(token))
                 {
-                    while (_channel.Reader.TryRead(out var logEntry))
+                    while (_channel.Reader.TryRead(out LogQueueEntry logEntry))
                     {
                         token.ThrowIfCancellationRequested();
 
                         string cleanMessage = logEntry.Message.TrimEnd('\r', '\n');
                         if (string.IsNullOrEmpty(cleanMessage)) continue;
 
-                        var currentTextBuilder = new StringBuilder();
+                        StringBuilder currentTextBuilder = new StringBuilder();
 
                         foreach (char c in cleanMessage)
                         {

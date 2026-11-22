@@ -1,8 +1,8 @@
-﻿using System.Text;
-using Dapper;
+﻿using Dapper;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using System.Text;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {

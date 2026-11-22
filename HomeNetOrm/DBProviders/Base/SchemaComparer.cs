@@ -13,13 +13,13 @@ namespace HomeNetOrm.DBProviders.Base
             if (!expected.TableName.Equals(actual.TableName, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Нельзя сравнивать разные таблицы: '{expected.TableName}' и '{actual.TableName}'");
 
-            var diff = new SchemaDiff { TableName = expected.TableName };
+            SchemaDiff diff = new SchemaDiff { TableName = expected.TableName };
 
-            var expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ColumnSchema> expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var actualCol in actual.Columns)
+            foreach (ColumnSchema actualCol in actual.Columns)
             {
-                if (!expectedMap.Remove(actualCol.Name, out var expectedCol))
+                if (!expectedMap.Remove(actualCol.Name, out ColumnSchema? expectedCol))
                 {
                     diff.MissingColumns.Add(actualCol);
                     continue;
@@ -63,12 +63,12 @@ namespace HomeNetOrm.DBProviders.Base
 
         private static bool IsTypeCompatible(string typeA, string typeB)
         {
-            string a = typeA.ToLower();
-            string b = typeB.ToLower();
+            string a = typeA.ToLowerInvariant();
+            string b = typeB.ToLowerInvariant();
 
-            return (NumericAndBoolTypes.Any(t => a.Contains(t)) && NumericAndBoolTypes.Any(t => b.Contains(t))) ||
-                   (TextAndGuidTypes.Any(t => a.Contains(t)) && TextAndGuidTypes.Any(t => b.Contains(t))) ||
-                   (DateTimeTypes.Any(t => a.Contains(t)) && DateTimeTypes.Any(t => b.Contains(t)));
+            return (NumericAndBoolTypes.Any(a.Contains) && NumericAndBoolTypes.Any(b.Contains)) ||
+                   (TextAndGuidTypes.Any(a.Contains) && TextAndGuidTypes.Any(b.Contains)) ||
+                   (DateTimeTypes.Any(a.Contains) && DateTimeTypes.Any(b.Contains));
         }
 
         private static bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
@@ -78,7 +78,7 @@ namespace HomeNetOrm.DBProviders.Base
 
             if (expStr == actStr) return true;
 
-            if (isCreatedAt && actStr.ToLower() is string lowerAct && (lowerAct.Contains("now") || lowerAct.Contains("current_timestamp")))
+            if (isCreatedAt && actStr.ToLowerInvariant() is { } lowerAct && (lowerAct.Contains("now") || lowerAct.Contains("current_timestamp")))
                 return true;
 
             return CleanPostgresTypeCasting(expStr).Equals(CleanPostgresTypeCasting(actStr), StringComparison.OrdinalIgnoreCase);
@@ -87,7 +87,7 @@ namespace HomeNetOrm.DBProviders.Base
         private static string NormalizeDefaultValue(string value)
         {
             string str = value?.Trim().Trim('\'', '(', ')') ?? string.Empty;
-            return (string.IsNullOrEmpty(str) || str == "0" || str.ToLower() == "false") ? "0" : str;
+            return (string.IsNullOrEmpty(str) || str == "0" || str.Equals("false", StringComparison.CurrentCultureIgnoreCase)) ? "0" : str;
         }
 
         private static string CleanPostgresTypeCasting(string value) =>

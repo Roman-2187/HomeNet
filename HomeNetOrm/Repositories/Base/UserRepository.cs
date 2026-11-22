@@ -3,11 +3,12 @@ using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Exeptions;
+using HomeNetOrm.Exceptions;
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Models;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Base
@@ -38,7 +39,7 @@ namespace HomeNetOrm.Repositories.Base
         {
             if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
 
-            var cmd = _userSqlGenerator.GenerateInsert();
+            SqlQueryCommand cmd = _userSqlGenerator.GenerateInsert();
 
            
 
@@ -65,7 +66,7 @@ namespace HomeNetOrm.Repositories.Base
         public async Task UpdateAsync(UserEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
-            var cmd = _userSqlGenerator.GenerateUpdate();
+            SqlQueryCommand cmd = _userSqlGenerator.GenerateUpdate();
 
             int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity)));
@@ -78,7 +79,7 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task DeleteByIdAsync(Guid id)
         {
-            var cmd = _userSqlGenerator.GenerateDelete(id);
+            SqlQueryCommand cmd = _userSqlGenerator.GenerateDelete(id);
 
             int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
@@ -91,7 +92,7 @@ namespace HomeNetOrm.Repositories.Base
 
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
-            var cmd = _userSqlGenerator.GenerateSelectById(id);
+            SqlQueryCommand cmd = _userSqlGenerator.GenerateSelectById(id);
 
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params)));
@@ -102,7 +103,7 @@ namespace HomeNetOrm.Repositories.Base
 
            
 
-            var cmd = _userSqlGenerator.GenerateSelectAll();
+            SqlQueryCommand cmd = _userSqlGenerator.GenerateSelectAll();
 
            
 

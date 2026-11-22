@@ -3,18 +3,12 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
 
-namespace HomeNetServices.Services.Identity
+namespace HomeNetServices.Identity
 {
-    public class FriendService : IFriendService
+    public class FriendService(IFriendRepo friendRepository, ICastomLogger logger) : IFriendService
     {
-        private readonly IFriendRepo _friendRepository;
-        private readonly ICastomLogger _logger;
-
-        public FriendService(IFriendRepo friendRepository, ICastomLogger logger)
-        {
-            _friendRepository = friendRepository ?? throw new ArgumentNullException(nameof(friendRepository));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+        private readonly IFriendRepo _friendRepository = friendRepository ?? throw new ArgumentNullException(nameof(friendRepository));
+        private readonly ICastomLogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // 🤝 Добавить пользователя в контакты
         public async Task<bool> AddFriendToUserAsync(Guid userId, Guid friendId)
@@ -22,7 +16,7 @@ namespace HomeNetServices.Services.Identity
             try
             {
                 // Инициализируем модель с новыми Guid-идентификаторами сущностей
-                var friendLink = new FriendEntity
+                FriendEntity friendLink = new FriendEntity
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
@@ -51,7 +45,7 @@ namespace HomeNetServices.Services.Identity
         {
             try
             {
-                var friends = await _friendRepository.GetFriendsForUserAsync(userId);
+                IEnumerable<UserEntity> friends = await _friendRepository.GetFriendsForUserAsync(userId);
                 _logger.LogInfo($"[Контакты] Список друзей для пользователя с GUID {userId} успешно извлечён из SQLite.");
                 return friends;
             }

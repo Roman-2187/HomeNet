@@ -11,7 +11,6 @@
             public const CmdType Delete = CmdType.Delete;
             public const CmdType Insert = CmdType.Insert;
             public const CmdType Create = CmdType.Create;
-            public const CmdType Trigger = CmdType.Trigger;
             public const CmdType Function = CmdType.Function;
             public const CmdType Procedure = CmdType.Procedure;
         }

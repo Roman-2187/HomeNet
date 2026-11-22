@@ -4,7 +4,6 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Local;
 using HomeNetServices.Identity;
-using HomeNetServices.Services.Identity;
 using HomeNet.Network.Api;
 
 namespace HomeNet.DI.Modules

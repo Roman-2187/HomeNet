@@ -1,24 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Enums;
-using HomeNetCore.Enums;
 
-
-namespace HomeNetCore.Models
+namespace HomeNetPresentation.Models
 {
     
-    public partial class LogToken : ObservableObject
+    public partial class LogToken(string text, LogLevel level) : ObservableObject
 
     {
         [ObservableProperty]
-        private string _text = string.Empty;
-
-        public LogLevel Level { get; }
-
-        public LogToken(string text, LogLevel level)
-        {
-            _text = text;
-            Level = level;
-        }
+        public partial string Text { get; set; } = text;
+        public LogLevel Level { get; } = level;
 
         // Метод быстрого добавления символа без пересоздания строки
         public void Append(char c)

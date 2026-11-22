@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using HomeNet.DI;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetAvalonia.Infrastructure;
+using HomeNetAvalonia.MainViews;
 using HomeNetCore.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetPresentation.ViewModels;
@@ -86,7 +87,7 @@ namespace HomeNetAvalonia
                 // 5. Инициализируем окно и даём ему ViewModel
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    desktop.MainWindow = new Views.MainWindow
+                    desktop.MainWindow = new MainWindow
                     {
                         DataContext = _compositionRoot.GetViewModel<MainViewModel>()
                     };

@@ -1,5 +1,5 @@
-﻿using System.Linq.Expressions;
-using HomeNetOrm.Models;
+﻿using HomeNetOrm.Models;
+using System.Linq.Expressions;
 
 namespace HomeNetOrm.Builders
 {
@@ -7,20 +7,18 @@ namespace HomeNetOrm.Builders
     /// Билдер схемы таблицы для конкретного класса сущности.
     /// На полном автопилоте собирает структуру без ООП-каши и кэширования строк.
     /// </summary>
-    public class TableBuilder<TEntity> where TEntity : class
+    public class TableBuilder<TEntity>(string tableName)
+        where TEntity : class
     {
-        private readonly string _tableName;
         private readonly List<ColumnBuilder<TEntity>> _columnBuilders = new();
-        private bool _useVersionTrigger = false;
-
-        public TableBuilder(string tableName) => _tableName = tableName;
+        private bool _useVersionTrigger;
 
         /// <summary>
         /// Принимает C#-выражение свойства модели (например: x => x.DeviceId)
         /// </summary>
         public ColumnBuilder<TEntity> AddColumn(Expression<Func<TEntity, object?>> propertyExpression)
         {
-            var builder = new ColumnBuilder<TEntity>(propertyExpression);
+            ColumnBuilder<TEntity> builder = new(propertyExpression);
             _columnBuilders.Add(builder);
             return builder;
         }
@@ -39,14 +37,14 @@ namespace HomeNetOrm.Builders
         /// </summary>
         public TableSchema Generate()
         {
-            var columns = _columnBuilders
+            List<ColumnSchema> columns = _columnBuilders
                 .Select(builder => builder.Build())
                 .ToList();
 
             // 🔥 ЧИСТЫЙ АВТОПИЛОТ: Схема получает только сухие данные структуры
             return new TableSchema
             {
-                TableName = _tableName,
+                TableName = tableName,
                 Columns = columns,
                 UseVersionTrigger = _useVersionTrigger
             };

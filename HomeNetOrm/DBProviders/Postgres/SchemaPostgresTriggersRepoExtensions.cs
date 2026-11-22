@@ -30,9 +30,10 @@ namespace HomeNetOrm.DBProviders.Postgres
                 logger.LogInfo("[Postgres Migrator] ✅ Глобальная функция 'update_version_func' проверена.");
 
                 // 2. Адаптируем схему DeletedRecords в snake_case через твой турникет
-                var rawDeletedSchema = tableSchemas.First(s =>
+                IEnumerable<TableSchema> tableSchemata = tableSchemas as TableSchema[] ?? [.. tableSchemas];
+                TableSchema rawDeletedSchema = tableSchemata.First(s =>
                     s.TableName.Replace("\"", "").Equals("DeletedRecords", StringComparison.OrdinalIgnoreCase));
-                var snakeDeletedSchema = rawDeletedSchema.ToAdaptedSchemas().Snake;
+                TableSchema snakeDeletedSchema = rawDeletedSchema.ToAdaptedSchemas().Snake;
 
                 string deletedTable = translator.FormatTable(snakeDeletedSchema);
                 string colId = translator.FormatColumnName("id");
@@ -54,9 +55,9 @@ namespace HomeNetOrm.DBProviders.Postgres
                 logger.LogInfo("[Postgres Migrator] ✅ Функция надгробий 'log_deleted_record' проверена.");
 
                 // 4. Бежим по всем схемам таблиц
-                foreach (var schema in tableSchemas)
+                foreach (TableSchema schema in tableSchemata)
                 {
-                    if (schema == null || string.IsNullOrEmpty(schema.TableName)) continue;
+                    if (string.IsNullOrEmpty(schema.TableName)) continue;
 
                     // Проверяем по самой схеме: есть ли у таблицы отслеживание версий (колонка Version)
                     bool hasVersionColumn = schema.Columns.Any(c =>
@@ -81,26 +82,30 @@ namespace HomeNetOrm.DBProviders.Postgres
                     }
 
                     // --- ШАГ Б: Триггер надгробий (AFTER DELETE) для всех версионируемых таблиц, кроме самой DeletedRecords ---
-                    if (!cleanTableName.Equals("deletedrecords", StringComparison.OrdinalIgnoreCase))
+                    if (cleanTableName.Equals("deletedrecords", StringComparison.OrdinalIgnoreCase))
                     {
-                        string deleteTriggerName = $"trg_{cleanTableName}_deleted";
-                        if (!await TriggerExistsAsync(connection, deleteTriggerName))
-                        {
-                            logger.LogWarning($"[Postgres Migrator] Триггер надгробий '{deleteTriggerName}' не найден. Накатываем...");
+                        continue;
+                    }
 
-                            var snakeSchema = schema.ToAdaptedSchemas().Snake;
-                            string quotedTable = translator.FormatTable(snakeSchema);
-                            string entityTypeArg = schema.TableName.Replace("\"", "");
+                    string deleteTriggerName = $"trg_{cleanTableName}_deleted";
+                    if (await TriggerExistsAsync(connection, deleteTriggerName))
+                    {
+                        continue;
+                    }
 
-                            string deleteTriggerSql = $@"
+                    logger.LogWarning($"[Postgres Migrator] Триггер надгробий '{deleteTriggerName}' не найден. Накатываем...");
+
+                    TableSchema snakeSchema = schema.ToAdaptedSchemas().Snake;
+                    string quotedTable = translator.FormatTable(snakeSchema);
+                    string entityTypeArg = schema.TableName.Replace("\"", "");
+
+                    string deleteTriggerSql = $@"
                                 CREATE TRIGGER {deleteTriggerName}
                                 AFTER DELETE ON {quotedTable}
                                 FOR EACH ROW EXECUTE FUNCTION log_deleted_record('{entityTypeArg}');";
 
-                            await ExecuteSqlAsync(connection, deleteTriggerSql);
-                            logger.LogInfo($"[Postgres Migrator] ✅ Триггер надгробий '{deleteTriggerName}' привязан к '{schema.TableName}'.");
-                        }
-                    }
+                    await ExecuteSqlAsync(connection, deleteTriggerSql);
+                    logger.LogInfo($"[Postgres Migrator] ✅ Триггер надгробий '{deleteTriggerName}' привязан к '{schema.TableName}'.");
                 }
             }
             catch (Exception ex)
@@ -112,20 +117,20 @@ namespace HomeNetOrm.DBProviders.Postgres
 
         private static async Task<bool> TriggerExistsAsync(DbConnection connection, string triggerName)
         {
-            using var checkCmd = connection.CreateCommand();
+            await using DbCommand checkCmd = connection.CreateCommand();
             checkCmd.CommandText = "SELECT COUNT(*) FROM pg_trigger WHERE tgname = @tgname;";
-            var param = checkCmd.CreateParameter();
+            DbParameter param = checkCmd.CreateParameter();
             param.ParameterName = "@tgname";
             param.Value = triggerName;
             checkCmd.Parameters.Add(param);
 
-            var result = await checkCmd.ExecuteScalarAsync();
+            object? result = await checkCmd.ExecuteScalarAsync();
             return Convert.ToInt32(result) > 0;
         }
 
         private static async Task ExecuteSqlAsync(DbConnection connection, string sql)
         {
-            using var cmd = connection.CreateCommand();
+            await using DbCommand cmd = connection.CreateCommand();
             cmd.CommandText = sql;
             await cmd.ExecuteNonQueryAsync();
         }

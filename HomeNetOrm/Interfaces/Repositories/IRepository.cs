@@ -1,5 +1,5 @@
-﻿using System.Data.Common;
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using System.Data.Common;
 
 namespace HomeNetOrm.Interfaces.Repositories
 {

@@ -1,10 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using HomeNetPresentation.ViewModels;
 using System;
 
-namespace HomeNetAvalonia.Views
+namespace HomeNetAvalonia.MainViews
 {
     public partial class MainWindow : Window
     {

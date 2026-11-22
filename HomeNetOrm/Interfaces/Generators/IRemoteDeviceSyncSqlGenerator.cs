@@ -1,5 +1,4 @@
-﻿using System;
-using HomeNetOrm.Models;
+﻿using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces.Generators
 {

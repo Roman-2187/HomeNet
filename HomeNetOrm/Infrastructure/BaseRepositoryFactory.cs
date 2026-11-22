@@ -36,13 +36,14 @@ namespace HomeNetOrm.Infrastructure
             InitializeCommonRepositories();
 
             // 🔥 А ТЕПЕРЬ НАСЛЕДНИК ДОБАВИТ СВОИ
+            // ReSharper disable once VirtualMemberCallInConstructor
             RegisterSpecificRepositories();
         }
 
         private void InitializeCommonRepositories()
         {
-            var userGen = new UserSqlGenerator(Schemas, Translator, Logger);
-            var msgGen = new MessageSqlGenerator(Schemas, Translator, Logger);
+            UserSqlGenerator userGen = new(Schemas, Translator, Logger);
+            MessageSqlGenerator msgGen = new(Schemas, Translator, Logger);
 
             // Создаем репозитории (какой конструктор вызывать — решает наследник через фабричный метод)
             Repositories[typeof(IUserRepo)] = CreateUserRepository(userGen);
@@ -58,7 +59,7 @@ namespace HomeNetOrm.Infrastructure
 
         public T GetRepository<T>() where T : class
         {
-            if (Repositories.TryGetValue(typeof(T), out var repo))
+            if (Repositories.TryGetValue(typeof(T), out object? repo))
                 return (T)repo;
 
             throw new InvalidOperationException($"Репозиторий {typeof(T).Name} не зарегистрирован в фабрике.");

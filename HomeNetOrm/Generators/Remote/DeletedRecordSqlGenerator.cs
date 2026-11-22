@@ -3,22 +3,22 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Remote
 {
-    internal class DeletedRecordSqlGenerator : BaseSqlGenerator<DeletedRecordEntity>
+    internal class DeletedRecordSqlGenerator(
+        IEnumerable<TableSchema> schemas,
+        ISqlDialectTranslator translator,
+        ICastomLogger logger)
+        : BaseSqlGenerator<DeletedRecordEntity>(schemas, translator, logger)
     {
-        public DeletedRecordSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
-            : base(schemas, translator, logger) { }
-
         public SqlQueryCommand GenerateSelectSinceVersion(string entityType, long lastVersion) =>
             CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                    .Col(d => d.EntityType).Emit(OpType.Equal).Param(d => d.EntityType, entityType)
-                    .Emit(OpType.And)
-                    .Col(d => d.Version).Emit(OpType.GreaterThan).Param(d => d.Version, lastVersion)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where)
+                    .Col(d => d.EntityType).Emit(Equal).Param(d => d.EntityType, entityType)
+                    .Emit(And)
+                    .Col(d => d.Version).Emit(GreaterThan).Param(d => d.Version, lastVersion)
                 .Build();
     }
 }

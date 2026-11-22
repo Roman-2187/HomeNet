@@ -9,7 +9,7 @@ namespace HomeNetOrm.Schemes
     /// </summary>
     public abstract class BaseMessengerSchemaModule
     {
-        protected readonly List<TableSchema> _schemas = new();
+        protected readonly List<TableSchema> Schemas = [];
 
         protected BaseMessengerSchemaModule()
         {
@@ -19,21 +19,21 @@ namespace HomeNetOrm.Schemes
         private void BuildCommonSchemas()
         {
             // 1. СХЕМА ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ (Users)
-            var users = BuildUsersSchema();
-            _schemas.Add(users.Generate());
+            TableBuilder<UserEntity> users = BuildUsersSchema();
+            Schemas.Add(users.Generate());
 
             // 2. СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (Messages)
-            var messages = BuildMessagesSchema();
-            _schemas.Add(messages.Generate());
+            TableBuilder<MessageEntity> messages = BuildMessagesSchema();
+            Schemas.Add(messages.Generate());
 
             // 3. СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (Friends)
-            var friends = BuildFriendsSchema();
-            _schemas.Add(friends.Generate());
+            TableBuilder<FriendEntity> friends = BuildFriendsSchema();
+            Schemas.Add(friends.Generate());
         }
 
         protected virtual TableBuilder<UserEntity> BuildUsersSchema()
         {
-            var builder = new TableBuilder<UserEntity>("Users");
+            TableBuilder<UserEntity> builder = new TableBuilder<UserEntity>("Users");
             builder.AddColumn(u => u.Id).AsPrimaryKey();
            
             builder.AddColumn(u => u.FirstName).HasLength(50).IsRequired();
@@ -48,7 +48,7 @@ namespace HomeNetOrm.Schemes
 
         protected virtual TableBuilder<MessageEntity> BuildMessagesSchema()
         {
-            var builder = new TableBuilder<MessageEntity>("Messages");
+            TableBuilder<MessageEntity> builder = new TableBuilder<MessageEntity>("Messages");
             builder.AddColumn(m => m.Id).AsPrimaryKey();
             builder.AddColumn(m => m.SenderId).IsRequired();
             builder.AddColumn(m => m.ReceiverId).IsRequired();
@@ -63,7 +63,7 @@ namespace HomeNetOrm.Schemes
 
         protected virtual TableBuilder<FriendEntity> BuildFriendsSchema()
         {
-            var builder = new TableBuilder<FriendEntity>("Friends");
+            TableBuilder<FriendEntity> builder = new TableBuilder<FriendEntity>("Friends");
             builder.AddColumn(f => f.Id).AsPrimaryKey();
             builder.AddColumn(f => f.UserId).IsRequired();
             builder.AddColumn(f => f.FriendId).IsRequired();
@@ -73,6 +73,6 @@ namespace HomeNetOrm.Schemes
             return builder;
         }
 
-        public IEnumerable<TableSchema> GetSchemas() => _schemas;
+        public IEnumerable<TableSchema> GetSchemas() => Schemas;
     }
 }

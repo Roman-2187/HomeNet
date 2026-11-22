@@ -31,59 +31,59 @@ namespace HomeNetOrm.DBProviders.Sqlite
         // 🟥 1. Команды (DML / DDL)
         public string Translate(CmdType cmd) => cmd switch
         {
-            CmdType.Select => "SELECT",
-            CmdType.Update => "UPDATE",
-            CmdType.Delete => "DELETE",
-            CmdType.Insert => "INSERT",
-            CmdType.Create => "CREATE",
+            Select => "SELECT",
+            Update => "UPDATE",
+            Delete => "DELETE",
+            Insert => "INSERT",
+            Create => "CREATE",
             CmdType.Trigger => "TRIGGER",
-            CmdType.Function => "CREATE FACTORY",
-            CmdType.Procedure => "PROCEDURE",
+            Function => "CREATE FACTORY",
+            Procedure => "PROCEDURE",
             _ => throw new ArgumentOutOfRangeException(nameof(cmd))
         };
 
         // 🟨 2. Ключевые слова-связки
         public string Translate(PhraseType phrase) => phrase switch
         {
-            PhraseType.From => "FROM",
-            PhraseType.Where => "WHERE",
-            PhraseType.Set => "SET",
-            PhraseType.Into => "INTO",
-            PhraseType.Values => "VALUES",
-            PhraseType.Returning => "RETURNING",
-            PhraseType.OrderBy => "ORDER BY",
-            PhraseType.Language => "LANGUAGE",
-            PhraseType.On => "ON",
-            PhraseType.Conflict => "CONFLICT",
-            PhraseType.Do => "DO",
-            PhraseType.As => "AS",
+            From => "FROM",
+            Where => "WHERE",
+            Set => "SET",
+            Into => "INTO",
+            Values => "VALUES",
+            Returning => "RETURNING",
+            OrderBy => "ORDER BY",
+            Language => "LANGUAGE",
+            On => "ON",
+            Conflict => "CONFLICT",
+            Do => "DO",
+            As => "AS",
             // 🔥 Дописываем кейсы для триггерных структур
-            PhraseType.Sequence => "SEQUENCE",
-            PhraseType.OrDml => "OR",
+            Sequence => "SEQUENCE",
+            OrDml => "OR",
             _ => throw new ArgumentOutOfRangeException(nameof(phrase))
         };
 
         // 🟩 3. Операторы и логика (Истина/Ложь в SQLite — это 1 и 0)
         public string Translate(OpType op) => op switch
         {
-            OpType.Equal => "=",
-            OpType.And => "AND",
-            OpType.Or => "OR",
-            OpType.True => "1",
-            OpType.False => "0",
-            OpType.OpenBracket => "(",
-            OpType.CloseBracket => ")",
-            OpType.Asc => "ASC",
-            OpType.Desc => "DESC",
-            OpType.GreaterThan => ">",
-            OpType.IsNull => "IS NULL",
-            OpType.Begin => "BEGIN",
-            OpType.End => "END;",
+            Equal => "=",
+            And => "AND",
+            Or => "OR",
+            True => "1",
+            False => "0",
+            OpenBracket => "(",
+            CloseBracket => ")",
+            Asc => "ASC",
+            Desc => "DESC",
+            GreaterThan => ">",
+            IsNull => "IS NULL",
+            Begin => "BEGIN",
+            End => "END;",
             
-            OpType.NotEqual => "!=",
-            OpType.Comma => ",",
-            OpType.Excluded => "EXCLUDED", // 🆕 SQLite поймет конструкцию EXCLUDED.field один в один!
-            OpType.CurrentTimestamp => "CURRENT_TIMESTAMP", // 🆕 Встроенное время SQLite (вернет текущую дату-время)
+            NotEqual => "!=",
+            Comma => ",",
+            Excluded => "EXCLUDED", // 🆕 SQLite поймет конструкцию EXCLUDED.field один в один!
+            CurrentTimestamp => "CURRENT_TIMESTAMP", // 🆕 Встроенное время SQLite (вернет текущую дату-время)
             _ => throw new ArgumentOutOfRangeException(nameof(op)) //
         };
 

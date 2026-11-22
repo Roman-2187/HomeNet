@@ -1,6 +1,6 @@
 ﻿using Dapper;
-using System;
 using System.Data;
+using System.Globalization;
 
 namespace HomeNetOrm.Helpers
 {
@@ -18,19 +18,15 @@ namespace HomeNetOrm.Helpers
 
         public override DateTimeOffset Parse(object value)
         {
-            // Если из SQLite прилетела строка — парсим её стандартными средствами .NET,
-            // которые, в отличие от Dapper, переваривают любую длину миллисекунд!
-            if (value is string str && DateTimeOffset.TryParse(str, out var parsed))
+            return value switch
             {
-                return parsed;
-            }
-
-            if (value is DateTime dt)
-            {
-                return new DateTimeOffset(dt);
-            }
-
-            return DateTimeOffset.MinValue;
+                // Если из SQLite прилетела строка — парсим её стандартными средствами .NET,
+                // которые, в отличие от Dapper, переваривают любую длину миллисекунд!
+                string str when DateTimeOffset.TryParse(str, CultureInfo.InvariantCulture, out DateTimeOffset parsed) =>
+                    parsed,
+                DateTime dt => new DateTimeOffset(dt),
+                _ => DateTimeOffset.MinValue
+            };
         }
     }
 }

@@ -9,36 +9,25 @@ namespace HomeNetOrm.DBProviders.Base
     /// </summary>
     internal static class SchemaDiffVisualizer
     {
-        public static void LogDifferences(ICastomLogger logger, string dbName, string camelTableName, SchemaDiff diff, List<ColumnSchema>? expectedCamelCols)
+        public static void LogDifferences(ICastomLogger logger, string dbName, string camelTableName, SchemaDiff? diff, List<ColumnSchema>? expectedCamelCols)
         {
             if (diff == null || diff.IsIdentical) return;
 
             logger.LogWarning($"[{dbName} ⚠️] ВНИМАНИЕ: Обнаружены расхождения в структуре '{camelTableName}':");
 
-            // Локальная функция маппинга регистра
-            string GetLogName(string fallbackName) =>
-                expectedCamelCols?.FirstOrDefault(c => c != null && fallbackName.Equals(c.Name, StringComparison.OrdinalIgnoreCase))?.Name ?? fallbackName;
-
-            if (diff.MissingColumns != null)
+            foreach (ColumnSchema missing in diff.MissingColumns.Where(m => !string.IsNullOrEmpty(m.Name)))
             {
-                foreach (var missing in diff.MissingColumns.Where(m => m != null && !string.IsNullOrEmpty(m.Name)))
-                {
-                    logger.LogWarning($"   [-] ❌ Отсутствует колонка: {GetLogName(missing.Name)}");
-                }
+                logger.LogWarning($"   [-] ❌ Отсутствует колонка: {GetLogName(missing.Name)}");
             }
 
-            if (diff.ExtraColumns != null)
+            foreach (ColumnSchema extra in diff.ExtraColumns.Where(e => !string.IsNullOrEmpty(e.Name)))
             {
-                foreach (var extra in diff.ExtraColumns.Where(e => e != null && !string.IsNullOrEmpty(e.Name)))
-                {
-                    logger.LogWarning($"   [+] 🛑 Обнаружена лишняя колонка: {GetLogName(extra.Name)}");
-                }
+                logger.LogWarning($"   [+] 🛑 Обнаружена лишняя колонка: {GetLogName(extra.Name)}");
             }
 
-            if (diff.MismatchedColumns != null)
             {
-                var validMismatches = diff.MismatchedColumns.Where(m => m != null && !string.IsNullOrEmpty(m.ColumnName) && m.Expected != null && m.Actual != null);
-                foreach (var mismatch in validMismatches)
+                IEnumerable<ColumnMismatch> validMismatches = diff.MismatchedColumns.Where(m => !string.IsNullOrEmpty(m.ColumnName));
+                foreach (ColumnMismatch mismatch in validMismatches)
                 {
                     string reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
 
@@ -51,6 +40,12 @@ namespace HomeNetOrm.DBProviders.Base
                     logger.LogWarning($"[{dbName}]    [*] 🔄 Расхождение в '{GetLogName(mismatch.ColumnName)}': {reason}");
                 }
             }
+
+            return;
+
+            // Локальная функция маппинга регистра
+            string GetLogName(string fallbackName) =>
+                expectedCamelCols?.FirstOrDefault(c => fallbackName.Equals(c.Name, StringComparison.OrdinalIgnoreCase))?.Name ?? fallbackName;
         }
     }
 }

@@ -3,6 +3,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
+using System.Data;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Local
@@ -20,19 +21,19 @@ namespace HomeNetOrm.Repositories.Local
 
         public async Task<SettingsEntity?> GetActiveSessionAsync()
         {
-            var cmd = _sqlGenerator.GenerateSelectActiveSession();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectActiveSession();
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<SettingsEntity>(cmd.Sql, cmd.Params);
         }
 
         public async Task<SettingsEntity?> GetBySessionIdAsync(Guid sessionId)
         {
-            var cmd = _sqlGenerator.GenerateSelectById();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectById();
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<SettingsEntity>(cmd.Sql, new { Id = sessionId });
         }
 
@@ -40,22 +41,22 @@ namespace HomeNetOrm.Repositories.Local
         {
             if (string.IsNullOrWhiteSpace(email)) return null;
 
-            var cmd = _sqlGenerator.GenerateSelectByEmail();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectByEmail();
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<SettingsEntity>(cmd.Sql, new { Email = email.Trim() });
         }
 
         public async Task SaveSettingsAsync(SettingsEntity settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
 
             if (settings.LastUserVersion == 0 && settings.LastMessageVersion == 0 && !string.IsNullOrWhiteSpace(settings.Email))
             {
-                var existing = await GetByEmailAsync(settings.Email);
+                SettingsEntity? existing = await GetByEmailAsync(settings.Email);
                 if (existing != null)
                 {
                     settings.LastUserVersion = existing.LastUserVersion;
@@ -65,7 +66,7 @@ namespace HomeNetOrm.Repositories.Local
 
             if (settings.IsActive)
             {
-                var deactivateCmd = _sqlGenerator.GenerateDeactivateOthers(settings.Id);
+                SqlQueryCommand deactivateCmd = _sqlGenerator.GenerateDeactivateOthers(settings.Id);
                 await db.ExecuteAsync(deactivateCmd.Sql, deactivateCmd.Params);
             }
 
@@ -76,28 +77,28 @@ namespace HomeNetOrm.Repositories.Local
 
         public async Task UpdateLastUserVersionAsync(Guid userId, long newVersion)
         {
-            var cmd = _sqlGenerator.GenerateUpdateLastUserVersion(userId, newVersion);
+            SqlQueryCommand cmd = _sqlGenerator.GenerateUpdateLastUserVersion(userId, newVersion);
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
 
         public async Task UpdateLastMessageVersionAsync(Guid userId, long newVersion)
         {
-            var cmd = _sqlGenerator.GenerateUpdateLastMessageVersion(userId, newVersion);
+            SqlQueryCommand cmd = _sqlGenerator.GenerateUpdateLastMessageVersion(userId, newVersion);
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
 
         public async Task DeleteByUserIdAsync(Guid userId)
         {
-            var cmd = _sqlGenerator.GenerateDeleteByUserId(userId);
+            SqlQueryCommand cmd = _sqlGenerator.GenerateDeleteByUserId(userId);
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
     }

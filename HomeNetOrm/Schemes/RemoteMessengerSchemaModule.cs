@@ -4,18 +4,18 @@ using HomeNetOrm.Builders;
 namespace HomeNetOrm.Schemes
 {
     /// <summary>
-    /// 🌐 УДАЛЕННЫЙ МОДУЛЬ СХЕМ (Для PostgreSQL): Общие таблицы с триггерами версий + курсор девайсов + версионируемая таблица надгробий
+    /// 🌐 УДАЛЕННЫЙ МОДУЛЬ СХЕМ (Для PostgresSQL): Общие таблицы с триггерами версий + курсор девайсов + версионируемая таблица надгробий
     /// </summary>
     public class RemoteMessengerSchemaModule : BaseMessengerSchemaModule
     {
-        public RemoteMessengerSchemaModule() : base()
+        public RemoteMessengerSchemaModule()
         {
            
 
 
 
 
-            var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
+            TableBuilder<DeviceSyncEntity> deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync");
 
             deviceSync.AddColumn(d => d.Id).AsPrimaryKey(); // Актуальный SessionId
             deviceSync.AddColumn(d => d.UserId).IsRequired(); // Гарантирует 1 актуальную сессию на пользователя
@@ -23,11 +23,11 @@ namespace HomeNetOrm.Schemes
             deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);
 
-            _schemas.Add(deviceSync.Generate());
+            Schemas.Add(deviceSync.Generate());
 
 
             // 2. Серверная таблица надгробий (Tombstones) с отслеживанием версий
-            var deletedRecords = new TableBuilder<DeletedRecordEntity>("DeletedRecords")
+            TableBuilder<DeletedRecordEntity> deletedRecords = new TableBuilder<DeletedRecordEntity>("DeletedRecords")
                 .WithVersionTracking();
 
             deletedRecords.AddColumn(d => d.Id).AsPrimaryKey();
@@ -35,12 +35,12 @@ namespace HomeNetOrm.Schemes
             deletedRecords.AddColumn(d => d.DeletedAt).IsRequired();
             deletedRecords.AddColumn(d => d.Version);
 
-            _schemas.Add(deletedRecords.Generate());
+            Schemas.Add(deletedRecords.Generate());
         }
 
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
-            var builder = base.BuildUsersSchema().WithVersionTracking();
+            TableBuilder<UserEntity> builder = base.BuildUsersSchema().WithVersionTracking();
             builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
             builder.AddColumn(f => f.ServerCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
@@ -50,7 +50,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<MessageEntity> BuildMessagesSchema()
         {
-            var builder = base.BuildMessagesSchema().WithVersionTracking();
+            TableBuilder<MessageEntity> builder = base.BuildMessagesSchema().WithVersionTracking();
 
             builder.AddColumn(m => m.ServerCreatedAt);
             builder.AddColumn(m => m.UpdatedAt);
@@ -60,7 +60,7 @@ namespace HomeNetOrm.Schemes
 
         protected override TableBuilder<FriendEntity> BuildFriendsSchema()
         {
-            var builder = base.BuildFriendsSchema().WithVersionTracking();
+            TableBuilder<FriendEntity> builder = base.BuildFriendsSchema().WithVersionTracking();
             builder.AddColumn(f => f.Version);
             return builder;
         }

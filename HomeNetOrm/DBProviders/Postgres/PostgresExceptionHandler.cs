@@ -1,4 +1,4 @@
-﻿using HomeNetOrm.Exeptions;
+﻿using HomeNetOrm.Exceptions;
 using HomeNetOrm.Infrastructure;
 using Npgsql;
 
@@ -7,7 +7,7 @@ namespace HomeNetOrm.DBProviders.Postgres
     public class PostgresExceptionHandler : IDbExceptionHandler
     {
         public bool IsDuplicateKeyException(Exception ex)
-            => ex is PostgresException pgEx && pgEx.SqlState == "23505";
+            => ex is PostgresException { SqlState: "23505" };
 
         public Exception Translate(Exception ex)
         {

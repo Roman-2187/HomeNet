@@ -1,7 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Server.Filters;
-using HomeNetOrm.Exeptions;
+using HomeNetOrm.Exceptions;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Remote;
 using Microsoft.AspNetCore.Mvc;

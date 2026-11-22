@@ -32,7 +32,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
 
         public string? GetColumnFeatures(ColumnType type, bool isPk, bool isAi, object? defaultValue, bool isCreatedAt)
         {
-            var features = new List<string>();
+            List<string> features = [];
 
             if (defaultValue != null)
             {

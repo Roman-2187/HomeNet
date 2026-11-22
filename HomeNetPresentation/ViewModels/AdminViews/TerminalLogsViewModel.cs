@@ -2,26 +2,25 @@
 using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
 using System.Collections.ObjectModel;
+using LogToken = HomeNetPresentation.Models.LogToken;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class TerminalLogsViewModel : ObservableObject, IDisposable
+    public  class TerminalLogsViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
 
         // Ссылка на текущую строку лога, которую мы сейчас анимируем
         private List<LogToken>? _currentLine;
 
-        // Ссылка на последний активный токен (слово), куда прямо сейчас капают буквы
-        private LogToken? _activeToken;
+      
 
         // Символы, после которых мы железно "отрезаем" слово и начинаем новое
-        private readonly HashSet<char> _splitters = new() { ' ', ']', ':', ',', ';' };
+        private readonly HashSet<char> _splitters = [' ', ']', ':', ',', ';'];
 
         // Главная коллекция строк лога для XAML
-        public ObservableCollection<List<LogToken>> Logs { get; } = new();
+        public ObservableCollection<List<LogToken>> Logs { get; } = [];
 
         public TerminalLogsViewModel(IEventBus eventBus)
         {
@@ -37,7 +36,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
                 // 1. Парсим всю прилетевшую подросшую строку на отдельные слова
                 // Используем те же разделители, но сохраняем их в тексте, чтобы логи не слиплись
-                var tokensList = new List<LogToken>();
+                List<LogToken> tokensList = [];
                 string currentWord = "";
 
                 foreach (char c in msg.Text)
@@ -45,11 +44,13 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                     currentWord += c;
 
                     // Если дошли до разделителя — фиксируем слово как отдельный токен
-                    if (_splitters.Contains(c))
+                    if (!_splitters.Contains(c))
                     {
-                        tokensList.Add(new LogToken(currentWord, msg.Level));
-                        currentWord = "";
+                        continue;
                     }
+
+                    tokensList.Add(new LogToken(currentWord, msg.Level));
+                    currentWord = "";
                 }
 
                 // Если в конце осталось недописанное слово — тоже добавляем его в токены
@@ -71,22 +72,24 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                     // 🔥 ТВОЯ РОДНАЯ ЖЕЛЕЗОБЕТОННАЯ ПОДМЕНА!
                     // Находим индекс и просто перезаписываем строчку новым списком слов
                     int index = Logs.IndexOf(_currentLine);
-                    if (index >= 0)
+                    if (index < 0)
                     {
-                        _currentLine = tokensList;
-                        Logs[index] = tokensList; // Шлём в XAML обновленный массив слов
+                        return;
                     }
+
+                    _currentLine = tokensList;
+                    Logs[index] = tokensList; // Шлём в XAML обновленный массив слов
                 }
             }
             else // Конец сообщения (msg.IsAnimating == false)
             {
-                if (_currentLine != null && _currentLine.Count > 0)
+                if (_currentLine is { Count: > 0 })
                 {
-                    var emptyLine = new List<LogToken> { new LogToken(" ", LogLevel.Info) };
+                    List<LogToken> emptyLine = [new LogToken(" ", LogLevel.Info)];
                     Logs.Add(emptyLine);
                 }
                 _currentLine = null;
-                _activeToken = null;
+               
             }
         }
 

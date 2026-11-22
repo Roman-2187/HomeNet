@@ -6,24 +6,18 @@ using HomeNet.Network.Api;
 
 namespace HomeNetServices.Identity
 {
-    public class SettingsService : IDeviceSettingsService
+    public class SettingsService(
+        DeviceSettingsRepo deviceSettingsRepo,
+        IUserApiClient apiClient,
+        ICastomLogger logger)
+        : IDeviceSettingsService
     {
-        private readonly DeviceSettingsRepo _deviceSettingsRepo;
-        private readonly IUserApiClient _apiClient;
-        private readonly ICastomLogger _logger;
+        private readonly DeviceSettingsRepo _deviceSettingsRepo = deviceSettingsRepo ?? throw new ArgumentNullException(nameof(deviceSettingsRepo));
+        private readonly IUserApiClient _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+        private readonly ICastomLogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         private SettingsEntity? _cachedActiveSession;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
-
-        public SettingsService(
-            DeviceSettingsRepo deviceSettingsRepo,
-            IUserApiClient apiClient,
-            ICastomLogger logger)
-        {
-            _deviceSettingsRepo = deviceSettingsRepo ?? throw new ArgumentNullException(nameof(deviceSettingsRepo));
-            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
 
         private async Task EnsureActiveSessionLoadedAsync()
         {
@@ -76,9 +70,9 @@ namespace HomeNetServices.Identity
                     ? sessionId
                     : ImmortalDeviceProvider.CreateSessionIdForCurrentDevice(userId);
 
-                var existing = await _deviceSettingsRepo.GetBySessionIdAsync(activeSessionId);
+                SettingsEntity? existing = await _deviceSettingsRepo.GetBySessionIdAsync(activeSessionId);
 
-                var settings = existing ?? new SettingsEntity
+                SettingsEntity settings = existing ?? new SettingsEntity
                 {
                     Id = activeSessionId,
                     DeviceId = deviceId,
@@ -109,7 +103,7 @@ namespace HomeNetServices.Identity
             {
                 await EnsureActiveSessionLoadedAsync();
 
-                var settings = _cachedActiveSession;
+                SettingsEntity? settings = _cachedActiveSession;
                 if (settings == null) return;
 
                 // 1. Сначала просим сервер удалить текущую сессию (пока X-Session-Id в заголовке!)

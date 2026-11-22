@@ -2,8 +2,8 @@
 {
     public class ColumnMismatch
     {
-        public string ColumnName { get; set; } = string.Empty;
-        public required ColumnSchema Expected { get; set; } 
-        public required ColumnSchema Actual { get; set; }
+        public string ColumnName { get; init; } = string.Empty;
+        public required ColumnSchema Expected { get; init; } 
+        public required ColumnSchema Actual { get; init; }
     }
 }

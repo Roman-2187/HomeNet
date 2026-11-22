@@ -3,6 +3,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
+using System.Data;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Remote
@@ -23,8 +24,8 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task<DeviceSyncEntity> UpsertSessionAsync(Guid sessionId, Guid userId)
         {
-            var now = DateTimeOffset.UtcNow;
-            var syncData = new DeviceSyncEntity
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DeviceSyncEntity syncData = new DeviceSyncEntity
             {
                 Id = sessionId,
                 UserId = userId,
@@ -34,8 +35,8 @@ namespace HomeNetOrm.Repositories.Remote
 
             SqlQueryCommand cmd = _sqlGenerator.GenerateSessionUpsert();
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
 
             return (await GetByIdAsync(sessionId))!;
@@ -48,8 +49,8 @@ namespace HomeNetOrm.Repositories.Remote
         {
             SqlQueryCommand cmd = _sqlGenerator.GenerateSelectById(sessionId);
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             return await db.QueryFirstOrDefaultAsync<DeviceSyncEntity>(cmd.Sql, cmd.Params);
         }
 
@@ -60,8 +61,8 @@ namespace HomeNetOrm.Repositories.Remote
         /// </summary>
         public async Task<DeviceSyncEntity> CreateSessionAsync(Guid sessionId, Guid userId)
         {
-            var now = DateTimeOffset.UtcNow;
-            var syncData = new DeviceSyncEntity
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DeviceSyncEntity syncData = new DeviceSyncEntity
             {
                 Id = sessionId,
                 UserId = userId,
@@ -71,8 +72,8 @@ namespace HomeNetOrm.Repositories.Remote
 
             SqlQueryCommand cmd = _sqlGenerator.GenerateSessionInsert();
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, syncData);
 
             return (await GetByIdAsync(sessionId))!;
@@ -86,8 +87,8 @@ namespace HomeNetOrm.Repositories.Remote
         {
             SqlQueryCommand cmd = _sqlGenerator.GenerateDeleteById(sessionId);
 
-            using var db = _connectionFactory();
-            if (db.State != System.Data.ConnectionState.Open) await db.OpenAsync();
+            await using DbConnection db = _connectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
             await db.ExecuteAsync(cmd.Sql, cmd.Params);
         }
     }

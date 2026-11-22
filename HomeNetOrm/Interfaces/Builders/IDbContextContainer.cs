@@ -9,7 +9,7 @@
         /// <summary>
         /// Вложенный рекорд сигнала готовности Хаба
         /// </summary>
-        public record InfrastructureReady();
+        public record InfrastructureReady;
 
 
     }

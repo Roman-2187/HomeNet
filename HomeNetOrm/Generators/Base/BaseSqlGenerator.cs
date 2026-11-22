@@ -10,36 +10,36 @@ namespace HomeNetOrm.Generators.Base
     // 🔥 Единственный базовый класс в системе! Идеален для ЛЮБОГО генератора.
     internal abstract class BaseSqlGenerator<T> : ISqlGenerator<T> where T : class
     {
-        protected readonly TableSchema Schema;
-        protected readonly TableSchema CamelSchema;
-        protected readonly ICastomLogger Logger;
+        private readonly TableSchema _schema;
+        private readonly TableSchema _camelSchema;
+        private readonly ICastomLogger _logger;
 
         public ISqlDialectTranslator Translator { get; }
-        public IReadOnlyDictionary<string, string> DbColumns { get; }
+        private IReadOnlyDictionary<string, string> DbColumns { get; }
         public IReadOnlyDictionary<string, string> DapperParams { get; }
 
         protected BaseSqlGenerator(IEnumerable<TableSchema> availableSchemas, ISqlDialectTranslator translator, ICastomLogger logger)
         {
             Translator = translator ?? throw new ArgumentNullException(nameof(translator));
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ArgumentNullException.ThrowIfNull(availableSchemas);
 
             // 1. Ищем и адаптируем схему из общего реестра
-            var foundSchema = FindSchemaOrThrow(availableSchemas);
-            var adapted = AdaptSchemaOrThrow(foundSchema);
+            TableSchema foundSchema = FindSchemaOrThrow(availableSchemas);
+            (TableSchema Snake, TableSchema Camel) adapted = AdaptSchemaOrThrow(foundSchema);
 
-            Schema = adapted.Snake;
-            CamelSchema = adapted.Camel;
+            _schema = adapted.Snake;
+            _camelSchema = adapted.Camel;
 
             // 2. Вытаскиваем валидные пары колонок для маппинга
-            var validPairs = ExtractValidColumnPairs();
+            List<DynamicColumnPair> validPairs = ExtractValidColumnPairs();
 
             // 3. Формируем словари для работы с Dapper и SQL-диалектами
             DbColumns = validPairs.ToDictionary(p => p.Camel.Name!, p => p.Snake.Name!, StringComparer.OrdinalIgnoreCase);
             DapperParams = validPairs.ToDictionary(p => p.Camel.Name!, p => $"@{p.Camel.Name!}", StringComparer.OrdinalIgnoreCase);
         }
 
-        public TokenQueryBuilder<T> CreateQuery() => new(Translator, Schema, CamelSchema, DbColumns);
+        public TokenQueryBuilder<T> CreateQuery() => new(Translator, _schema, _camelSchema, DbColumns);
 
         #region Private Helper Methods
 
@@ -48,24 +48,25 @@ namespace HomeNetOrm.Generators.Base
             string targetEntityName = typeof(T).Name;
             string cleanName = targetEntityName.Replace("Entity", "");
 
-            var foundSchema = availableSchemas.FirstOrDefault(s =>
-                s != null && !string.IsNullOrEmpty(s.TableName) &&
+            TableSchema? foundSchema = availableSchemas.FirstOrDefault(s =>
+                !string.IsNullOrEmpty(s.TableName) &&
                 (s.TableName.Equals(cleanName + "s", StringComparison.OrdinalIgnoreCase) ||
                  s.TableName.Equals(cleanName, StringComparison.OrdinalIgnoreCase)));
 
-            if (foundSchema == null || string.IsNullOrEmpty(foundSchema.TableName))
+            if (foundSchema != null && !string.IsNullOrEmpty(foundSchema.TableName))
             {
-                Logger.LogCritical($"[ОРМ ДВИЖОК] Схема для класса {targetEntityName} отсутствует в реестре.");
-                throw new InvalidOperationException($"Схема для класса {targetEntityName} отсутствует.");
+                return foundSchema;
             }
 
-            return foundSchema;
+            _logger.LogCritical($"[ОРМ ДВИЖОК] Схема для класса {targetEntityName} отсутствует в реестре.");
+            throw new InvalidOperationException($"Схема для класса {targetEntityName} отсутствует.");
+
         }
 
         private (TableSchema Snake, TableSchema Camel) AdaptSchemaOrThrow(TableSchema foundSchema)
         {
-            var adapted = foundSchema.ToAdaptedSchemas();
-            if (adapted == null || adapted.Snake == null || adapted.Camel == null ||
+            AdaptedSchemas? adapted = foundSchema.ToAdaptedSchemas();
+            if (adapted.Snake == null || adapted.Camel == null ||
                 adapted.Snake.Columns == null || adapted.Camel.Columns == null)
             {
                 throw new InvalidOperationException($"Не удалось адаптировать схему для {typeof(T).Name}");
@@ -76,11 +77,12 @@ namespace HomeNetOrm.Generators.Base
 
         private List<DynamicColumnPair> ExtractValidColumnPairs()
         {
-            return CamelSchema.Columns
-                .Zip(Schema.Columns, (camel, snake) => new DynamicColumnPair { Camel = camel, Snake = snake })
-                .Where(p => p.Camel != null && !string.IsNullOrEmpty(p.Camel.Name) &&
-                            p.Snake != null && !string.IsNullOrEmpty(p.Snake.Name))
-                .ToList();
+            return
+            [
+                .. _camelSchema.Columns
+                    .Zip(_schema.Columns, (camel, snake) => new DynamicColumnPair { Camel = camel, Snake = snake })
+                    .Where(p => !string.IsNullOrEmpty(p.Camel.Name) && !string.IsNullOrEmpty(p.Snake.Name))
+            ];
         }
 
         // Вспомогательный служебный класс-контейнер для Zip-итератора

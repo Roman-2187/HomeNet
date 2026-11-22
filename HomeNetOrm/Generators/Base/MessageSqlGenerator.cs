@@ -3,77 +3,73 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Base
 {
-    internal class MessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
+    internal class MessageSqlGenerator(
+        IEnumerable<TableSchema> schemas,
+        ISqlDialectTranslator translator,
+        ICastomLogger logger)
+        : BaseSqlGenerator<MessageEntity>(schemas, translator, logger), IMessageSqlGenerator
     {
-        public MessageSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
-            : base(schemas, translator, logger)
-        {
-        }
-
         public SqlQueryCommand GenerateSelectChatHistory(Guid senderId, Guid receiverId) =>
         CreateQuery()
-            .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-            .Emit(PhraseType.Where)
-            .Emit(OpType.OpenBracket)
+            .Emit(Select).Fields().Emit(From).Table()
+            .Emit(Where)
+            .Emit(OpenBracket)
                 // Условие 1: Я отправил другу (SenderId1, ReceiverId1)
-                .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "1", senderId)
-                .Emit(OpType.And)
-                .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "1", receiverId)
-            .Emit(OpType.CloseBracket)
-            .Emit(OpType.Or)
-            .Emit(OpType.OpenBracket)
+                .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "1", senderId)
+                .Emit(And)
+                .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "1", receiverId)
+            .Emit(CloseBracket)
+            .Emit(Or)
+            .Emit(OpenBracket)
                 // Условие 2: Друг отправил мне (SenderId2, ReceiverId2)
-                .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "2", receiverId)
-                .Emit(OpType.And)
-                .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "2", senderId)
-            .Emit(OpType.CloseBracket)
-            .Emit(PhraseType.OrderBy).Col(m => m.LocalCreatedAt).Emit(OpType.Asc)
+                .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "2", receiverId)
+                .Emit(And)
+                .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "2", senderId)
+            .Emit(CloseBracket)
+            .Emit(OrderBy).Col(m => m.LocalCreatedAt).Emit(Asc)
             .Build();
 
         public SqlQueryCommand GenerateMarkAsRead(Guid senderId, Guid receiverId) =>
             CreateQuery()
-                .Emit(CmdType.Update).Table()
-                .Emit(PhraseType.Set).Col(m => m.IsRead).Emit(OpType.Equal).Emit(OpType.True)
-                .Emit(PhraseType.Where)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, senderId)
-                    .Emit(OpType.And)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, receiverId)
-                    .Emit(OpType.And)
-                    .Col(m => m.IsRead).Emit(OpType.Equal).Emit(OpType.False)
+                .Emit(Update).Table()
+                .Emit(Set).Col(m => m.IsRead).Emit(Equal).Emit(True)
+                .Emit(Where)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, senderId)
+                    .Emit(And)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, receiverId)
+                    .Emit(And)
+                    .Col(m => m.IsRead).Emit(Equal).Emit(False)
                 .Build();
 
         public SqlQueryCommand GenerateUnreadCount(Guid currentUserId, Guid friendId) =>
             CreateQuery()
-                .Emit(CmdType.Select).CountAll().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, currentUserId)
-                    .Emit(OpType.And)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, friendId)
-                    .Emit(OpType.And)
-                    .Col(m => m.IsRead).Emit(OpType.Equal).Emit(OpType.False)
+                .Emit(Select).CountAll().Emit(From).Table()
+                .Emit(Where)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, currentUserId)
+                    .Emit(And)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, friendId)
+                    .Emit(And)
+                    .Col(m => m.IsRead).Emit(Equal).Emit(False)
                 .Build();
 
         public SqlQueryCommand GenerateClearChatHistory(Guid senderId, Guid receiverId) =>
             CreateQuery()
-                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                .Emit(OpType.OpenBracket)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "1", senderId)
-                    .Emit(OpType.And)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "1", receiverId)
-                .Emit(OpType.CloseBracket)
-                .Emit(OpType.Or)
-                .Emit(OpType.OpenBracket)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "2", receiverId)
-                    .Emit(OpType.And)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "2", senderId)
-                .Emit(OpType.CloseBracket)
+                .Emit(Delete).Emit(From).Table()
+                .Emit(Where)
+                .Emit(OpenBracket)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "1", senderId)
+                    .Emit(And)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "1", receiverId)
+                .Emit(CloseBracket)
+                .Emit(Or)
+                .Emit(OpenBracket)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "2", receiverId)
+                    .Emit(And)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "2", senderId)
+                .Emit(CloseBracket)
                 .Build();
-
-        public object PrepareParameters(MessageEntity msg) => msg;
     }
 }

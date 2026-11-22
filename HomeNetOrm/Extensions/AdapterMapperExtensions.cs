@@ -1,10 +1,9 @@
-﻿using System;
+﻿using HomeNetOrm.Enums;
+using HomeNetOrm.Models;
 using System.Linq.Expressions;
 using System.Reflection;
-using HomeNetOrm.Enums;
-using HomeNetOrm.Models;
 
-namespace HomeNetOrm.DBProviders.Extensions
+namespace HomeNetOrm.Extensions
 {
     /// <summary>
     /// Статический движок маппинга: расширяет функционал адаптера схем, 
@@ -17,7 +16,7 @@ namespace HomeNetOrm.DBProviders.Extensions
         /// </summary>
         public static ColumnSchema MapPropertySchema<TEntity>(this Expression<Func<TEntity, object?>> expression) where TEntity : class
         {
-            if (expression == null) throw new ArgumentNullException(nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
 
             MemberExpression? memberExpression = expression.Body as MemberExpression;
 
@@ -27,13 +26,13 @@ namespace HomeNetOrm.DBProviders.Extensions
                 memberExpression = unaryExpression.Operand as MemberExpression;
             }
 
-            if (memberExpression == null || !(memberExpression.Member is PropertyInfo propertyInfo))
+            if (memberExpression is not { Member: PropertyInfo propertyInfo })
             {
                 throw new ArgumentException($"Выражение должно ссылаться на валидное свойство класса {typeof(TEntity).Name}.");
             }
 
             // 🔥 ФИКС: Убираем затертый OriginalName. Оставляем только чистое C# имя поля
-            var schema = new ColumnSchema
+            ColumnSchema schema = new ColumnSchema
             {
                 Name = propertyInfo.Name // Адаптер в слое конвертации позже переведет это в нужный регистр на лету 🐍
             };
@@ -51,17 +50,17 @@ namespace HomeNetOrm.DBProviders.Extensions
             // Прямое сопоставление фундаментальных типов C# и ColumnType движка
             schema.Type = propertyType switch
             {
-                Type t when t == typeof(int) || t == typeof(long) => ColumnType.Integer,
-                Type t when t == typeof(string) => ColumnType.Varchar,
-                Type t when t == typeof(bool) => ColumnType.Boolean,
+                not null when propertyType == typeof(int) || propertyType == typeof(long) => ColumnType.Integer,
+                not null when propertyType == typeof(string) => ColumnType.Varchar,
+                not null when propertyType == typeof(bool) => ColumnType.Boolean,
 
                 // Наш бро для кросс-базовой синхронизации (SQLite + Postgres) ⚡
-                Type t when t == typeof(Guid) => ColumnType.Guid,
+                not null when propertyType == typeof(Guid) => ColumnType.Guid,
 
                 // ⏱ ТОТАЛЬНЫЙ DateTimeOffset: 
                 // Заставляем любые типы даты-времени C# жестко маппиться в тип со смещением!
-                Type t when t == typeof(DateTime) => ColumnType.DateTimeOffset,
-                Type t when t == typeof(DateTimeOffset) => ColumnType.DateTimeOffset,
+                not null when propertyType == typeof(DateTime) => ColumnType.DateTimeOffset,
+                not null when propertyType == typeof(DateTimeOffset) => ColumnType.DateTimeOffset,
 
                 _ => ColumnType.Unspecified
             };

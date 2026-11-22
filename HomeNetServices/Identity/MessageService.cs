@@ -2,26 +2,20 @@
 using HomeNet.Network.Api;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Interfaces.Repositories;
-
-namespace HomeNetServices.Services.Identity
+using static HomeNetCore.Interfaces.Services.IMessageService;
+namespace HomeNetServices.Identity
 {
-    public class MessageService : IMessageService
+    public class MessageService(IMessageApiClient apiClient, IMessageRepo messageRepo) : IMessageService
     {
-        private readonly IMessageApiClient _apiClient;
-        private readonly IMessageRepo _messageRepo; // Для чтения истории
+        private readonly IMessageApiClient _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+        private readonly IMessageRepo _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo)); 
 
-        public MessageService(IMessageApiClient apiClient, IMessageRepo messageRepo)
-        {
-            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-            _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
-        }
-
-        public async Task<IMessageService.ChatVerdict> SendPrivateMessageAsync(Guid senderId, Guid receiverId, string text)
+        public async Task<ChatVerdict> SendPrivateMessageAsync(Guid senderId, Guid receiverId, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return new IMessageService.ChatVerdict(false, "Сообщение не может быть пустым", null);
+                return new ChatVerdict(false, "Сообщение не может быть пустым", null);
 
-            var entity = new MessageEntity
+            MessageEntity entity = new MessageEntity
             {
                 Id = Guid.NewGuid(),
                 SenderId = senderId,
@@ -38,21 +32,20 @@ namespace HomeNetServices.Services.Identity
                 // 🔥 Отправляем через API (API опубликует факт, SyncService запишет в SQLite)
                 bool success = await _apiClient.PushMessageAsync(entity);
 
-                if (success)
-                    return new IMessageService.ChatVerdict(true, string.Empty, entity);
-                else
-                    return new IMessageService.ChatVerdict(false, "Сервер недоступен. Сообщение не отправлено.", null);
+                return success
+                    ? new ChatVerdict(true, string.Empty, entity) 
+                    : new ChatVerdict(false, "Сервер недоступен. Сообщение не отправлено.", null);
             }
             catch (Exception ex)
             {
-                return new IMessageService.ChatVerdict(false, $"Ошибка API: {ex.Message}", null);
+                return new ChatVerdict(false, $"Ошибка API: {ex.Message}", null);
             }
         }
 
         public async Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId)
         {
           
-                var allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
+                IEnumerable<MessageEntity> allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
             
            

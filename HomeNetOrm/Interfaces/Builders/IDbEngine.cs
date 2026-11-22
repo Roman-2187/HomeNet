@@ -1,5 +1,4 @@
-﻿using HomeNetOrm.Interfaces.Generators;
-using System.Data.Common;
+﻿using System.Data.Common;
 
 namespace HomeNetOrm.Interfaces.Builders
 {

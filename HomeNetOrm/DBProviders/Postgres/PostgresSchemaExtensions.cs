@@ -13,20 +13,20 @@ namespace HomeNetOrm.DBProviders.Postgres
             var sb = new StringBuilder();
 
             // 1. Создаем глобальный счетчик в Postgres, если его еще нет
-            sb.Append($"{translator.Translate(CmdType.Create)} SEQUENCE IF NOT EXISTS {VersionSequenceName} START WITH 1; ");
+            sb.Append($"{translator.Translate(Create)} SEQUENCE IF NOT EXISTS {VersionSequenceName} START WITH 1; ");
 
             // 2. Пишем функцию, которая при любой операции выдает строке новое сквозное число
-            sb.Append($"{translator.Translate(CmdType.Create)} {translator.Translate(TriggerType.Replace)} ")
-              .Append($"{translator.Translate(CmdType.Function)} {VersionFunctionName}() ")
-              .Append($"{translator.Translate(TriggerType.Returns)} {translator.Translate(CmdType.Trigger)} {translator.Translate(PhraseType.As)} $$ ")
-              .Append($"{translator.Translate(OpType.Begin)} ")
+            sb.Append($"{translator.Translate(Create)} {translator.Translate(TriggerType.Replace)} ")
+              .Append($"{translator.Translate(Function)} {VersionFunctionName}() ")
+              .Append($"{translator.Translate(TriggerType.Returns)} {translator.Translate(CmdType.Trigger)} {translator.Translate(As)} $$ ")
+              .Append($"{translator.Translate(Begin)} ")
 
               // 🧙‍♂️ Вот он — статический сквозной инкремент! Новое число при ЛЮБОМ действии
               .Append($"{translator.Translate(TriggerType.New)}.version = nextval('{VersionSequenceName}'); ")
 
               .Append($"RETURN {translator.Translate(TriggerType.New)}; ")
-              .Append($"{translator.Translate(OpType.End)} $$ ")
-              .Append($"{translator.Translate(PhraseType.Language)} {PostgresLanguageMarker};");
+              .Append($"{translator.Translate(End)} $$ ")
+              .Append($"{translator.Translate(Language)} {PostgresLanguageMarker};");
 
             return sb.ToString();
         }
@@ -40,9 +40,9 @@ namespace HomeNetOrm.DBProviders.Postgres
             string formattedTable = translator.FormatTable(schema);
 
             var sb = new StringBuilder();
-            sb.Append($"{translator.Translate(CmdType.Create)} {translator.Translate(CmdType.Trigger)} {triggerName} ")
+            sb.Append($"{translator.Translate(Create)} {translator.Translate(CmdType.Trigger)} {triggerName} ")
               // 🎯 ТЕПЕРЬ СРАБАТЫВАЕТ И ПРИ ВСТАВКЕ, И ПРИ ОБНОВЛЕНИИ
-              .Append($"{translator.Translate(TriggerType.Before)} {translator.Translate(CmdType.Insert)} OR {translator.Translate(CmdType.Update)} ")
+              .Append($"{translator.Translate(TriggerType.Before)} {translator.Translate(Insert)} OR {translator.Translate(Update)} ")
               .Append($"{translator.Translate(TriggerType.On)} {formattedTable} ")
               .Append($"{translator.Translate(TriggerType.ForEach)} {translator.Translate(TriggerType.Row)} ")
               .Append($"{translator.Translate(TriggerType.Execute)} {VersionFunctionName}();");

@@ -7,9 +7,9 @@
         public List<ColumnSchema> ExtraColumns { get; set; } = [];
         public List<ColumnMismatch> MismatchedColumns { get; set; } = [];
 
-        public bool IsIdentical => !MissingColumns.Any() &&
-                                  !ExtraColumns.Any() &&
-                                  !MismatchedColumns.Any();
+        public bool IsIdentical => MissingColumns.Count == 0 &&
+                                  ExtraColumns.Count == 0 &&
+                                  MismatchedColumns.Count == 0;
     }
 
 

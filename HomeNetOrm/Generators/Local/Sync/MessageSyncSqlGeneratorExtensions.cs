@@ -1,8 +1,7 @@
 ﻿using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
 
-namespace HomeNetOrm.Generators.Extensions
+namespace HomeNetOrm.Generators.Local.Sync
 {
     // 🔥 Расширяем публичный интерфейс генератора сообщений
     internal static class MessageSyncSqlGeneratorExtensions
@@ -10,16 +9,16 @@ namespace HomeNetOrm.Generators.Extensions
         public static SqlQueryCommand GenerateSelectMessagesForSync(this IMessageSqlGenerator generator, Guid senderId, DateTimeOffset timestamp)
         {
             return generator.CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                .Emit(OpType.OpenBracket)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "1", senderId)
-                    .Emit(OpType.Or)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "1", senderId)
-                .Emit(OpType.CloseBracket)
-                .Emit(OpType.And)
-                    .Col(m => m.UpdatedAt).Emit(OpType.GreaterThan).Param(m => m.UpdatedAt, timestamp)
-                .Emit(PhraseType.OrderBy).Col(m => m.UpdatedAt).Emit(OpType.Asc)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where)
+                .Emit(OpenBracket)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "1", senderId)
+                    .Emit(Or)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "1", senderId)
+                .Emit(CloseBracket)
+                .Emit(And)
+                    .Col(m => m.UpdatedAt).Emit(GreaterThan).Param(m => m.UpdatedAt, timestamp)
+                .Emit(OrderBy).Col(m => m.UpdatedAt).Emit(Asc)
                 .Build();
         }
 
@@ -28,10 +27,10 @@ namespace HomeNetOrm.Generators.Extensions
         internal static SqlQueryCommand GenerateSelectUnsynced(this IMessageSqlGenerator generator)
         {
             return generator.CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                    .Col(m => m.IsSynced).Emit(OpType.Equal).Param(m => m.IsSynced, 0)
-                .Emit(PhraseType.OrderBy).Col(m => m.LocalCreatedAt).Emit(OpType.Asc)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where)
+                    .Col(m => m.IsSynced).Emit(Equal).Param(m => m.IsSynced, 0)
+                .Emit(OrderBy).Col(m => m.LocalCreatedAt).Emit(Asc)
                 .Build();
         }
 
@@ -41,16 +40,16 @@ namespace HomeNetOrm.Generators.Extensions
         internal static SqlQueryCommand GenerateSelectMessagesSinceVersion(this IMessageSqlGenerator generator, Guid userId, long sinceVersion)
         {
             return generator.CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                .Emit(OpType.OpenBracket)
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "1", userId)
-                    .Emit(OpType.Or)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "1", userId)
-                .Emit(OpType.CloseBracket)
-                .Emit(OpType.And)
-                    .Col(m => m.Version).Emit(OpType.GreaterThan).Param(m => m.Version, sinceVersion)
-                .Emit(PhraseType.OrderBy).Col(m => m.Version).Emit(OpType.Asc)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where)
+                .Emit(OpenBracket)
+                    .Col(m => m.SenderId).Emit(Equal).Param(m => m.SenderId, "1", userId)
+                    .Emit(Or)
+                    .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "1", userId)
+                .Emit(CloseBracket)
+                .Emit(And)
+                    .Col(m => m.Version).Emit(GreaterThan).Param(m => m.Version, sinceVersion)
+                .Emit(OrderBy).Col(m => m.Version).Emit(Asc)
                 .Build();
         }
 
@@ -58,17 +57,17 @@ namespace HomeNetOrm.Generators.Extensions
         internal static SqlQueryCommand GenerateUpsert(this IMessageSqlGenerator generator)
         {
             return generator.CreateQuery()
-                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .Emit(Insert).Emit(Into).Table()
                 .InsertFields()
-                .Emit(PhraseType.Values)
+                .Emit(Values)
                 .InsertParameters()
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict)
-                    .Emit(OpType.OpenBracket).Col(m => m.Id).Emit(OpType.CloseBracket)
-                .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(m => m.Text).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.Text).Emit(OpType.Comma)
-                    .Col(m => m.IsRead).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.IsRead).Emit(OpType.Comma)
-                    .Col(m => m.UpdatedAt).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(m => m.UpdatedAt).Emit(OpType.Comma)
-                    .Col(m => m.IsSynced).Emit(OpType.Equal).Emit(OpType.True)
+                .Emit(On).Emit(Conflict)
+                    .Emit(OpenBracket).Col(m => m.Id).Emit(CloseBracket)
+                .Emit(Do).Emit(Update).Emit(Set)
+                    .Col(m => m.Text).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.Text).Emit(Comma)
+                    .Col(m => m.IsRead).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.IsRead).Emit(Comma)
+                    .Col(m => m.UpdatedAt).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.UpdatedAt).Emit(Comma)
+                    .Col(m => m.IsSynced).Emit(Equal).Emit(True)
                 .Build();
         }
 

@@ -4,7 +4,7 @@ using HomeNetOrm.Interfaces.DbInfrastructure;
 namespace HomeNetOrm.DBProviders.Postgres
 {
     /// <summary>
-    /// Спецификация типов данных для PostgreSQL.
+    /// Спецификация типов данных для PostgresSQL.
     /// </summary>
     internal class PostgresProviderSpecification : IDbProviderSpecification
     {
@@ -27,7 +27,7 @@ namespace HomeNetOrm.DBProviders.Postgres
             };
         }
 
-        public ColumnType ParsePropertyType(string dbType) => dbType.ToLower() switch
+        public ColumnType ParsePropertyType(string dbType) => dbType.ToLowerInvariant() switch
         {
             "integer" or "numeric" => ColumnType.Integer,
             "text" or "character varying" or "varchar" => ColumnType.Varchar,

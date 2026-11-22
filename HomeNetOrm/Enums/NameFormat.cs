@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HomeNetOrm.Enums
+﻿namespace HomeNetOrm.Enums
 {
     public enum NameFormat
     {

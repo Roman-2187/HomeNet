@@ -1,6 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetOrm.DBProviders.Sqlite; // 🔥 Для SqliteExceptionHandler
+using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
@@ -9,6 +9,7 @@ using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
 using HomeNetOrm.Repositories.Local;
 using System.Data.Common;
+// 🔥 Для SqliteExceptionHandler
 
 namespace HomeNetOrm.Infrastructure
 {

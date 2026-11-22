@@ -1,5 +1,5 @@
-﻿using HomeNetOrm.DBProviders.Extensions;
-using HomeNetOrm.Enums;
+﻿using HomeNetOrm.Enums;
+using HomeNetOrm.Extensions;
 using HomeNetOrm.Models;
 using System.Linq.Expressions;
 
@@ -19,10 +19,9 @@ namespace HomeNetOrm.Builders
             _schema.IsAutoIncrement = false;
         }
 
-        public ColumnBuilder<TEntity> AsPrimaryKey()
+        public void AsPrimaryKey()
         {
             _schema.IsPrimaryKey = true;
-            return this;
         }
 
         // 🔥 Явно размечает колонку в схеме как GUID/UUID
@@ -101,12 +100,14 @@ namespace HomeNetOrm.Builders
         {
             // 🛠 ВАЛИДАЦИЯ АВТОИНКРЕМЕНТА: 
             // Проверяем тип Integer только если автоинкремент был включен вручную.
-            if (_schema.IsAutoIncrement)
+            if (!_schema.IsAutoIncrement)
             {
-                if (_schema.Type != ColumnType.Integer || !_schema.IsPrimaryKey)
-                {
-                    throw new InvalidOperationException($"Ошибка в колонке {_schema.Name}: AutoIncrement применим только к Integer Primary Key.");
-                }
+                return _schema;
+            }
+
+            if (_schema.Type != ColumnType.Integer || !_schema.IsPrimaryKey)
+            {
+                throw new InvalidOperationException($"Ошибка в колонке {_schema.Name}: AutoIncrement применим только к Integer Primary Key.");
             }
 
             return _schema;

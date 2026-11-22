@@ -1,8 +1,8 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
-using HomeNetOrm.Enums;
+﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace HomeNetOrm.DBProviders.Base
 {

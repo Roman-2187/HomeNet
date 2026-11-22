@@ -4,81 +4,81 @@ using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Local
 {
-    internal class SettingsSqlGenerator : BaseSqlGenerator<SettingsEntity>, ILocalDeviceSettingsSqlGenerator
+    internal class SettingsSqlGenerator(
+        IEnumerable<TableSchema> schemas,
+        ISqlDialectTranslator translator,
+        ICastomLogger logger)
+        : BaseSqlGenerator<SettingsEntity>(schemas, translator, logger), ILocalDeviceSettingsSqlGenerator
     {
-        public SettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
-            : base(schemas, translator, logger) { }
-
         public SqlQueryCommand GenerateSelectActiveSession() =>
             CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(d => d.IsActive).Emit(OpType.Equal).Param("IsActive", true)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where).Col(d => d.IsActive).Emit(Equal).Param(d => d.IsActive, true)
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
         public SqlQueryCommand GenerateSelectById() =>
             CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(d => d.Id).Emit(OpType.Equal).Param("Id", Guid.Empty)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where).Col(d => d.Id).Emit(Equal).Param(d => d.Id, Guid.Empty)
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
         public SqlQueryCommand GenerateSelectByEmail() =>
             CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(d => d.Email).Emit(OpType.Equal).Param("Email", string.Empty)
+                .Emit(Select).Fields().Emit(From).Table()
+                .Emit(Where).Col(d => d.Email).Emit(Equal).Param(d => d.Email, string.Empty)
                 .Raw(Translator.FormatLimit(1))
                 .Build();
 
         public SqlQueryCommand GenerateDeactivateOthers(Guid activeSessionId) =>
             CreateQuery()
-                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-                    .Col(d => d.IsActive).Emit(OpType.Equal).Param("IsActive", false)
-                .Emit(PhraseType.Where)
-                    .Col(d => d.Id).Emit(OpType.NotEqual).Param("Id", activeSessionId)
+                .Emit(Update).Table().Emit(Set)
+                .Col(d => d.IsActive).Emit(Equal).Param(d => d.IsActive, false)
+                .Emit(Where)
+                .Col(d => d.Id).Emit(NotEqual).Param(d => d.Id, activeSessionId)
                 .Build();
 
         public SqlQueryCommand GenerateUpdateLastUserVersion(Guid userId, long newVersion) =>
             CreateQuery()
-                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-                    .Col(d => d.LastUserVersion).Emit(OpType.Equal).Param(d => d.LastUserVersion, newVersion)
-                    .Emit(OpType.Comma)
-                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
-                .Emit(PhraseType.Where)
-                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+                .Emit(Update).Table().Emit(Set)
+                .Col(d => d.LastUserVersion).Emit(Equal).Param(d => d.LastUserVersion, newVersion)
+                .Emit(Comma)
+                .Col(d => d.UpdatedAt).Emit(Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(Where)
+                .Col(d => d.UserId).Emit(Equal).Param(d => d.UserId, userId)
                 .Build();
 
         public SqlQueryCommand GenerateUpdateLastMessageVersion(Guid userId, long newVersion) =>
             CreateQuery()
-                .Emit(CmdType.Update).Table().Emit(PhraseType.Set)
-                    .Col(d => d.LastMessageVersion).Emit(OpType.Equal).Param(d => d.LastMessageVersion, newVersion)
-                    .Emit(OpType.Comma)
-                    .Col(d => d.UpdatedAt).Emit(OpType.Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
-                .Emit(PhraseType.Where)
-                    .Col(d => d.UserId).Emit(OpType.Equal).Param(d => d.UserId, userId)
+                .Emit(Update).Table().Emit(Set)
+                .Col(d => d.LastMessageVersion).Emit(Equal).Param(d => d.LastMessageVersion, newVersion)
+                .Emit(Comma)
+                .Col(d => d.UpdatedAt).Emit(Equal).Param(d => d.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(Where)
+                .Col(d => d.UserId).Emit(Equal).Param(d => d.UserId, userId)
                 .Build();
 
         public SqlQueryCommand GenerateInsertOrUpdate() =>
             CreateQuery()
-                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
+                .Emit(Insert).Emit(Into).Table()
                 .InsertFields()
-                .Emit(PhraseType.Values)
+                .Emit(Values)
                 .InsertParameters()
-                .Emit(PhraseType.On).Emit(PhraseType.Conflict).Emit(OpType.OpenBracket).Col(d => d.UserId).Emit(OpType.CloseBracket)
-                .Emit(PhraseType.Do).Emit(CmdType.Update).Emit(PhraseType.Set)
-                    .Col(d => d.Id).Emit(OpType.Equal).Emit(OpType.Excluded).Raw(".").Col(d => d.Id)
-                    .Emit(OpType.Comma)
-                    .UpsertExcludedFields()
+                .Emit(On).Emit(Conflict).Emit(OpenBracket).Col(d => d.UserId).Emit(CloseBracket)
+                .Emit(Do).Emit(Update).Emit(Set)
+                .Col(d => d.Id).Emit(Equal).Emit(Excluded).Raw(".").Col(d => d.Id)
+                .Emit(Comma)
+                .UpsertExcludedFields()
                 .Build();
 
         public SqlQueryCommand GenerateDeleteByUserId(Guid userId) =>
             CreateQuery()
-                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(d => d.UserId).Emit(OpType.Equal).Param("UserId", userId)
+                .Emit(Delete).Emit(From).Table()
+                .Emit(Where).Col(d => d.UserId).Emit(Equal).Param(d => d.UserId, userId)
                 .Build();
     }
 }

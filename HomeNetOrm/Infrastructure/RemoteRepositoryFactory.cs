@@ -1,6 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetOrm.DBProviders.Postgres; // 🔥 Для PostgresExceptionHandler
-using HomeNetOrm.Generators.Base;
+using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
@@ -9,6 +8,7 @@ using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
 using HomeNetOrm.Repositories.Remote;
 using System.Data.Common;
+// 🔥 Для PostgresExceptionHandler
 
 namespace HomeNetOrm.Infrastructure
 {

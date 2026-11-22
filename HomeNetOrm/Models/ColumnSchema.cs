@@ -1,11 +1,10 @@
 ﻿using HomeNetOrm.Enums;
-using System;
 
 namespace HomeNetOrm.Models
 {
     public class ColumnSchema
     {
-        public  string Name { get; set; } = string.Empty;
+        public  string Name { get; init; } = string.Empty;
         public ColumnType Type { get; set; }
         public int Length { get; set; }
         public bool IsNullable { get; set; }
@@ -30,9 +29,8 @@ namespace HomeNetOrm.Models
             IsNullable = metadata.IsNullable;
             IsPrimaryKey = string.Equals(metadata.KeyType, "YES", StringComparison.OrdinalIgnoreCase);
 
-            IsAutoIncrement = metadata.ExtraInfo != null &&
-                             (metadata.ExtraInfo.Contains("nextval") ||
-                              metadata.ExtraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase));
+            IsAutoIncrement = (metadata.ExtraInfo.Contains("nextval") ||
+                               metadata.ExtraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase));
         }
 
         public override string ToString() => $"{Name} ({Type})";

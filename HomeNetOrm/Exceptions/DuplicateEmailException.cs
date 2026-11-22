@@ -1,8 +1,8 @@
-﻿namespace HomeNetOrm.Exeptions
+﻿namespace HomeNetOrm.Exceptions
 {
     public class DuplicateEmailException : Exception
     {
-        public string Email { get; }
+        private string Email { get; }
 
         // Основной конструктор: только email → сообщение генерируется автоматически
         public DuplicateEmailException(string email)

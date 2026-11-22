@@ -2,8 +2,8 @@
 {
     public class TableSchema
     {
-        public string TableName { get; set; } = string.Empty;
-        public List<ColumnSchema> Columns { get; set; } = new();
+        public string TableName { get; init; } = string.Empty;
+        public List<ColumnSchema> Columns { get; init; } = [];
 
         // Оставляем только важный флаг логики
         public bool UseVersionTrigger { get; set; } = false;

@@ -1,9 +1,9 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
-using Dapper;
+﻿using Dapper;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Builders

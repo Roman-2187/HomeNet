@@ -1,4 +1,4 @@
-﻿namespace HomeNetOrm.Exeptions
+﻿namespace HomeNetOrm.Exceptions
 {
     [Serializable]
     public class SchemaProviderException : Exception

@@ -1,7 +1,8 @@
-﻿using HomeNet.Models.Shared.Entity; // Где лежит твоя BaseEntity
+﻿using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Builders;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using static HomeNetOrm.Enums.Sql;
+// Где лежит твоя BaseEntity
 
 namespace HomeNetOrm.Generators.Base
 {
@@ -10,57 +11,59 @@ namespace HomeNetOrm.Generators.Base
     {
       
 
-        public static SqlQueryCommand GenerateInsert<T>(this ISqlGenerator<T> generator) where T : BaseEntity
+        extension<T>(ISqlGenerator<T> generator) where T : BaseEntity
         {
-            // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
-            var baseGen = (BaseSqlGenerator<T>)generator;
+            public SqlQueryCommand GenerateInsert()
+            {
+                // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
+                BaseSqlGenerator<T> baseGen = (BaseSqlGenerator<T>)generator;
 
-            var builder = generator.CreateQuery()
-                .Emit(CmdType.Insert).Emit(PhraseType.Into).Table()
-                .InsertFields()
-                .Emit(PhraseType.Values)
-                .InsertParameters();
+                TokenQueryBuilder<T> builder = generator.CreateQuery()
+                    .Emit(Insert).Emit(Into).Table()
+                    .InsertFields()
+                    .Emit(Values)
+                    .InsertParameters();
 
-            // Теперь Translator пробивается со строгой типизацией
-            string returningSql = baseGen.Translator.FormatReturningId("id");
+                // Теперь Translator пробивается со строгой типизацией
+                string returningSql = baseGen.Translator.FormatReturningId("id");
 
-            return builder.Raw(returningSql).Build();
-        }
+                return builder.Raw(returningSql).Build();
+            }
 
-        public static SqlQueryCommand GenerateUpdate<T>(this ISqlGenerator<T> generator) where T : BaseEntity
-        {
-            // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
-            var baseGen = (BaseSqlGenerator<T>)generator;
+            public SqlQueryCommand GenerateUpdate()
+            {
+                // 🔥 Кастуем к конкретному базовому классу вместо dynamic!
+                BaseSqlGenerator<T> baseGen = (BaseSqlGenerator<T>)generator;
 
-            return generator.CreateQuery()
-                .Emit(CmdType.Update).Table()
-                .Emit(PhraseType.Set).SetFields()
-                .Emit(PhraseType.Where).Col(e => e.Id).Emit(OpType.Equal).Param(e => e.Id, baseGen.DapperParams["Id"])
-                .Build();
-        }
+                return generator.CreateQuery()
+                    .Emit(Update).Table()
+                    .Emit(Set).SetFields()
+                    .Emit(Where).Col(e => e.Id).Emit(Equal).Param(e => e.Id, baseGen.DapperParams["Id"])
+                    .Build();
+            }
 
+            public SqlQueryCommand GenerateSelectAll()
+            {
+                return generator.CreateQuery()
+                    .Emit(Select).Fields().Emit(From).Table()
+                    .Build();
+            }
 
-        public static SqlQueryCommand GenerateSelectAll<T>(this ISqlGenerator<T> generator) where T : BaseEntity
-        {
-            return generator.CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Build();
-        }
+            public SqlQueryCommand GenerateDelete(Guid id)
+            {
+                return generator.CreateQuery()
+                    .Emit(Delete).Emit(From).Table()
+                    .Emit(Where).Col(e => e.Id).Emit(Equal).Param(e => e.Id, id)
+                    .Build();
+            }
 
-        public static SqlQueryCommand GenerateDelete<T>(this ISqlGenerator<T> generator, Guid id) where T : BaseEntity
-        {
-            return generator.CreateQuery()
-                .Emit(CmdType.Delete).Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(e => e.Id).Emit(OpType.Equal).Param(e => e.Id, id)
-                .Build();
-        }
-
-        public static SqlQueryCommand GenerateSelectById<T>(this ISqlGenerator<T> generator, Guid id) where T : BaseEntity
-        {
-            return generator.CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where).Col(e => e.Id).Emit(OpType.Equal).Param(e => e.Id, id)
-                .Build();
+            public SqlQueryCommand GenerateSelectById(Guid id)
+            {
+                return generator.CreateQuery()
+                    .Emit(Select).Fields().Emit(From).Table()
+                    .Emit(Where).Col(e => e.Id).Emit(Equal).Param(e => e.Id, id)
+                    .Build();
+            }
         }
     }
 }

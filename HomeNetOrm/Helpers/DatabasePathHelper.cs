@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO;
-
-namespace HomeNetOrm.Helpers
+﻿namespace HomeNetOrm.Helpers
 {
     public static class DatabasePathHelper
     {
@@ -28,15 +25,6 @@ namespace HomeNetOrm.Helpers
             return fullPath;
         }
     }
-
-
-        class TestMain
-        {
-          string connectionString = $"Data Source={DatabasePathHelper.GetDatabasePath("home_net.db")}";
-        }
-
-
-
 }
 
 

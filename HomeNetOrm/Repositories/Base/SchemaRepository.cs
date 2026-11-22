@@ -4,7 +4,6 @@ using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
-using HomeNetOrm.Schemes;
 using System.Data;
 using System.Data.Common;
 
@@ -33,7 +32,7 @@ namespace HomeNetOrm.Repositories.Base
             _logger = logger
                 ?? throw new ArgumentNullException(nameof(logger));
 
-            _dbName = _dbConnection.GetType().Name.Contains("NpgsqlConnection") ? "PostgreSQL" : "SQLite";
+            _dbName = _dbConnection.GetType().Name.Contains("NpgsqlConnection") ? "PostgresSQL" : "SqLite";
         }
 
         public async Task InitializeAsync()
@@ -41,15 +40,15 @@ namespace HomeNetOrm.Repositories.Base
             _logger.LogInfo($"=== 🚀 СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
             // 🌟 LINQ-фильтрация: Убираем из цепочки весь мусор, null-объекты и пустые схемы одной декларативной строкой
-            var validSchemas = _tableSchemas
-                .Where(s => s != null && !string.IsNullOrEmpty(s.TableName))
+            IEnumerable<(TableSchema Raw, AdaptedSchemas Adapted)> validSchemas = _tableSchemas
+                .Where(s => !string.IsNullOrEmpty(s.TableName))
                 .Select(s => (Raw: s, Adapted: s.ToAdaptedSchemas()))
                 .Where(x => x.Adapted?.Snake?.TableName != null && x.Adapted?.Camel?.TableName != null);
 
-            foreach (var (raw, adapted) in validSchemas)
+            foreach ((TableSchema raw, AdaptedSchemas adapted) in validSchemas)
             {
-                var camelName = adapted.Camel.TableName;
-                var snakeSchema = adapted.Snake;
+                string camelName = adapted.Camel.TableName;
+                TableSchema snakeSchema = adapted.Snake;
 
                 try
                 {
@@ -77,11 +76,11 @@ namespace HomeNetOrm.Repositories.Base
 
         private async Task<bool> TableExistsAsync(string dbTableName)
         {
-            var cmd = _schemaSqlInitializer.GenerateTableExistsSql(dbTableName);
+            SqlQueryCommand cmd = _schemaSqlInitializer.GenerateTableExistsSql(dbTableName);
 
             try
             {
-                var result = await _dbConnection.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
+                int result = await _dbConnection.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
                 return result > 0;
             }
             catch (Exception ex)
@@ -113,26 +112,26 @@ namespace HomeNetOrm.Repositories.Base
             if (string.IsNullOrEmpty(snakeSchema.TableName)) return;
             if (_dbConnection.State != ConnectionState.Open) await _dbConnection.OpenAsync();
 
-            var expectedSchemaRaw = await _schemaProvider.GetActualTableSchemaAsync(snakeSchema.TableName);
+            TableSchema? expectedSchemaRaw = await _schemaProvider.GetActualTableSchemaAsync(snakeSchema.TableName);
 
             // Guard Clause: Проверка поврежденной или пустой схемы
-            if (expectedSchemaRaw?.Columns == null || expectedSchemaRaw.Columns.Count == 0 || !expectedSchemaRaw.Columns.Any(c => c != null && c.IsPrimaryKey))
+            if (expectedSchemaRaw?.Columns == null || expectedSchemaRaw.Columns.Count == 0 || !expectedSchemaRaw.Columns.Any(c => c.IsPrimaryKey))
             {
                 _logger.LogError($"[{_dbName} ❌ ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{camelTableName}' пропущена, так как схема в БД повреждена или пуста.");
                 return;
             }
 
             // 1. Быстрый и чистый вызов статического компарера
-            var diff = SchemaComparer.Compare(expectedSchemaRaw, snakeSchema);
+            SchemaDiff? diff = SchemaComparer.Compare(expectedSchemaRaw, snakeSchema);
 
-            if (diff == null || diff.IsIdentical)
+            if (diff.IsIdentical)
             {
                 _logger.LogInfo($"[{_dbName}] ✅ Структура таблицы '{camelTableName}' в полном порядке.");
                 return;
             }
 
             // 2. Делегируем всю черновую работу по разбору логов нашему новому визуализатору
-            var expectedCamelCols = expectedSchemaRaw.ToAdaptedSchemas()?.Camel?.Columns;
+            List<ColumnSchema>? expectedCamelCols = expectedSchemaRaw.ToAdaptedSchemas()?.Camel?.Columns;
             SchemaDiffVisualizer.LogDifferences(_logger, _dbName, camelTableName, diff, expectedCamelCols);
         }
 

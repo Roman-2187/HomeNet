@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Generators.Extensions;
+using HomeNetOrm.Generators.Local.Sync;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Base;
