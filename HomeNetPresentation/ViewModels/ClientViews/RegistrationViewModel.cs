@@ -7,9 +7,9 @@ using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetCore.Validation;
-using HomeNetPresentation.Services;
+using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
     /// Чистая форма регистрации мессенджера SiberNet.
@@ -49,9 +49,9 @@ namespace HomeNetPresentation.ViewModels
             SubmitButtonText = "Создать ID";
         }
 
-        public void ResetForm()
+        private void ResetForm()
         {
-            UserData = new();
+            UserData = new UserEntity();
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
         }

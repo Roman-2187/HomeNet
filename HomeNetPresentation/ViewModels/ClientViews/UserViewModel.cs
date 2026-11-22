@@ -4,20 +4,20 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetPresentation.Services;
+using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
-    /// Тотально изолированная и чистая панель пользователя SiberNet.
+    /// Тотально изолированная и чистая панель пользователя HomeNet.
     /// Больше не содержит внутри себя ссылки на другие вью-модели! 🧼
     /// </summary>
-    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable ,IUserVm
+    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>,IUserVm
     {
-        private Guid _currentUserId;
-        ICastomLogger _logger;
+        private readonly ICastomLogger _logger;
 
-        [ObservableProperty] private ClientSubTab _activeClientTab = ClientSubTab.None;
+        [ObservableProperty]
+        public partial ClientSubTab ActiveClientTab { get; set; } = ClientSubTab.None;
 
         public UserViewModel(ICastomLogger logger, IEventBus eventBus, UserNavigationManager navigation)
             : base(eventBus, navigation)
@@ -47,7 +47,7 @@ namespace HomeNetPresentation.ViewModels
         }
 
 
-        private void OnClientTabChanged(IUserVm.ClientTabChanged msg)
+        private void OnClientTabChanged(IUserVm.ClientTabChanged? msg)
         {
             if (msg == null)
             {
@@ -63,13 +63,11 @@ namespace HomeNetPresentation.ViewModels
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
-            _currentUserId = msg.User.Id;
         }
 
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
-            _currentUserId = msg.User.Id;
         }
 
         public override void Dispose()

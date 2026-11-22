@@ -7,8 +7,8 @@ using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetPresentation.Services;
 using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
+using UserNavigationManager = HomeNetPresentation.Serviсes.UserNavigationManager;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {

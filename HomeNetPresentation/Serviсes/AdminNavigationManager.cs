@@ -4,15 +4,16 @@ using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 
-namespace HomeNetPresentation.Services
+
+namespace HomeNetPresentation.Serviсes
 {
     /// <summary>
-    /// Автономный менеджер навигации зоны администратора SiberNet.
+    /// Автономный менеджер навигации зоны администратора HomeNet.
     /// Переключает макро-зону и возвращает полный дуэт стейтов в тайтлбар.
     /// </summary>
     public partial class AdminNavigationManager : BaseNavigationState
     {
-        [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.None;
+        [ObservableProperty] private partial AdminSubTab CurrentAdminTab { get; set; } = AdminSubTab.None;
 
         public AdminNavigationManager(IEventBus eventBus) : base(eventBus)
         {

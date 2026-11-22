@@ -1,22 +1,20 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetPresentation.Services;
+
+using BaseNavigationState = HomeNetPresentation.Serviсes.BaseNavigationState;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class MainViewModel
     {
-        private readonly ICastomLogger _logger;
-        private readonly IEventBus _eventBus;
-
         public MainViewModel(ICastomLogger logger, IEventBus eventBus, BaseNavigationState navigation)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            ICastomLogger logger1 = logger ?? throw new ArgumentNullException(nameof(logger));
+            IEventBus eventBus1 = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-            _eventBus.Subscribe<WindowOpenedEvent>(e =>
+            eventBus1.Subscribe<WindowOpenedEvent>(e =>
             {
-                _logger.LogInfo($"[PERF] Окно открыто через {e.ElapsedMs} мс");
+                logger1.LogInfo($"[PERF] Окно открыто через {e.ElapsedMs} мс");
             });
         }
     }
@@ -24,6 +22,6 @@ namespace HomeNetPresentation.ViewModels
 
     public class WindowOpenedEvent
     {
-        public long ElapsedMs { get; set; }
+        public long ElapsedMs { get; init; }
     }
 }

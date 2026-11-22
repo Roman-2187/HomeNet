@@ -3,10 +3,10 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetPresentation.Services;
+using HomeNetPresentation.Serviсes;
 using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.ClientViews;
 using Moq;
-using Xunit;
 using Assert = Xunit.Assert;
 
 namespace HomeNetTests
@@ -17,12 +17,12 @@ namespace HomeNetTests
         public void When_OpenRegistrationRequested_Then_UserViewModel_ShouldReceive_RegistrationTab()
         {
             // 1. ARRANGE (Подготовка окружения)
-            var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ICastomLogger>();
+            Mock<IEventBus> eventBusMock = new();
+            Mock<ICastomLogger> loggerMock = new();
 
             // Списки для хранения колбэков, которые компоненты зарегистрируют в шине
-            Action<IUserVm.OpenRegistration> navigatorOpenRegCallback = null;
-            Action<IUserVm.ClientTabChanged> userVmTabChangedCallback = null;
+            Action<IUserVm.OpenRegistration>? navigatorOpenRegCallback = null;
+            Action<IUserVm.ClientTabChanged>? userVmTabChangedCallback = null;
 
             // Перехватываем подписку Навигатора на запрос регистрации
             eventBusMock
@@ -45,15 +45,15 @@ namespace HomeNetTests
                 });
 
             // Инициализируем систему (они сами подписываются на мок шины)
-            var navigator = new UserNavigationManager(eventBusMock.Object, loggerMock.Object);
-            var userViewModel = new UserViewModel(loggerMock.Object, eventBusMock.Object, navigator);
+            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
 
             // Проверяем, что все подписки успешно перехвачены моком
             Assert.NotNull(navigatorOpenRegCallback);
             Assert.NotNull(userVmTabChangedCallback);
 
             // Создаем заглушку для сообщения "Хочу регистрацию" (например, от нажатия кнопки на панели)
-            var openRegMsgMock = new Mock<IUserVm.OpenRegistration>();
+            Mock<IUserVm.OpenRegistration> openRegMsgMock = new();
 
             // 2. ACT (Действие — имитируем клик/команду на регистрацию)
             // Вызываем колбэк навигатора, как будто в шину прилетела команда IUserVm.OpenRegistration
@@ -69,11 +69,11 @@ namespace HomeNetTests
         public void When_OpenAuthRequested_Then_UserViewModel_ShouldReceive_AuthenticationTab()
         {
             // 1. ARRANGE (Подготовка окружения)
-            var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ICastomLogger>();
+            Mock<IEventBus> eventBusMock = new();
+            Mock<ICastomLogger> loggerMock = new();
 
-            Action<IUserVm.OpenAuth> navigatorOpenAuthCallback = null;
-            Action<IUserVm.ClientTabChanged> userVmTabChangedCallback = null;
+            Action<IUserVm.OpenAuth>? navigatorOpenAuthCallback = null;
+            Action<IUserVm.ClientTabChanged>? userVmTabChangedCallback = null;
 
             // Перехватываем подписку Навигатора на запрос Входа
             eventBusMock
@@ -94,15 +94,15 @@ namespace HomeNetTests
                 });
 
             // Инициализируем компоненты
-            var navigator = new UserNavigationManager(eventBusMock.Object, loggerMock.Object);
-            var userViewModel = new UserViewModel(loggerMock.Object, eventBusMock.Object, navigator);
+            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
 
             // Проверяем, что подписки успешно перехвачены
             Assert.NotNull(navigatorOpenAuthCallback);
             Assert.NotNull(userVmTabChangedCallback);
 
             // Создаем заглушку для сообщения "Хочу войти" (имитация клика по кнопке "Вход")
-            var openAuthMsgMock = new Mock<IUserVm.OpenAuth>();
+            Mock<IUserVm.OpenAuth> openAuthMsgMock = new();
 
             // 2. ACT (Действие)
             // Имитируем, что в шину прилетела команда IUserVm.OpenAuth
@@ -117,12 +117,12 @@ namespace HomeNetTests
         public void When_UserSignedIn_Then_UserViewModel_ShouldReceive_MessengerTab()
         {
             // 1. ARRANGE (Подготовка окружения)
-            var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ICastomLogger>();
+            Mock<IEventBus> eventBusMock = new();
+            Mock<ICastomLogger> loggerMock = new();
 
             // Коллекция для хранения ВСЕХ подписчиков на событие успешного входа
-            var signedInCallbacks = new List<Action<IUserVm.UserSignedIn>>();
-            Action<IUserVm.ClientTabChanged> userVmTabChangedCallback = null;
+            List<Action<IUserVm.UserSignedIn>> signedInCallbacks = [];
+            Action<IUserVm.ClientTabChanged>? userVmTabChangedCallback = null;
 
             // Универсальный перехватчик подписок на UserSignedIn. 
             // Каждый раз, когда кто-то (Навигатор или ЮзерВМ) вызывает Subscribe, мы добавляем его колбэк в список.
@@ -148,16 +148,16 @@ namespace HomeNetTests
                 });
 
             // Инициализируем компоненты (они внутри себя вызовут Subscribe, и наши списки заполнятся)
-            var navigator = new UserNavigationManager(eventBusMock.Object, loggerMock.Object);
-            var userViewModel = new UserViewModel(loggerMock.Object, eventBusMock.Object, navigator);
+            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
+            UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object, navigator);
 
             // Создаем реальные объекты данных для отправки
-            var realUser = new UserEntity();
-            var realMessage = new IUserVm.UserSignedIn(realUser);
+            UserEntity realUser = new();
+            IUserVm.UserSignedIn realMessage = new(realUser);
 
             // 2. ACT (Действие)
             // Имитируем падение события UserSignedIn в шину — оповещаем ВСЕХ зарегистрированных подписчиков
-            foreach (var callback in signedInCallbacks)
+            foreach (Action<IUserVm.UserSignedIn> callback in signedInCallbacks)
             {
                 callback.Invoke(realMessage);
             }

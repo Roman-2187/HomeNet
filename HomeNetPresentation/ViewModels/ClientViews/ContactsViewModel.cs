@@ -2,10 +2,8 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
 using static HomeNetCore.Interfaces.ViewModels.AdminZone.IUsersTableVm;
 using static HomeNetCore.Interfaces.ViewModels.MainZone.IStatusBarViewModel;
@@ -13,21 +11,21 @@ using static HomeNetCore.Interfaces.ViewModels.UserZone.IContactsVm;
 using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 using static HomeNetOrm.Interfaces.Repositories.IUserRepo;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
-    /// Реактивный список контактов SiberNet.
+    /// Реактивный список контактов HomeNet.
     /// Полностью отвязан от СУБД и логики навигации чата! 🧼
     /// </summary>
     public partial class ContactsViewModel : ObservableObject, IContactsVm, IDisposable, IMenuViewModel
     {
         private readonly IEventBus _eventBus;
 
-        [ObservableProperty] private bool _isMenuOpen=false;
+        [ObservableProperty] private bool _isMenuOpen;
         private UserEntity? _currentUser;
 
         [ObservableProperty] private UserEntity? _selectedFriend;
-        [ObservableProperty] private ObservableCollection<UserEntity> _friends = new();
+        [ObservableProperty] private ObservableCollection<UserEntity> _friends = [];
 
         [ObservableProperty] private string _currentUserName = "Авторизация...";
 
@@ -78,14 +76,16 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.Users == null) return;
 
+            // ReSharper disable once SuggestVarOrType_Elsewhere
             var filtered = msg.Users
                 .Where(u => _currentUserId == null || u.Id != _currentUserId.Value)
-                .Select(u => {
-                    if (u.FirstName == null) u.FirstName = "Пользователь без имени";
+                .Select(u =>
+                {
+                    u.FirstName ??= "Пользователь без имени";
                     return u;
                 });
 
-            Friends = new ObservableCollection<UserEntity>(filtered);
+            Friends = [.. filtered];
         }
 
         [RelayCommand]
@@ -119,14 +119,14 @@ namespace HomeNetPresentation.ViewModels
             // 2. 🔥 ЗАЩИТА ОТ ДВОЙНИКОВ: если такой юзер уже есть в списке, не добавляем его снова!
             if (Friends.Any(f => f.Id == msg.User.Id)) return;
 
-            if (msg.User.FirstName == null) msg.User.FirstName = "Пользователь без имени";
+            msg.User.FirstName ??= "Пользователь без имени";
 
             Friends.Add(msg.User);
         }
 
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(Deleted msg)
+        private void OnUserDeleted(Deleted? msg)
         {
             if (msg == null) return;
             var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.UserId);
@@ -135,12 +135,14 @@ namespace HomeNetPresentation.ViewModels
 
         partial void OnSelectedFriendChanged(UserEntity? value)
         {
-            if (value != null)
+            if (value == null)
             {
-                _eventBus.Publish(this, new FriendSelected(value, _currentUserId ?? Guid.Empty));
-
-                _eventBus.Publish(this, new TextChanged($"собеседник: {_selectedFriend?.FirstName??"unknown"}"));
+                return;
             }
+
+            _eventBus.Publish(this, new FriendSelected(value, _currentUserId ?? Guid.Empty));
+
+            _eventBus.Publish(this, new TextChanged($"собеседник: {_selectedFriend?.FirstName??"unknown"}"));
         }
 
         public void SetCurrentUser(UserEntity? currentUser)

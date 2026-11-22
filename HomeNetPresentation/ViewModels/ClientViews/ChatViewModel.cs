@@ -8,20 +8,33 @@ using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.ClientViews
 {
     public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly IMessageService _messageService;
 
-        [ObservableProperty] private Guid _currentUserId;
+        [ObservableProperty]
+        // ReSharper disable once MemberCanBePrivate.Global
+        public partial Guid CurrentUserId { get; set; }
 
-        [ObservableProperty] private string _currentUserName = string.Empty;
-        [ObservableProperty] private bool _isChatOpen = false;
-        [ObservableProperty] private string _inputText = string.Empty;
-        [ObservableProperty] private string _selectedFriendName = string.Empty;
-        [ObservableProperty] private Guid? _selectedFriendId;
+        [ObservableProperty]
+        public partial string CurrentUserName { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        public partial bool IsChatOpen { get; set; } = false;
+
+        [ObservableProperty]
+        public partial string InputText { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        public partial string SelectedFriendName { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        // ReSharper disable once MemberCanBePrivate.Global
+        public partial Guid? SelectedFriendId { get; set; }
+
         [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
 
         public ChatViewModel(IEventBus eventBus, IMessageService messageService)
@@ -100,15 +113,12 @@ namespace HomeNetPresentation.ViewModels
 
             try
             {
-                var history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
-                if (history != null)
+                IEnumerable<MessageEntity> history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
+                foreach (MessageEntity m in history)
                 {
-                    foreach (var m in history)
-                    {
-                        m.IsOutgoing = m.SenderId == CurrentUserId;
-                    }
-                    Messages = new ObservableCollection<MessageEntity>(history);
+                    m.IsOutgoing = m.SenderId == CurrentUserId;
                 }
+                Messages = new ObservableCollection<MessageEntity>(history);
             }
             catch (Exception ex)
             {
@@ -141,7 +151,7 @@ namespace HomeNetPresentation.ViewModels
             {
                 msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
 
-                if (!Messages.Any(m => m.Id == msg.Message.Id))
+                if (!Enumerable.Any<MessageEntity>(Messages, m => m.Id == msg.Message.Id))
                 {
                     Messages.Add(msg.Message);
                 }

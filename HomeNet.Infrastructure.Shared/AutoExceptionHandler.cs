@@ -25,6 +25,25 @@ namespace HomeNet.Infrastructure.Shared
                 throw;
             }
         }
+        
+        
+        public static async Task ExecuteSafeAsync(
+            ICastomLogger? logger,
+            Func<Task> action,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                logger?.Log(LogLevel.Error, ex.Message, memberName, filePath, lineNumber);
+            }
+        }
+
 
         public static async Task<T> ExecuteSafeAsync<T>(
             ICastomLogger logger,

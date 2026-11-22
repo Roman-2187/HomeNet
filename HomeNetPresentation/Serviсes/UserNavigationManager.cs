@@ -5,20 +5,20 @@ using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 
-namespace HomeNetPresentation.Services
+namespace HomeNetPresentation.Serviсes
 {
     /// <summary>
     /// Автономный менеджер навигации зоны пользователя мессенджера SiberNet.
     /// Рулит гостевыми экранами, мессенджером и открытием чатов через шину событий. 🦾
     /// </summary>
-    public partial class UserNavigationManager : BaseNavigationState
+    public partial class UserNavigationManager : Serviсes.BaseNavigationState
     {
-        ICastomLogger _logger { get; set; }
-        [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
+        private ICastomLogger Logger { get; set; }
+        [ObservableProperty] private partial ClientSubTab CurrentClientTab { get; set; } = ClientSubTab.None;
 
         public UserNavigationManager(IEventBus eventBus, ICastomLogger logger) : base(eventBus)
         {
-            _logger = logger;
+            Logger = logger;
             EventBus.Subscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
             EventBus.Subscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
             EventBus.Subscribe<IUserVm.BackToStart>(OnBackToStartRequested);
@@ -41,7 +41,7 @@ namespace HomeNetPresentation.Services
             CurrentClientTab = ClientSubTab.Authentication;
             PublishStateDuet();
 
-            _logger.LogInfo($"Зашли в OnOpenAuthRequested текущий стате {CurrentClientTab}");
+            Logger.LogInfo($"Зашли в OnOpenAuthRequested текущий стате {CurrentClientTab}");
         }
 
         private void OnOpenRegistrationRequested(IUserVm.OpenRegistration msg)
@@ -50,7 +50,7 @@ namespace HomeNetPresentation.Services
             CurrentClientTab = ClientSubTab.Registration;
             PublishStateDuet();
 
-            _logger.LogInfo($"Зашли в OnOpenRegistrationRequested текущий стате {CurrentClientTab}");
+            Logger.LogInfo($"Зашли в OnOpenRegistrationRequested текущий стате {CurrentClientTab}");
         }
 
         private void OnBackToStartRequested(IUserVm.BackToStart msg)
@@ -87,7 +87,7 @@ namespace HomeNetPresentation.Services
         {
             if (msg?.Friend == null) return;
 
-            _logger.LogInfo($"[Navigator] Выбран контакт: {msg.Friend.FirstName}. Переключаем стейт на Chat.");
+            Logger.LogInfo($"[Navigator] Выбран контакт: {msg.Friend.FirstName}. Переключаем стейт на Chat.");
 
             // Переводим под-вкладку в режим чата, чтобы XAML скрыл заглушку и открыл ChatViewControl!
             CurrentClientTab = ClientSubTab.Chat;

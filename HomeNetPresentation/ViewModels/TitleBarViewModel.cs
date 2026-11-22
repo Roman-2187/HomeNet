@@ -6,21 +6,22 @@ using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetPresentation.Services;
+using BaseNavigationState = HomeNetPresentation.Serviсes.BaseNavigationState;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
-    /// Стерильная верхняя панель управления окном мессенджера SiberNet.
+    /// Стерильная верхняя панель управления окном мессенджера HomeNet.
     /// Полная изоляция: класс общается с навигацией ИСКЛЮЧИТЕЛЬНО через рацию автобуса.
     /// </summary>
     public partial class TitleBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
+        private readonly ICastomLogger _logger;
+        [ObservableProperty]
+        public partial MainTab CurrentMainZone { get; set; } = MainTab.StartZone;
 
-    ICastomLogger _logger;
-        [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
-        [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
-       
+        [ObservableProperty]
+        public partial ClientSubTab CurrentClientTab { get; set; } = ClientSubTab.None;
 
         public TitleBarViewModel(IEventBus eventBus,ICastomLogger logger, BaseNavigationState navigationStateManager)
             : base(eventBus, navigationStateManager)
@@ -32,7 +33,7 @@ namespace HomeNetPresentation.ViewModels
 
         #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА 🧼
 
-        private void OnMacroZoneChanged(ITitleBarVm.MacroZoneChanged msg)
+        private void OnMacroZoneChanged(ITitleBarVm.MacroZoneChanged? msg)
         {
             if (msg == null) return;
 
@@ -44,7 +45,7 @@ namespace HomeNetPresentation.ViewModels
 
         // 🛠️ КНОПКА: Админка
         [RelayCommand]
-        public void ToggleAdminZone()
+        private void ToggleAdminZone()
         {
             if (CurrentMainZone == MainTab.AdminZone)
             {
@@ -58,7 +59,7 @@ namespace HomeNetPresentation.ViewModels
 
         // 🔑 КНОПКА: Вход
         [RelayCommand]
-        public void OpenAuthZone()
+        private void OpenAuthZone()
         {
             _eventBus.Publish(this, new IUserVm.OpenAuth());
 
@@ -67,7 +68,7 @@ namespace HomeNetPresentation.ViewModels
 
         // 📝 КНОПКА: Регистрация
         [RelayCommand]
-        public void OpenRegisterZone()
+        private void OpenRegisterZone()
         {
             _eventBus.Publish(this, new IUserVm.OpenRegistration());
 
@@ -76,7 +77,7 @@ namespace HomeNetPresentation.ViewModels
 
         // 🔑 КНОПКА: Выход из профиля клиента
         [RelayCommand]
-        public void Logout()
+        private void Logout()
         {
             _eventBus.Publish(this, new IUserVm.LogoutClient());
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Выход из аккаунта выполнен успешно"));

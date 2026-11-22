@@ -3,7 +3,8 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetCore.Validation;
-using HomeNetPresentation.Services;
+
+using BaseNavigationState = HomeNetPresentation.Serviсes.BaseNavigationState;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -19,12 +20,11 @@ namespace HomeNetPresentation.ViewModels
         #pragma warning restore CS8618
 
         protected readonly IEventBus _eventBus;
-        protected readonly TNavigation _navigation; // 🔥 Строгий тип навигатора!
+        private readonly TNavigation _navigation; // 🔥 Строгий тип навигатора!
 
         public IEventBus EventBus => _eventBus;
 
-        // 🔥 ИДЕАЛЬНЫЙ МОСТ: Наследник видит свойства СВОЕГО конкретного навигатора без кастов!
-        public TNavigation Navigation => _navigation;
+        
 
         [ObservableProperty] private string _statusMessage = string.Empty;
         [ObservableProperty] private string _submitButtonText = "Выполнить";

@@ -1,16 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Services;
-using HomeNetPresentation.Services;
-using System.Collections.ObjectModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Enums.Navigation;
+using HomeNetCore.Interfaces.Services;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetOrm.Interfaces.Repositories;
+using System.Collections.ObjectModel;
+using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.AdminViews
 {
     public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
@@ -19,7 +19,7 @@ namespace HomeNetPresentation.ViewModels
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
-        private ObservableCollection<UserEntity> _foundUsers = new();
+        public partial ObservableCollection<UserEntity> FoundUsers { get; set; } = [];
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
@@ -27,8 +27,7 @@ namespace HomeNetPresentation.ViewModels
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
-        private string _targetUserEmail = string.Empty;
-
+        public partial string TargetUserEmail { get; set; } = string.Empty;
         public ObservableCollection<string> DeletedUsersHistory { get; } = [];
 
         public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ICastomLogger log, AdminNavigationManager nav)
@@ -50,14 +49,16 @@ namespace HomeNetPresentation.ViewModels
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
-            if (msg?.ActiveTab == AdminSubTab.DeleteUsers)
+            if (msg?.ActiveTab != AdminSubTab.DeleteUsers)
             {
-                ResetForm();
-                _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+                return;
             }
+
+            ResetForm();
+            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
         }
 
-        private void OnUsersRefreshed(IUsersTableVm.Refreshed msg)
+        private void OnUsersRefreshed(IUsersTableVm.Refreshed? msg)
         {
             if (msg == null) return;
             FoundUsers = new ObservableCollection<UserEntity>(msg.Users);
@@ -66,7 +67,7 @@ namespace HomeNetPresentation.ViewModels
         // 🔥 Метод теперь принимает системный тип события от репозитория
         private void OnUserDeleted(IUserRepo.Deleted msg)
         {
-            var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
+            UserEntity? userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
             if (userToRemove != null)
             {
                 FoundUsers.Remove(userToRemove);
@@ -81,10 +82,10 @@ namespace HomeNetPresentation.ViewModels
         private async Task SearchAsync()
         {
             StatusMessage = "Поиск...";
-            var verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
+            IDeleteService.SearchVerdict verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
             StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
-            if (verdict.IsValid && verdict.FoundUser != null)
+            if (verdict is { IsValid: true, FoundUser: not null })
             {
                 if (FoundUsers.All(u => u.Id != verdict.FoundUser.Id))
                 {
@@ -101,7 +102,7 @@ namespace HomeNetPresentation.ViewModels
             {
                 StatusMessage = "Удаление...";
 
-                var verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
+                IDeleteService.DeleteVerdict verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
                 UpdateValidation(verdict.Results);
                 StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
@@ -125,9 +126,20 @@ namespace HomeNetPresentation.ViewModels
         }
 
         [RelayCommand]
-        private async Task CancelAsync() =>ResetForm();
-       
-       
+        private Task CancelAsync()
+        {
+            try
+            {
+                ResetForm();
+                return Task.CompletedTask;
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException(exception);
+            }
+        }
+
+
         private void ResetForm()
         {
             TargetUserEmail = string.Empty;
@@ -148,7 +160,7 @@ namespace HomeNetPresentation.ViewModels
         {
             if (value != null && !string.Equals(TargetUserEmail, value.Email, StringComparison.OrdinalIgnoreCase))
             {
-                _targetUserEmail = value.Email ?? string.Empty;
+                TargetUserEmail = value.Email ?? string.Empty;
                 OnPropertyChanged(nameof(TargetUserEmail));
             }
 
@@ -166,7 +178,7 @@ namespace HomeNetPresentation.ViewModels
                 return;
             }
 
-            var match = FoundUsers.FirstOrDefault(u => string.Equals(u.Email?.Trim(), value.Trim(), StringComparison.OrdinalIgnoreCase));
+            UserEntity? match = FoundUsers.FirstOrDefault(u => string.Equals(u.Email?.Trim(), value.Trim(), StringComparison.OrdinalIgnoreCase));
             _selectedUser = match;
             OnPropertyChanged(nameof(SelectedUser));
 

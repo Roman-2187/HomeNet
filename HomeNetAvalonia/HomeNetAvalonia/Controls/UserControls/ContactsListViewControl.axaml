@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             xmlns:controls="using:HomeNetAvalonia.Controls"
              xmlns:vm="using:HomeNetPresentation.ViewModels"
+             xmlns:clientViews="clr-namespace:HomeNetPresentation.ViewModels.ClientViews;assembly=HomeNetPresentation"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ContactsListViewControl"
-             x:DataType="vm:ContactsViewModel">
+             x:DataType="clientViews:ContactsViewModel">
 
     <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
 

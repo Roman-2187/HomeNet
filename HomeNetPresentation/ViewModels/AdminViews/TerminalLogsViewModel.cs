@@ -37,9 +37,9 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 // 1. Парсим всю прилетевшую подросшую строку на отдельные слова
                 // Используем те же разделители, но сохраняем их в тексте, чтобы логи не слиплись
                 List<LogToken> tokensList = [];
-                string currentWord = "";
+                var currentWord = "";
 
-                foreach (char c in msg.Text)
+                foreach (var c in msg.Text)
                 {
                     currentWord += c;
 
@@ -71,7 +71,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 {
                     // 🔥 ТВОЯ РОДНАЯ ЖЕЛЕЗОБЕТОННАЯ ПОДМЕНА!
                     // Находим индекс и просто перезаписываем строчку новым списком слов
-                    int index = Logs.IndexOf(_currentLine);
+                    var index = Logs.IndexOf(_currentLine);
                     if (index < 0)
                     {
                         return;

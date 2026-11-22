@@ -14,14 +14,14 @@ namespace HomeNetPresentation.ViewModels
 
         // ✕ КНОПКА: Закрыть приложение
         [RelayCommand]
-        public void RequestCloseApplication()
+        private void RequestCloseApplication()
         {
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
 
         // 🔳 КНОПКА: Развернуть/Восстановить окно
         [RelayCommand]
-        public void ToggleGrowWindow()
+        private void ToggleGrowWindow()
         {
             // 🔥 Публикуем сигнал изменения размеров
             _eventBus.Publish(this, new IMainViewModel.ToggleSize());
@@ -29,7 +29,7 @@ namespace HomeNetPresentation.ViewModels
 
         // ➖ КНОПКА: Свернуть окно
         [RelayCommand]
-        public void MinimizeWindow()
+        private void MinimizeWindow()
         {
             // 🔥 Публикуем сигнал сворачивания
             _eventBus.Publish(this, new IMainViewModel.MinimizeRequest());

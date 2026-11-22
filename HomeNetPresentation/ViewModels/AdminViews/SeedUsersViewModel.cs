@@ -1,12 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetPresentation.Services;
 using HomeNetPresentation.TestData;
+using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
@@ -19,10 +20,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         private readonly IUserRepo _userRepository;
 
         [ObservableProperty]
-        private string _seedStatusText = "🔋 Система генерации готова к сидингу 50 пользователей...";
+        public partial string SeedStatusText { get; set; } = "🔋 Система генерации готова к сидингу 50 пользователей...";
 
         [ObservableProperty]
-        private bool _isSeedInProgress;
+        public partial bool IsSeedInProgress { get; set; }
 
         public SeedUsersViewModel(IEventBus eventBus, IUserRepo userRepository, AdminNavigationManager navigation)
             : base(eventBus, navigation)
@@ -33,7 +34,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК 🧼
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
+        private void OnAdminTabChanged(IAdminVm.AdminTabChanged? msg)
         {
             if (msg == null) return;
 
@@ -56,18 +57,20 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
             try
             {
-                var testUsers = DbSeedData.GetGeneratedUsers();
+                List<UserEntity> testUsers = DbSeedData.GetGeneratedUsers();
 
-                foreach (var user in testUsers)
+                foreach (UserEntity user in testUsers)
                 {
                     bool emailExists = await _userRepository.EmailExistsAsync(user.Email);
-                    if (!emailExists)
+                    if (emailExists)
                     {
-                        await _userRepository.InsertAsync(user);
+                        continue;
+                    }
+
+                    await _userRepository.InsertAsync(user);
 
                         
-                        addedCount++;
-                    }
+                    addedCount++;
                 }
 
                 SeedStatusText = addedCount > 0

@@ -5,10 +5,11 @@
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
             xmlns:models="using:HomeNet.Models.Shared.Entity"
+            xmlns:clientViews="clr-namespace:HomeNetPresentation.ViewModels.ClientViews;assembly=HomeNetPresentation"
 
-             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
+            mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
-             x:DataType="vm:ChatViewModel" >
+             x:DataType="clientViews:ChatViewModel" >
 
       <UserControl.Styles>
         <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->

@@ -6,9 +6,9 @@ using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-using HomeNetPresentation.Services;
+using AdminNavigationManager = HomeNetPresentation.Serviсes.AdminNavigationManager;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.AdminViews
 {
     public partial class AdminViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable, IMenuViewModel
     {
@@ -60,7 +60,7 @@ namespace HomeNetPresentation.ViewModels
 
        
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
+        private void OnAdminTabChanged(IAdminVm.AdminTabChanged? msg)
         {
             if (msg == null) return;
 
