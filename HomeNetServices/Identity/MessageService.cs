@@ -24,31 +24,51 @@ namespace HomeNetServices.Identity
                 MediaType = "Text",
                 IsRead = false,
                 LocalCreatedAt = DateTime.UtcNow,
-                IsSynced = 1 // Улетает на сервер
+                IsSynced = 0 // <-- Помечаем как несинхронизированное (Unsynced)
             };
 
             try
             {
-                // 🔥 Отправляем через API (API опубликует факт, SyncService запишет в SQLite)
-                var success = await _apiClient.PushMessageAsync(entity);
-
-                return success
-                    ? new ChatVerdict(true, string.Empty, entity) 
-                    : new ChatVerdict(false, "Сервер недоступен. Сообщение не отправлено.", null);
+                // Сразу сохраняем в локальную SQLite (внутри сработает EventBus.Publish(Saved))
+                var savedEntity = await _messageRepo.InsertAsync(entity);
+                return new ChatVerdict(true, string.Empty, savedEntity);
             }
             catch (Exception ex)
             {
-                return new ChatVerdict(false, $"Ошибка API: {ex.Message}", null);
+                return new ChatVerdict(false, $"Ошибка локальной БД: {ex.Message}", null);
+            }
+        }
+        
+        
+        public async Task<ChatVerdict> DeleteMessageAsync(Guid messageId)
+        {
+            try
+            {
+                // 1. Сначала просим сервер удалить сообщение
+                var apiSuccess = await _apiClient.DeleteMessageAsync(messageId);
+        
+                if (!apiSuccess)
+                    return new ChatVerdict(false, "Не удалось удалить сообщение на сервере.", null);
+
+                // 2. Если сервер подтвердил — затираем текст в локальной SQLite
+                await _messageRepo.SoftDeleteAsync(messageId);
+        
+                return new ChatVerdict(true, string.Empty, null);
+            }
+            catch (Exception ex)
+            {
+                return new ChatVerdict(false, $"Ошибка при удалении: {ex.Message}", null);
             }
         }
 
+
+
         public async Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId)
         {
-          
                 var allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
-            
-           
         }
+        
+        
     }
 }

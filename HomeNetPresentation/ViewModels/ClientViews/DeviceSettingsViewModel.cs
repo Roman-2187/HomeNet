@@ -176,6 +176,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 await _deviceSettingsService.ClearSessionAsync();
 
                 CurrentSessionEmail = "Гостевой режим";
+                
+                EventBus.Publish(this, new TextChanged($"Logout"));
             }
             catch (Exception ex)
             {

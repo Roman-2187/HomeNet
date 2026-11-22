@@ -2,12 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-              xmlns:di="using:HomeNet.DI"
-           xmlns:models="using:HomeNet.Models.Shared.Entity"
-
+             xmlns:di="using:HomeNet.DI"
+             xmlns:models="using:HomeNet.Models.Shared.Entity"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
              x:Class="HomeNetAvalonia.Controls.AdminControls.DeleteUsersControl"
-            
              x:DataType="di:ComponentHub">
 
        
@@ -25,7 +23,9 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- ================= ЛЕВАЯ ЧАСТЬ (ЕДИНЫЙ ГРИД) ================= -->
-                <Grid Grid.Column="0" Margin="0,0,5,0" RowDefinitions="Auto,Auto,*">
+                <Grid Grid.Column="0" 
+                      Margin="0,0,5,0"
+                      RowDefinitions="Auto,Auto,*">
 
                     <!-- 👑 ЗАГОЛОВОК -->
                     <TextBlock Grid.Row="0"
@@ -37,49 +37,46 @@
                                VerticalAlignment="Center"/>
 
                     <!-- Панель поиска -->
-                    <Grid Grid.Row="1" Margin="0,5,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"  />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- В Авалонии по умолчанию текст обновляется сразу, 
-                             так что UpdateSourceTrigger писать не нужно -->
-                     <TextBox Text="{Binding TargetUserEmail}"
-                         Grid.Column="0"
-                         BorderBrush="#FF211E19"
-                         BorderThickness="0.5"
-                         HorizontalAlignment="Stretch" 
-                         Height="35"
-                         VerticalContentAlignment="Center"
-                         Foreground="#FFF5546F"
-                         Padding="5,0,0,0"
-                         Background="#1AADD8E6"/>
+                    <Grid Grid.Row="1" 
+                          Margin="0,5,0,10"
+                          ColumnDefinitions="*,Auto">
+                        
+                         <TextBox Grid.Column="0"
+                             Text="{Binding TargetUserEmail}"
+                             BorderBrush="#FF211E19"
+                             BorderThickness="0.5"
+                             HorizontalAlignment="Stretch" 
+                             Height="35"
+                             VerticalContentAlignment="Center"
+                             Foreground="#FFF5546F"
+                             Padding="5,0,0,0"
+                             Background="#1AADD8E6"/>
 
 
-                        <Button Content="Найти" 
-                                Grid.Column="1"
-                                Width="90" Height="35"
-                                Margin="10,0,0,0"
-                                Command="{Binding SearchCommand}"
-                                Background="Transparent" />
+                        <Button Grid.Column="1"
+                            Content="Найти" 
+                            Width="90" Height="35"
+                            Margin="10,0,0,0"
+                            Command="{Binding SearchCommand}"
+                            Background="Transparent" />
                     </Grid>
 
                     <!-- Живой список пользователей -->
                     <Border Grid.Row="2"
-                            Background="#1AADD8E6"
-                            BorderBrush="#FFF5546F"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            ClipToBounds="True">
+                        Background="#1AADD8E6"
+                        BorderBrush="#FFF5546F"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        ClipToBounds="True">
                         
                         <!-- В Авалонии нет DisplayMemberPath, используем ItemTemplate -->
-                        <ListBox BorderThickness="0"
-                                 ItemsSource="{Binding FoundUsers}"
-                                 SelectedItem="{Binding SelectedUser}"
-                                 Background="Transparent"
-                                 Margin="10" 
-                                 Foreground="#FFF5546F">
+                        <ListBox
+                            BorderThickness="0"
+                            ItemsSource="{Binding FoundUsers}"
+                            SelectedItem="{Binding SelectedUser}"
+                            Background="Transparent"
+                            Margin="10" 
+                            Foreground="#FFF5546F">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:UserEntity">
                                     <!-- Биндим твоё вычисляемое свойство информации о юзере -->
@@ -92,22 +89,18 @@
 
                 <!-- 🔥 КИБЕРПАНК-РАЗДЕЛИТЕЛЬ АВАЛОНИИ -->
                 <GridSplitter Grid.Column="1"
-                              Width="4"
-                              ResizeBehavior="PreviousAndNext"
-                              ResizeDirection="Columns"
-                              Background="#6600FFFF" 
-                              Margin="3,0,3,0"/>
+                    Width="4"
+                    ResizeBehavior="PreviousAndNext"
+                    ResizeDirection="Columns"
+                    Background="#6600FFFF" 
+                    Margin="3,0,3,0"/>
 
                 <!-- ================= ПРАВАЯ ЧАСТЬ (ЖУРНАЛ ИСТОРИИ) ==-->
                 <Border Grid.Column="2"               
                         Margin="5,30,0,0"
                         BorderThickness="0"
                         CornerRadius="6">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <Grid RowDefinitions="Auto,*">
 
                         <TextBlock Grid.Row="0"
                                    Text="Журнал истории удаления (Текущая сессия)"

@@ -3,10 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetPresentation.Serviсes;
-using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.ClientViews;
-using HomeNetPresentation.ViewModels.MainViews;
 using Moq;
 using Assert = Xunit.Assert;
 
@@ -39,14 +36,13 @@ namespace HomeNetTests
             // и СРАЗУ перенаправляем это событие в UserViewModel, имитируя работу реального автобуса!
             eventBusMock
                 .Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<IUserVm.ClientTabChanged>()))
-                .Callback<object, IUserVm.ClientTabChanged>((sender, msg) =>
+                .Callback<object, IUserVm.ClientTabChanged>((_, msg) =>
                 {
                     // Если Навигатор опубликовал извещение, мы мгновенно передаем его в UserVM
                     userVmTabChangedCallback?.Invoke(msg);
                 });
 
             // Инициализируем систему (они сами подписываются на мок шины)
-            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
             UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Проверяем, что все подписки успешно перехвачены моком
@@ -89,13 +85,12 @@ namespace HomeNetTests
             // Перенаправляем событие изменения таба из Навигатора прямо во Вью-модель
             eventBusMock
                 .Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<IUserVm.ClientTabChanged>()))
-                .Callback<object, IUserVm.ClientTabChanged>((sender, msg) =>
+                .Callback<object, IUserVm.ClientTabChanged>((_, msg) =>
                 {
                     userVmTabChangedCallback?.Invoke(msg);
                 });
 
             // Инициализируем компоненты
-            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
             UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Проверяем, что подписки успешно перехвачены
@@ -140,7 +135,7 @@ namespace HomeNetTests
             // мок сразу же перенаправляет это событие во Вью-Модель
             eventBusMock
                 .Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<object>()))
-                .Callback<object, object>((sender, msg) =>
+                .Callback<object, object>((_, msg) =>
                 {
                     if (msg is IUserVm.ClientTabChanged tabChangedMsg)
                     {
@@ -149,7 +144,6 @@ namespace HomeNetTests
                 });
 
             // Инициализируем компоненты (они внутри себя вызовут Subscribe, и наши списки заполнятся)
-            UserNavigationManager navigator = new(eventBusMock.Object, loggerMock.Object);
             UserViewModel userViewModel = new(loggerMock.Object, eventBusMock.Object);
 
             // Создаем реальные объекты данных для отправки

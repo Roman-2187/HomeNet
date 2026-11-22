@@ -111,8 +111,9 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                     SubmitButtonText = "Входим...";
                     Logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
+                   
                     var finalUser = verdict.User ?? UserData;
-                    // ReSharper disable once MethodHasAsyncOverload
+                   
                     EventBus.Publish(this, new UserSignedIn(finalUser));
                 }
                 else

@@ -71,5 +71,22 @@ namespace HomeNetOrm.Generators.Base
                     .Col(m => m.ReceiverId).Emit(Equal).Param(m => m.ReceiverId, "2", senderId)
                 .Emit(CloseBracket)
                 .Build();
+        
+        
+        
+        public SqlQueryCommand GenerateSoftDelete(Guid messageId) =>
+            CreateQuery()
+                .Emit(Update).Table()
+                .Emit(Set)
+                .Col(m => m.Text).Emit(Equal).Emit(Null) // Затираем текст в NULL
+                .Emit(Comma)
+                .Col(m => m.IsDeleted).Emit(Equal).Emit(True) // Ставим флаг удаления
+                .Emit(Comma)
+                .Col(m => m.UpdatedAt).Emit(Equal).Param(m => m.UpdatedAt, DateTimeOffset.UtcNow)
+                .Emit(Where)
+                .Col(m => m.Id).Emit(Equal).Param(m => m.Id, messageId)
+                .Build();
     }
+    
+    
 }

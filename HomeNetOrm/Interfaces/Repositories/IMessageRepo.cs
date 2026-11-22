@@ -23,5 +23,7 @@ namespace HomeNetOrm.Interfaces.Repositories
         Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId);
         Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId);
         Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);
+        Task<bool> SoftDeleteAsync(Guid id);
+
     }
 }

@@ -2,8 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            
-             xmlns:controls="using:HomeNetAvalonia.Controls"
              xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
              xmlns:adminControls="clr-namespace:HomeNetAvalonia.Controls.AdminControls"
@@ -15,7 +13,7 @@
         <conv:EqualityConverter x:Key="EqualityConverter"/>
     </UserControl.Resources>
 
-    <!-- 🌌 Глобальный DataContext Хаба для рантайма без Code-behind -->
+    
     <ContentControl 
         DataContext="{DynamicResource ComponentHub}"
         x:CompileBindings="False">
@@ -33,16 +31,14 @@
                 <Grid RowDefinitions="Auto, *">
                     
                     <!-- 🔝 ШАПКА ПАНЕЛИ: Упакованный бургер-контрол и заголовок -->
-                    <Grid Grid.Row="0" 
-                          ColumnDefinitions="Auto, *">
-                        
-                       
-
-                         <Button Content="☰"
-                        
-                        Padding="8,3"
-                        FontSize="14"
-                        Command="{Binding  ToggleMenuCommand}" />
+                    <Grid
+                        Grid.Row="0" 
+                        ColumnDefinitions="Auto, *">
+                        <Button
+                            Content="☰"
+                            Padding="8,3"
+                            FontSize="14"
+                            Command="{Binding ToggleMenuCommand}" />
 
 
 
@@ -106,9 +102,6 @@
                             Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
-
-
-                        
                     </Grid> 
                    
 
@@ -116,9 +109,9 @@
             </ContentControl>
 
                <mainControls:SideMenuControl
-
-                   Grid.Column="0" HorizontalAlignment="Stretch"
-                          VerticalAlignment="Stretch" />
+                   Grid.Column="0"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch" />
 
 
             <!-- === ПРАВАЯ ЧАСТЬ: Рабочая зона вкладок === -->
@@ -129,13 +122,7 @@
                         <Setter Property="IsVisible" Value="False"/>
                     </Style>
                 </Grid.Styles>
-
-
-    
-                    
-                    
-                 
-
+                
                 <!-- Блок А: Таблица пользователей -->
                 <ContentControl    
                     Classes="tab-content" 
@@ -151,6 +138,7 @@
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.Logger}}">
+                    
                     <adminControls:LogRenderControl
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"/>
@@ -174,12 +162,13 @@
                         <Border Background="Transparent" 
                                 HorizontalAlignment="Stretch" 
                                 VerticalAlignment="Stretch">
-                            <TextBlock Text="🛠️ РАЗДЕЛ В РАЗРАБОТКЕ" 
-                                       Foreground="#FFF5546F" 
-                                       FontSize="20" 
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center" 
-                                       VerticalAlignment="Center"/>
+                            <TextBlock
+                                Text="🛠️ РАЗДЕЛ В РАЗРАБОТКЕ" 
+                                Foreground="#FFF5546F" 
+                                FontSize="20" 
+                                FontWeight="Bold"
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center"/>
                         </Border>
                     </ContentControl> 
 
@@ -199,8 +188,7 @@
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.SeedUsers}}">
                     <adminControls:SeedUsersViewControl/>
-
-                   
+                    
                 </ContentControl>
 
             </Grid>

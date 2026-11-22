@@ -9,7 +9,10 @@ namespace HomeNet.Network.Api
 
         Task<SyncBatchResponse<MessageEntity>> FetchFreshMessagesAsync(long sinceVersion);
 
+        public record MessageDeletedOnServer(Guid MessageId);
+        public record MessageDeleteFailed(Guid MessageId, string Reason);
 
+        Task<bool> DeleteMessageAsync(Guid messageId);
 
         // 🔥 ФАКТЫ (публикует сам ApiClient)
         public record MessageSentOnServer(MessageEntity Message);

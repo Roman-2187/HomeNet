@@ -75,6 +75,7 @@ namespace HomeNetOrm.DBProviders.Postgres
             Or => "OR",
             True => "TRUE",
             False => "FALSE",
+            Null => "NULL",
             OpenBracket => "(",
             CloseBracket => ")",
             Asc => "ASC",

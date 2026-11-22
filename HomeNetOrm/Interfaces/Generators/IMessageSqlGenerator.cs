@@ -9,5 +9,7 @@ namespace HomeNetOrm.Interfaces.Generators
         SqlQueryCommand GenerateMarkAsRead(Guid senderId, Guid receiverId);
         SqlQueryCommand GenerateUnreadCount(Guid currentUserId, Guid friendId);
         SqlQueryCommand GenerateClearChatHistory(Guid senderId, Guid receiverId);
+        SqlQueryCommand GenerateSoftDelete(Guid messageId);
+
     }
 }

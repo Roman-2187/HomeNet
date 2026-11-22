@@ -10,7 +10,7 @@ namespace HomeNet.Models.Shared.Entity
     public abstract partial class BaseEntity : ObservableObject
     {
         [ObservableProperty]
-        private Guid _id = Guid.NewGuid();
+        public partial Guid Id { get; set; } = Guid.NewGuid();
 
         // 🎯 Чисто служебный флаг для ORM и репозиториев (0 = грязный, 1 = засинхронен)
         public int IsSynced { get; set; } = 0;
@@ -18,15 +18,19 @@ namespace HomeNet.Models.Shared.Entity
         // 🔥 ВОЗВРАЩАЕМ НА МЕСТО: Служебное поле версии для триггеров PostgreSQL!
         public long Version { get; set; } = 0;
 
+
+        [ObservableProperty] public partial bool IsDeleted { get; set; } = false;
+
+
         // --- ⏳ Раздельное время создания ---
 
         // Когда автор физически создал запись на своем устройстве
         [ObservableProperty]
-        private DateTimeOffset _localCreatedAt = DateTimeOffset.Now;  
+        public partial DateTimeOffset LocalCreatedAt { get; set; } = DateTimeOffset.Now;
 
         // When база данных (сервер) закоммитила эту запись у себя
         [ObservableProperty]
-        private DateTimeOffset _serverCreatedAt = DateTimeOffset.UtcNow;
+        public partial DateTimeOffset ServerCreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
         // --- 🔄 Единое общее время обновления ---
 

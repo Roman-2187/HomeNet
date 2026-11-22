@@ -11,7 +11,9 @@
 
         <!-- 🟢 Твой любимый строгий радиус скругления 3 -->
         <Border BorderBrush="#304050"
-                BorderThickness="0.4" CornerRadius="3" Padding="15" Background="#FF111318">
+                BorderThickness="0.4" 
+                CornerRadius="3" Padding="15"
+                Background="#FF111318">
             
             <!-- 🔥 Оборачиваем всё в Grid, чтобы наложить слои -->
             <Grid>
@@ -42,7 +44,6 @@
                                     FontWeight="Bold"
                                     LetterSpacing="-0.5"
                                     Margin="0,1">
-                                    
                                     <TextBlock.Styles>
                                         <Style Selector="TextBlock">
                                             <Setter Property="Foreground" Value="#00F0FF"/>
@@ -57,15 +58,12 @@
                                             <Setter Property="Foreground" Value="#00FF66"/>
                                         </Style>
                                     </TextBlock.Styles>
-                                    
                                 </TextBlock>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
                 </ScrollViewer>
             </Grid>
-            
         </Border>
     </Grid>
 </Grid>

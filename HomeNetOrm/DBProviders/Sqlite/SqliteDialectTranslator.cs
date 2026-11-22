@@ -71,6 +71,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
             Or => "OR",
             True => "1",
             False => "0",
+            Null => "NULL",
             OpenBracket => "(",
             CloseBracket => ")",
             Asc => "ASC",
@@ -79,7 +80,6 @@ namespace HomeNetOrm.DBProviders.Sqlite
             IsNull => "IS NULL",
             Begin => "BEGIN",
             End => "END;",
-            
             NotEqual => "!=",
             Comma => ",",
             Excluded => "EXCLUDED", // 🆕 SQLite поймет конструкцию EXCLUDED.field один в один!

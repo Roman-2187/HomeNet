@@ -4,11 +4,12 @@ using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
+using static HomeNetCore.Interfaces.ViewModels.AdminZone.IUsersTableVm;
+using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
+using static HomeNetOrm.Interfaces.Repositories.IUserRepo;
 
 
 namespace HomeNetPresentation.ViewModels.AdminViews
@@ -32,17 +33,17 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             _userRepo = userRepo;
             _logger = logger;
 
-            EventBus.Subscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
-            EventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
+            EventBus.Subscribe<Deleted>(OnUserDeletedFromDb);
+            EventBus.Subscribe<Inserted>(OnUserAdded);
             EventBus.Subscribe<IUserRepo.Updated>(OnUserUpdated);
-            EventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
-            EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+            EventBus.Subscribe<RefreshRequest>(OnRefreshRequest);
+            EventBus.Subscribe<InfrastructureReady>(OnInfrastructureReady);
         }
 
-        private void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg) =>
+        private void OnInfrastructureReady(InfrastructureReady msg) =>
             _ = AutoExceptionHandler.ExecuteSafeAsync(_logger, InitializeDataAsync);
 
-        private void OnRefreshRequest(IUsersTableVm.RefreshRequest msg) =>
+        private void OnRefreshRequest(RefreshRequest msg) =>
             _ = AutoExceptionHandler.ExecuteSafeAsync(_logger, InitializeDataAsync);
 
         private async Task InitializeDataAsync()
@@ -52,7 +53,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 var list = await _userRepo.GetAllAsync();
                 RunOnUi(() =>
                 {
-                    Users = [.. list ?? []];
+                    Users = [.. list];
                     BroadcastRefreshed();
                 });
             }
@@ -81,7 +82,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             });
         }
 
-        private void OnUserDeletedFromDb(IUserRepo.Deleted? msg)
+        private void OnUserDeletedFromDb(Deleted? msg)
         {
             if (msg == null) return;
 
@@ -95,7 +96,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             });
         }
 
-        private void OnUserAdded(IUserRepo.Inserted? msg)
+        private void OnUserAdded(Inserted? msg)
         {
             if (msg?.User == null) return;
 
@@ -116,16 +117,18 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 action();
         }
 
-        private void BroadcastRefreshed() =>
-            EventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
+        private void BroadcastRefreshed()
+        {
+            EventBus.Publish(this, new Refreshed([.. Users]));
+        }
 
         public override void Dispose()
         {
-            EventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
-            EventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
+            EventBus.Unsubscribe<Deleted>(OnUserDeletedFromDb);
+            EventBus.Unsubscribe<Inserted>(OnUserAdded);
             EventBus.Unsubscribe<IUserRepo.Updated>(OnUserUpdated);
-            EventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
-            EventBus.Unsubscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+            EventBus.Unsubscribe<RefreshRequest>(OnRefreshRequest);
+            EventBus.Unsubscribe<InfrastructureReady>(OnInfrastructureReady);
             base.Dispose();
         }
     }

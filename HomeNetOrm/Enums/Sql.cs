@@ -3,7 +3,17 @@
     public static class Sql
     {
         // 🟥 1. Команды
-        public enum CmdType { Select, Update, Delete, Insert, Create, Trigger, Function, Procedure }
+        public enum CmdType
+        {
+            Select, 
+            Update,
+            Delete,
+            Insert, 
+            Create,
+            Trigger,
+            Function,
+            Procedure
+        }
         public static class Cmd
         {
             public const CmdType Select = CmdType.Select;
@@ -17,7 +27,19 @@
 
         // 🟨 2. Ключевые слова-связки
        
-        public enum PhraseType { From, Where, Set, Into, Values, Returning, OrderBy, Language, On, Conflict, Do,
+        public enum PhraseType 
+        { 
+            From,
+            Where, 
+            Set, 
+            Into, 
+            Values,
+            Returning,
+            OrderBy, 
+            Language,
+            On, 
+            Conflict,
+            Do,
             As,
             Sequence,
             OrDml
@@ -33,23 +55,32 @@
             public const PhraseType Returning = PhraseType.Returning;
             public const PhraseType OrderBy = PhraseType.OrderBy;
             public const PhraseType Language = PhraseType.Language;
-
-            // 🆕 Добавляем 3 недостающие константы для IntelliSense:
             public const PhraseType On = PhraseType.On;
             public const PhraseType Conflict = PhraseType.Conflict;
             public const PhraseType Do = PhraseType.Do;
-
             public const PhraseType As = PhraseType.As;
         }
 
         // 🟩 3. Операторы и логика
 
-        public enum OpType { Equal, And, Or, True, False, OpenBracket, CloseBracket, Asc, Desc, GreaterThan, IsNull,
+        public enum OpType
+        {
+            Equal,
+            And,
+            Or,
+            True,
+            False,
+            Null,
+            OpenBracket,
+            CloseBracket,
+            Asc,
+            Desc,
+            GreaterThan,
+            IsNull,
             Begin,
             End,
             Comma,
-
-                  Excluded,          // 🆕 Для синтаксиса EXCLUDED.column в UPSERT
+            Excluded,          // 🆕 Для синтаксиса EXCLUDED.column в UPSERT
             CurrentTimestamp,   // 🆕 Для CURRENT_TIME
             NotEqual
         }
@@ -61,24 +92,35 @@
             public const OpType Or = OpType.Or;
             public const OpType True = OpType.True;
             public const OpType False = OpType.False;
+            public const OpType Null = OpType.Null;
             public const OpType OpenBracket = OpType.OpenBracket;
             public const OpType CloseBracket = OpType.CloseBracket;
             public const OpType Asc = OpType.Asc;
             public const OpType Desc = OpType.Desc;
             public const OpType GreaterThan = OpType.GreaterThan;
-
             public const OpType Excluded = OpType.Excluded;
             public const OpType CurrentTimestamp = OpType.CurrentTimestamp;
-
-            // 🆕 Добавляем последнюю недостающую константу для проверки на NULL:
             public const OpType IsNull = OpType.IsNull;
-
             public const OpType Begin = OpType.Begin;
             public const OpType End = OpType.End;
+            public const OpType Comma = OpType.Comma; 
         }
 
         // 🟦 4. Специфика триггеров
-        public enum TriggerType { Returns, Replace, Before, After, InsteadOf, On, ForEach, Row, Execute, New, Old }
+        public enum TriggerType
+        {
+            Returns,
+            Replace,
+            Before,
+            After,
+            InsteadOf,
+            On,
+            ForEach, 
+            Row,
+            Execute,
+            New,
+            Old
+        }
         public static class Trigger
         {
             public const TriggerType Returns = TriggerType.Returns;

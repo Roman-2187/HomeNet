@@ -20,7 +20,7 @@ namespace HomeNetOrm.Infrastructure
         PostgreSQLServer // Режим сервера (PostgreSQL)
     }
 
-    public class SiberNetDbEngine : IDbEngine, IDisposable
+    public class DbEngine : IDbEngine, IDisposable
     {
         private readonly string _connectionString;
         private readonly ICastomLogger _logger;
@@ -46,7 +46,7 @@ namespace HomeNetOrm.Infrastructure
 
         public DbConnection Connection => ConnectionFactory();
 
-        public SiberNetDbEngine(DbEngineType engineType, string connectionString, IEnumerable<TableSchema> schemas, ICastomLogger logger)
+        public DbEngine(DbEngineType engineType, string connectionString, IEnumerable<TableSchema> schemas, ICastomLogger logger)
         {
             _engineType = engineType;
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));

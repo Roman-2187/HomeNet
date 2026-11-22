@@ -8,8 +8,8 @@ using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Models;
 using System.Data.Common;
+using static HomeNetOrm.Interfaces.Repositories.IMessageRepo;
 
 namespace HomeNetOrm.Repositories.Base
 {
@@ -20,7 +20,10 @@ namespace HomeNetOrm.Repositories.Base
         private readonly IDbExceptionHandler _errorHandler;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IDbExceptionHandler errorHandler)
+        internal 
+            MessageRepository(Func<DbConnection> connectionFactory,
+            IMessageSqlGenerator sqlGenerator, ICastomLogger logger,
+            IDbExceptionHandler errorHandler)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _messageSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
@@ -28,7 +31,10 @@ namespace HomeNetOrm.Repositories.Base
         }
 
         // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
+        internal
+            MessageRepository
+            (Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator,
+             ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
             : this(connectionFactory, sqlGenerator, logger, errorHandler)
         {
             EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -39,26 +45,24 @@ namespace HomeNetOrm.Repositories.Base
             if (message.Id == Guid.Empty) message.Id = Guid.NewGuid();
 
             var cmd = _messageSqlGenerator.GenerateInsert();
-
             
-
             try
             {
                 // Просто выполняем запрос без статического перехватчика
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
 
                 Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
-                EventBus?.Publish(this, new IMessageRepo.Saved(message));
+                EventBus?.Publish(this, new Saved(message));
                 return message;
             }
             catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
             {
-                // Если SQLite выкинул UNIQUE constraint — кидаем доменное исключение
+               
                 throw new DuplicateMessageException(message.Id);
             }
             catch (Exception ex)
             {
-                // Любая другая ошибка БД
+               
                 throw _errorHandler.Translate(ex);
             }
         }
@@ -73,7 +77,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                EventBus?.Publish(this, new IMessageRepo.Updated(entity));
+                EventBus?.Publish(this, new Updated(entity));
             }
         }
 
@@ -86,7 +90,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                EventBus?.Publish(this, new IMessageRepo.Deleted(id));
+                EventBus?.Publish(this, new Deleted(id));
             }
         }
 
@@ -123,7 +127,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                EventBus?.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
+                EventBus?.Publish(this, new ChatCleared(senderId, receiverId));
             }
 
             return rowsAffected > 0;
@@ -151,5 +155,27 @@ namespace HomeNetOrm.Repositories.Base
                 ExecuteAsync(db => db.ExecuteScalarAsync<int>(
                     _messageSqlGenerator.GenerateUnreadCount(currentUserId, senderId).Sql,
                     new { CurrentUserId = currentUserId, SenderId = senderId })));
+        
+        
+        public async Task<bool> SoftDeleteAsync(Guid id)
+        {
+            var cmd = _messageSqlGenerator.GenerateSoftDelete(id);
+
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
+
+            if (rowsAffected > 0)
+            {
+                // Можно использовать существующее событие или завести SoftDeleted(id)
+                EventBus?.Publish(this, new Deleted(id)); 
+            }
+
+            return rowsAffected > 0;
+        }
+
+        
     }
+    
+    
+    
 }

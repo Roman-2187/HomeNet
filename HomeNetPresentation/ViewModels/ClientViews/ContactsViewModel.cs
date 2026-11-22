@@ -31,7 +31,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         [ObservableProperty]
         public partial ObservableCollection<UserEntity> Friends { get; set; } = [];
 
-        [ObservableProperty] private string _currentUserName = "Авторизация...";
+        [ObservableProperty]
+        public partial string CurrentUserName { get; set; } = "Авторизация...";
 
         private Guid? _currentUserId;
 
@@ -54,33 +55,37 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             _eventBus.Subscribe<UserSignedUp>(OnGlobalUserSignedUp);
         }
 
-        private void OnGlobalUserSignedIn(UserSignedIn msg)
+      
+        
+        
+        private void OnGlobalUserSignedIn(UserSignedIn? msg)
         {
-            if (msg?.User == null) return;
+            ApplyCurrentUser(msg?.User);
+            _eventBus.Publish(this, new TextChanged($"выполнен вход"));
+        }
 
-            _currentUserId = msg.User.Id;
-            _currentUser = msg.User;
-            CurrentUserName = msg.User.FirstName ?? "Вы";
+        private void OnGlobalUserSignedUp(UserSignedUp? msg)
+        {
+            ApplyCurrentUser(msg?.User);
+            
+           _eventBus.Publish(this, new TextChanged($"выполнен вход"));
+        }
+
+        private void ApplyCurrentUser(UserEntity? user)
+        {
+            if (user == null) return;
+
+            _currentUserId = user.Id;
+            _currentUser = user;
+            CurrentUserName = user.FirstName ?? "Вы";
 
             _eventBus.Publish(this, new RefreshRequest());
         }
-
-        private void OnGlobalUserSignedUp(UserSignedUp msg)
-        {
-            if (msg?.User == null) return;
-
-            _currentUserId = msg.User.Id;
-            _currentUser = msg.User;
-            CurrentUserName = msg.User.FirstName ?? "Вы";
-
-            _eventBus.Publish(this, new RefreshRequest());
-        }
+        
+        
 
         private void OnUsersRefreshed(Refreshed msg)
         {
-            if (msg?.Users == null) return;
-
-            
             var filtered = msg.Users
                 .Where(u => _currentUserId == null || u.Id != _currentUserId.Value)
                 .Select(u =>
@@ -90,6 +95,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 });
 
             Friends = [.. filtered];
+            
+            
         }
 
         [RelayCommand]
@@ -113,7 +120,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
 
 
-        private void OnUserAdded(Inserted msg)
+        private void OnUserAdded(Inserted? msg)
         {
             if (msg?.User == null) return;
 
@@ -143,21 +150,10 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             {
                 return;
             }
-
             _eventBus.Publish(this, new FriendSelected(value, _currentUserId ?? Guid.Empty));
-
-            _eventBus.Publish(this, new TextChanged($"собеседник: {SelectedFriend?.FirstName??"unknown"}"));
         }
 
-        public void SetCurrentUser(UserEntity? currentUser)
-        {
-            _currentUser = currentUser;
-            if (_currentUser != null)
-            {
-                CurrentUserName = _currentUser.FirstName ?? "Вы";
-            }
-            _eventBus.Publish(this, new RefreshRequest());
-        }
+      
 
         public void Dispose()
         {

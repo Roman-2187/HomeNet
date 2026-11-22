@@ -49,6 +49,36 @@ namespace HomeNet.Network.ApiClient
                 return new SyncBatchResponse<MessageEntity>();
             }
         }
+        
+        
+        
+        public async Task<bool> DeleteMessageAsync(Guid messageId)
+        {
+            try
+            {
+                var response = await HttpClient.DeleteAsync($"/api/messages/{messageId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    eventBus.Publish(this, new IMessageApiClient.MessageDeletedOnServer(messageId));
+                    return true;
+                }
+
+                Logger.LogError($"[MessageApiClient] Сервер отклонил удаление {messageId}: HTTP {response.StatusCode}");
+                eventBus.Publish(this, new IMessageApiClient.MessageDeleteFailed(messageId, $"HTTP {response.StatusCode}"));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageApiClient] Ошибка удаления {messageId}: {ex.Message}");
+                eventBus.Publish(this, new IMessageApiClient.MessageDeleteFailed(messageId, ex.Message));
+                return false;
+            }
+        }
+
+        
+        
+        
 
     }
 }

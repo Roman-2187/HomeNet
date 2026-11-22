@@ -55,6 +55,7 @@ namespace HomeNetOrm.Schemes
             builder.AddColumn(m => m.Text).AsText();
             builder.AddColumn(m => m.MediaType).AsText();
             builder.AddColumn(m => m.IsRead);
+            builder.AddColumn(m => m.IsDeleted); // <-- Сразу в обе базы
 
             // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
             

@@ -44,7 +44,7 @@ namespace HomeNet.Server
 
 
             // 2. Создаем движок для PostgreSQL
-            var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
+            var postgresEngine = new DbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
 
             // 🔥 3. Инициализируем фабрику репозиториев БЕЗ шины событий (null)
             postgresEngine.InitializeRepositories(null);

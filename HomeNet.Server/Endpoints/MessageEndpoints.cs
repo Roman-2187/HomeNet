@@ -82,6 +82,54 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
+            
+            
+            // === [🗑️ МЯГКОЕ УДАЛЕНИЕ СООБЩЕНИЯ] ===
+            group.MapDelete("/{messageId:guid}", async (Guid messageId, HttpContext httpContext, IHubContext<ServerChatHub> hubContext) =>
+            {
+                try
+                {
+                    var session = (DeviceSyncEntity)httpContext.Items["CurrentSession"]!;
+
+                    // 1. Достаем сообщение из БД, чтобы проверить права и узнать кому слать пуш
+                    var message = await messageRepository.GetByIdAsync(messageId);
+                    if (message is null)
+                        return Results.NotFound();
+
+                    // 2. Защита: удалять может только автор сообщения!
+                    if (message.SenderId != session.UserId)
+                    {
+                        serverLogger.LogWarning($"[API БЕЗОПАСНОСТЬ] Юзер {session.UserId} пытался удалить чужое СМС {messageId}!");
+                        return Results.Forbid();
+                    }
+
+                    // 3. Мягко удаляем в Postgres (если уже удалено — просто вернем Ok)
+                    if (!message.IsDeleted)
+                    {
+                        await messageRepository.SoftDeleteAsync(messageId);
+                    }
+
+                    // 4. Рассылаем по группам SignalR (как в MapPost)
+                    var receiverGroup = message.ReceiverId.ToString();
+                    var senderGroup = message.SenderId.ToString();
+
+                    await hubContext.Clients.Group(receiverGroup).SendAsync("MessageDeleted", messageId);
+
+                    if (receiverGroup != senderGroup)
+                    {
+                        await hubContext.Clients.Group(senderGroup).SendAsync("MessageDeleted", messageId);
+                    }
+
+                    serverLogger.LogInfo($"[API] Сообщение {messageId} мягко удалено юзером {session.UserId}.");
+                    return Results.Ok(new { Success = true });
+                }
+                catch (Exception ex)
+                {
+                    serverLogger.LogError($"[API Ошибка] Сбой при удалении СМС {messageId}: {ex.Message}");
+                    return Results.Problem("Ошибка сервера");
+                }
+            });
+
 
             group.MapGet("/", () => Results.Ok(new { Status = "OK" }));
         }

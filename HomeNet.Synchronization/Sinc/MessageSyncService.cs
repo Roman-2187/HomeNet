@@ -26,17 +26,36 @@ namespace HomeNet.Synchronization.Sinc
             SubscribeEvents();
         }
 
+   
+        
         private void SubscribeEvents()
         {
             _eventBus.Subscribe<IMessageApiClient.MessageSentOnServer>(OnMessageSent);
             _eventBus.Subscribe<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
+    
+            // 🆕 Ловим подтверждение удаления от нашего API
+            _eventBus.Subscribe<IMessageApiClient.MessageDeletedOnServer>(OnMessageDeletedOnServer);
+    
+            // 🆕 Ловим удаление от собеседника через SignalR (подставь имя своего события из SignalRListeners)
+            _eventBus.Subscribe<MessageDeletedFromNetwork>(OnMessageDeletedFromNetwork);
         }
-
+        
+        
         private async void OnMessageSent(IMessageApiClient.MessageSentOnServer msg)
         {
-            _logger.LogInfo($"[MessageRealtime] Сервер подтвердил сообщение {msg.Message.Id}. Пишем в SQLite.");
-            await TryInsertMessageAsync(msg.Message);
+            _logger.LogInfo($"[MessageRealtime] Сервер подтвердил отправку {msg.Message.Id}. Ставим IsSynced = 1.");
+            try
+            {
+                msg.Message.IsSynced = 1;
+                await _messageRepository.UpdateAsync(msg.Message); // или отдельный метод MarkAsSyncedAsync(msg.Message.Id)
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[MessageRealtime] Ошибка обновления статуса синка {msg.Message.Id}: {ex.Message}");
+            }
         }
+
+        
 
         private async void OnMessageReceivedFromNetwork(MessageReceivedFromNetwork msg)
         {
@@ -60,6 +79,34 @@ namespace HomeNet.Synchronization.Sinc
                 _logger.LogError($"[MessageRealtime] Не удалось сохранить сообщение {message.Id}: {ex.Message}");
             }
         }
+        
+        private async void OnMessageDeletedOnServer(IMessageApiClient.MessageDeletedOnServer msg)
+        {
+            _logger.LogInfo($"[MessageRealtime] Сервер подтвердил удаление {msg.MessageId}. Затираем в SQLite.");
+            await TrySoftDeleteAsync(msg.MessageId);
+        }
+
+        private async void OnMessageDeletedFromNetwork(MessageDeletedFromNetwork msg)
+        {
+            _logger.LogInfo($"[MessageRealtime] Собеседник удалил сообщение {msg.MessageId}. Затираем в SQLite.");
+            await TrySoftDeleteAsync(msg.MessageId);
+        }
+
+        private async Task TrySoftDeleteAsync(Guid messageId)
+        {
+            try
+            {
+                await _messageRepository.SoftDeleteAsync(messageId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[MessageRealtime] Не удалось мягко удалить сообщение {messageId}: {ex.Message}");
+            }
+        }
+        
+        
+        
+        
 
         public void Dispose()
         {

@@ -18,7 +18,7 @@ namespace HomeNet.DI.Modules
 {
     public class DataAccessModule : IAsyncDisposable
     {
-        public SiberNetDbEngine DbEngine { get; }
+        public DbEngine DbEngine { get; }
         public string ApiBaseUrl { get; }
         public IDbContextContainer DbContextContainer { get; }
         public IUserRepo UserRepository { get; }
@@ -50,7 +50,7 @@ namespace HomeNet.DI.Modules
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             // 1. Движок и репозитории
-            DbEngine = new SiberNetDbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
+            DbEngine = new DbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
             DbEngine.InitializeRepositories(eventBus);
             UserRepository = DbEngine.Repositories.GetRepository<IUserRepo>();
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
