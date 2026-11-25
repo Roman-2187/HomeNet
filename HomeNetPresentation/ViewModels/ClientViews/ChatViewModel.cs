@@ -4,13 +4,14 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IContactsVm;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
+using static HomeNetOrm.Interfaces.Repositories.IMessageRepo;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
-    public partial class ChatViewModel : ObservableObject, IDisposable
+    public sealed partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly IMessageService _messageService;
@@ -35,7 +36,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         // ReSharper disable once MemberCanBePrivate.Global
         public partial Guid? SelectedFriendId { get; set; }
 
-        [ObservableProperty] private ObservableCollection<MessageEntity> _messages = [];
+        [ObservableProperty]
+        public partial ObservableCollection<MessageEntity> Messages { get; set; } = [];
 
         public ChatViewModel(IEventBus eventBus, IMessageService messageService)
         {
@@ -47,17 +49,17 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         private void InitializeBusSubscriptions()
         {
-            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.SubscribeAsync<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Subscribe<IMessageRepo.Saved>(OnMessageSaved);
+            _eventBus.Subscribe<UserSignedIn>(OnUserSignedIn);
+            _eventBus.Subscribe<UserSignedUp>(OnUserSignedUp);
+            _eventBus.SubscribeAsync<FriendSelected>(OnFriendSelected);
+            _eventBus.Subscribe<Saved>(OnMessageSaved);
             
             // 🔥 Подписываемся на логаут, чтобы вычистить чат
-            _eventBus.Subscribe<IUserVm.LogoutClient>(OnLogout);
+            _eventBus.Subscribe<LogoutClient>(OnLogout);
         }
 
         // 🔥 Очищаем всё при логауте
-        private void OnLogout(IUserVm.LogoutClient msg)
+        private void OnLogout(LogoutClient msg)
         {
             Messages.Clear();
             SelectedFriendId = null;
@@ -68,7 +70,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             InputText = string.Empty;
         }
 
-        private void OnUserSignedIn(IUserVm.UserSignedIn msg)
+        private void OnUserSignedIn(UserSignedIn msg)
         {
             if (msg?.User == null) return;
             
@@ -84,7 +86,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
-        private void OnUserSignedUp(IUserVm.UserSignedUp msg)
+        private void OnUserSignedUp(UserSignedUp msg)
         {
             if (msg?.User == null) return;
             
@@ -100,7 +102,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
-        private async Task  OnFriendSelected(IContactsVm.FriendSelected msg)
+        private async Task  OnFriendSelected(FriendSelected msg)
         {
             if (msg?.Friend == null) return;
 
@@ -145,7 +147,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             }
         }
 
-        private void OnMessageSaved(IMessageRepo.Saved msg)
+        private void OnMessageSaved(Saved msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
@@ -163,19 +165,29 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             }
         }
 
-        private bool CanSendMessage() => !string.IsNullOrWhiteSpace(InputText) && SelectedFriendId != null;
+        private bool CanSendMessage()
+        {
+            return !string.IsNullOrWhiteSpace(InputText) && SelectedFriendId != null;
+        }
 
-        partial void OnInputTextChanged(string value) => SendMessageCommand.NotifyCanExecuteChanged();
-        partial void OnSelectedFriendIdChanged(Guid? value) => SendMessageCommand.NotifyCanExecuteChanged();
+        partial void OnInputTextChanged(string value)
+        {
+            SendMessageCommand.NotifyCanExecuteChanged();
+        }
+
+        partial void OnSelectedFriendIdChanged(Guid? value)
+        {
+            SendMessageCommand.NotifyCanExecuteChanged();
+        }
+
 
         public void Dispose()
         {
-            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
-            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.UnsubscribeAsync<IContactsVm.FriendSelected>(OnFriendSelected);
-
-            _eventBus.Unsubscribe<IMessageRepo.Saved>(OnMessageSaved);
-            _eventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogout);
+            _eventBus.Unsubscribe<UserSignedIn>(OnUserSignedIn);
+            _eventBus.Unsubscribe<UserSignedUp>(OnUserSignedUp);
+            _eventBus.UnsubscribeAsync<FriendSelected>(OnFriendSelected);
+            _eventBus.Unsubscribe<Saved>(OnMessageSaved);
+            _eventBus.Unsubscribe<LogoutClient>(OnLogout);
         }
     }
 }

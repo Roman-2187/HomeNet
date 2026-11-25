@@ -20,13 +20,19 @@ namespace HomeNetOrm.Repositories.Local.Sync
                 return await baseRepo.ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
             }
 
+            
             public async Task SaveOrSyncMessageAsync(MessageEntity message)
             {
                 var baseRepo = (BaseRepository<MessageEntity>)repo;
                 var cmd = ((IMessageSqlGenerator)baseRepo.SqlGenerator).GenerateUpsert();
 
-                await baseRepo.ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
+                var rowsAffected = await baseRepo.ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
+                if (rowsAffected > 0)
+                {
+                    baseRepo.EventBus?.Publish(repo, new IMessageRepo.Saved(message));
+                }
             }
+
 
             public async Task<IEnumerable<MessageEntity>> GetMessagesSinceVersionAsync(Guid userId, long sinceVersion)
             {

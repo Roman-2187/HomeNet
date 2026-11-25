@@ -72,8 +72,6 @@ namespace HomeNetOrm.Generators.Base
                 .Emit(CloseBracket)
                 .Build();
         
-        
-        
         public SqlQueryCommand GenerateSoftDelete(Guid messageId) =>
             CreateQuery()
                 .Emit(Update).Table()
@@ -86,6 +84,9 @@ namespace HomeNetOrm.Generators.Base
                 .Emit(Where)
                 .Col(m => m.Id).Emit(Equal).Param(m => m.Id, messageId)
                 .Build();
+        
+       
+
     }
     
     

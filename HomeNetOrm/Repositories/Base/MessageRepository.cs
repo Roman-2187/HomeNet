@@ -93,13 +93,27 @@ namespace HomeNetOrm.Repositories.Base
                 EventBus?.Publish(this, new Deleted(id));
             }
         }
+        
+        public async Task<bool> SoftDeleteAsync(Guid id)
+        {
+            var cmd = _messageSqlGenerator.GenerateSoftDelete(id);
+
+            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
+
+            if (rowsAffected > 0)
+            {
+                // Можно использовать существующее событие или завести SoftDeleted(id)
+                EventBus?.Publish(this, new Deleted(id)); 
+            }
+
+            return rowsAffected > 0;
+        }
 
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
         {
             var cmd = _messageSqlGenerator.GenerateSelectById(id);
-
-           
-
+            
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
             {
                 return ExecuteAsync(db => db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params));
@@ -109,9 +123,7 @@ namespace HomeNetOrm.Repositories.Base
         public async Task<IEnumerable<MessageEntity>> GetAllAsync()
         {
             var cmd = _messageSqlGenerator.GenerateSelectAll();
-
-          
-
+            
             return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params)));
         }
@@ -134,22 +146,23 @@ namespace HomeNetOrm.Repositories.Base
         }
 
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId) =>
-     await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
-         ExecuteAsync(db => db.QueryAsync<MessageEntity>(
-             _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId).Sql,
-             new
-             {
-                 SenderId1 = senderId,
-                 ReceiverId1 = receiverId,
-                 SenderId2 = receiverId,
-                 ReceiverId2 = senderId
-             })));
+             await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                 ExecuteAsync(db => db.QueryAsync<MessageEntity>(
+                     _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId).Sql,
+                     new
+                     {
+                         SenderId1 = senderId,
+                         ReceiverId1 = receiverId,
+                         SenderId2 = receiverId,
+                         ReceiverId2 = senderId
+                     })));
+        
         public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId) =>
             await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(async db => await db.ExecuteAsync(
                     _messageSqlGenerator.GenerateMarkAsRead(senderId, receiverId).Sql,
                     new { SenderId = senderId, ReceiverId = receiverId }) > 0));
-
+        
         public async Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId) =>
             await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(db => db.ExecuteScalarAsync<int>(
@@ -157,22 +170,7 @@ namespace HomeNetOrm.Repositories.Base
                     new { CurrentUserId = currentUserId, SenderId = senderId })));
         
         
-        public async Task<bool> SoftDeleteAsync(Guid id)
-        {
-            var cmd = _messageSqlGenerator.GenerateSoftDelete(id);
-
-            var rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
-                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
-
-            if (rowsAffected > 0)
-            {
-                // Можно использовать существующее событие или завести SoftDeleted(id)
-                EventBus?.Publish(this, new Deleted(id)); 
-            }
-
-            return rowsAffected > 0;
-        }
-
+      
         
     }
     

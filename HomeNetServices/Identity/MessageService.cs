@@ -69,6 +69,5 @@ namespace HomeNetServices.Identity
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
         }
         
-        
     }
 }

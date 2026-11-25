@@ -11,7 +11,7 @@ namespace HomeNetOrm.Repositories.Base
     {
         private readonly Func<DbConnection> _connectionFactory;
 
-        // Торчит наружу internal-ом: экстеншены репозитория его увидят, а бизнес-логика — нет!
+        
         internal ISqlGenerator<TEntity> SqlGenerator { get; }
         protected internal IEventBus? EventBus { get; protected init; }
 

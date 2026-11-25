@@ -62,10 +62,12 @@ namespace HomeNetOrm.Generators.Local.Sync
                     .Emit(Do).Emit(Update).Emit(Set)
                     .Col(m => m.Text).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.Text).Emit(Comma)
                     .Col(m => m.IsRead).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.IsRead).Emit(Comma)
+                    .Col(m => m.IsDeleted).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.IsDeleted).Emit(Comma) // 🆕 Добавили IsDeleted
                     .Col(m => m.UpdatedAt).Emit(Equal).Emit(Excluded).Raw(".").Col(m => m.UpdatedAt).Emit(Comma)
                     .Col(m => m.IsSynced).Emit(Equal).Emit(True)
                     .Build();
             }
+
         }
     }
 }

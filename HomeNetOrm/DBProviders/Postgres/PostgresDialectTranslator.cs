@@ -60,7 +60,6 @@ namespace HomeNetOrm.DBProviders.Postgres
             Conflict => "CONFLICT",
             Do => "DO",
             As => "AS",
-            // 🔥 Дописываем новые кейсы для триггерных расширений схем:
             Sequence => "SEQUENCE",
             OrDml => "OR",
             _ => throw new ArgumentOutOfRangeException(nameof(phrase))
@@ -112,6 +111,5 @@ namespace HomeNetOrm.DBProviders.Postgres
         // 🧰 ПОДВАЛ КЛАССА: Изолируем специфичные текстовые маркеры Postgres
         // =========================================================================
         private const string PostgresNowFunc = "NOW()";
-        private const string ProceduralLanguageMarker = "plpgsql";
     }
 }

@@ -12,7 +12,7 @@ using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
-    /// Стерильная форма авторизации мессенджера SiberNet.
+    /// Стерильная форма авторизации мессенджера HomeNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
     /// </summary>
     public partial class AuthenticationViewModel : FormViewModelBase

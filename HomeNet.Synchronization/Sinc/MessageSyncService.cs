@@ -1,10 +1,10 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNet.Network.Api;
 using HomeNet.Network.SignalRListeners;
-using HomeNetOrm.Exceptions;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Local.Sync;
+using static HomeNet.Network.Api.IMessageApiClient;
 
 namespace HomeNet.Synchronization.Sinc
 {
@@ -30,18 +30,18 @@ namespace HomeNet.Synchronization.Sinc
         
         private void SubscribeEvents()
         {
-            _eventBus.Subscribe<IMessageApiClient.MessageSentOnServer>(OnMessageSent);
-            _eventBus.Subscribe<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
+            _eventBus.SubscribeAsync<MessageSentOnServer>(OnMessageSent);
+            _eventBus.SubscribeAsync<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
     
             // 🆕 Ловим подтверждение удаления от нашего API
-            _eventBus.Subscribe<IMessageApiClient.MessageDeletedOnServer>(OnMessageDeletedOnServer);
+            _eventBus.SubscribeAsync<MessageDeletedOnServer>(OnMessageDeletedOnServer);
     
             // 🆕 Ловим удаление от собеседника через SignalR (подставь имя своего события из SignalRListeners)
-            _eventBus.Subscribe<MessageDeletedFromNetwork>(OnMessageDeletedFromNetwork);
+            _eventBus.SubscribeAsync<MessageDeletedFromNetwork>(OnMessageDeletedFromNetwork);
         }
         
         
-        private async void OnMessageSent(IMessageApiClient.MessageSentOnServer msg)
+        private async Task OnMessageSent(MessageSentOnServer msg)
         {
             _logger.LogInfo($"[MessageRealtime] Сервер подтвердил отправку {msg.Message.Id}. Ставим IsSynced = 1.");
             try
@@ -56,42 +56,47 @@ namespace HomeNet.Synchronization.Sinc
         }
 
         
-
-        private async void OnMessageReceivedFromNetwork(MessageReceivedFromNetwork msg)
-        {
-            _logger.LogInfo($"[MessageRealtime] Сеть прислала сообщение {msg.Message.Id}. Пишем в SQLite.");
-            await TryInsertMessageAsync(msg.Message);
-        }
-
-        private async Task TryInsertMessageAsync(MessageEntity message)
-        {
-            try
-            {
-                message.IsSynced = 1;
-                await _messageRepository.InsertAsync(message);
-            }
-            catch (DuplicateMessageException)
-            {
-                _logger.LogDebug($"[MessageRealtime] Сообщение {message.Id} пропущено по дубликату.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"[MessageRealtime] Не удалось сохранить сообщение {message.Id}: {ex.Message}");
-            }
-        }
         
-        private async void OnMessageDeletedOnServer(IMessageApiClient.MessageDeletedOnServer msg)
+        private async Task OnMessageDeletedOnServer(MessageDeletedOnServer msg)
         {
             _logger.LogInfo($"[MessageRealtime] Сервер подтвердил удаление {msg.MessageId}. Затираем в SQLite.");
             await TrySoftDeleteAsync(msg.MessageId);
         }
+        
+        
+        private async Task OnMessageReceivedFromNetwork(MessageReceivedFromNetwork msg)
+        {
+            _logger.LogInfo($"[MessageRealtime] Сеть прислала сообщение {msg.Message.Id}. Пишем в SQLite.");
+            await TryUpsertMessageAsync(msg.Message);
+        }
 
-        private async void OnMessageDeletedFromNetwork(MessageDeletedFromNetwork msg)
+
+        private async Task OnMessageDeletedFromNetwork(MessageDeletedFromNetwork msg)
         {
             _logger.LogInfo($"[MessageRealtime] Собеседник удалил сообщение {msg.MessageId}. Затираем в SQLite.");
             await TrySoftDeleteAsync(msg.MessageId);
         }
+        
+        
+        
+        
+        
+        private async Task TryUpsertMessageAsync(MessageEntity message)
+        {
+            try
+            {
+                message.IsSynced = 1;
+                await _messageRepository.SaveOrSyncMessageAsync(message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[MessageRealtime] Не удалось сохранить/обновить сообщение {message.Id}: {ex.Message}");
+            }
+        }
 
+
+        
+        
         private async Task TrySoftDeleteAsync(Guid messageId)
         {
             try
@@ -106,12 +111,10 @@ namespace HomeNet.Synchronization.Sinc
         
         
         
-        
-
         public void Dispose()
         {
-            _eventBus.Unsubscribe<IMessageApiClient.MessageSentOnServer>(OnMessageSent);
-            _eventBus.Unsubscribe<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
+            _eventBus.UnsubscribeAsync<MessageSentOnServer>(OnMessageSent);
+            _eventBus.UnsubscribeAsync<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
         }
     }
 }

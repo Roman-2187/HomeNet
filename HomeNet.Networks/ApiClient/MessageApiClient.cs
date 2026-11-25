@@ -5,6 +5,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Api;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
+using static HomeNet.Network.Api.IMessageApiClient;
 
 namespace HomeNet.Network.ApiClient
 {
@@ -20,17 +21,17 @@ namespace HomeNet.Network.ApiClient
 
                 if (response.IsSuccessStatusCode)
                 {
-                    eventBus.Publish(this, new IMessageApiClient.MessageSentOnServer(message));
+                    eventBus.Publish(this, new MessageSentOnServer(message));
                     return true;
                 }
 
-                eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, $"HTTP {response.StatusCode}"));
+                eventBus.Publish(this, new MessageSendFailed(message.Id, $"HTTP {response.StatusCode}"));
                 return false;
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[MessageApiClient] Ошибка отправки: {ex.Message}");
-                eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, ex.Message));
+                eventBus.Publish(this, new MessageSendFailed(message.Id, ex.Message));
                 return false;
             }
         }
@@ -60,18 +61,18 @@ namespace HomeNet.Network.ApiClient
 
                 if (response.IsSuccessStatusCode)
                 {
-                    eventBus.Publish(this, new IMessageApiClient.MessageDeletedOnServer(messageId));
+                    eventBus.Publish(this, new MessageDeletedOnServer(messageId));
                     return true;
                 }
 
                 Logger.LogError($"[MessageApiClient] Сервер отклонил удаление {messageId}: HTTP {response.StatusCode}");
-                eventBus.Publish(this, new IMessageApiClient.MessageDeleteFailed(messageId, $"HTTP {response.StatusCode}"));
+                eventBus.Publish(this, new MessageDeleteFailed(messageId, $"HTTP {response.StatusCode}"));
                 return false;
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[MessageApiClient] Ошибка удаления {messageId}: {ex.Message}");
-                eventBus.Publish(this, new IMessageApiClient.MessageDeleteFailed(messageId, ex.Message));
+                eventBus.Publish(this, new MessageDeleteFailed(messageId, ex.Message));
                 return false;
             }
         }

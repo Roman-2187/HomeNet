@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace HomeNet.Server
 {
-    public partial class Program
+    public abstract partial class Program
     {
         private static async Task Main(string[] args)
         {
@@ -43,7 +43,7 @@ namespace HomeNet.Server
                                ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
 
 
-            // 2. Создаем движок для PostgreSQL
+            // 2. Создаем движок для PostgresSQL
             var postgresEngine = new DbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
 
             // 🔥 3. Инициализируем фабрику репозиториев БЕЗ шины событий (null)
@@ -104,7 +104,7 @@ namespace HomeNet.Server
                 await Groups.AddToGroupAsync(Context.ConnectionId, userId);
             }
 
-            // 🔥 РУКОПОЖАТИЕ SIBERNET:
+            // 🔥 РУКОПОЖАТИЕ HomeNet:
             await Clients.Caller.SendAsync("ReceiveServerReady");
 
             await base.OnConnectedAsync();

@@ -25,5 +25,6 @@ namespace HomeNetOrm.Interfaces.Repositories
         Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);
         Task<bool> SoftDeleteAsync(Guid id);
 
+       
     }
 }
