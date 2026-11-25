@@ -95,6 +95,14 @@ namespace HomeNetOrm.Builders
             _schema.Length = 8000;
             return this;
         }
+        
+        
+        public ColumnBuilder<TEntity> IsNullable()
+        {
+            _schema.IsNullable = true;
+            return this;
+        }
+
 
         public ColumnSchema Build()
         {

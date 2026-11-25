@@ -13,5 +13,7 @@ namespace HomeNetCore.Interfaces.Services
         /// Вытаскивает историю зашифрованной переписки между двумя пользователями из СУБД.
         /// </summary>
         Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId);
+
+        public Task<ChatVerdict> DeleteMessageAsync(Guid messageId);
     }
 }

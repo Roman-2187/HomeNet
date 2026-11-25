@@ -52,7 +52,7 @@ namespace HomeNetOrm.Schemes
             builder.AddColumn(m => m.Id).AsPrimaryKey();
             builder.AddColumn(m => m.SenderId).IsRequired();
             builder.AddColumn(m => m.ReceiverId).IsRequired();
-            builder.AddColumn(m => m.Text).AsText();
+            builder.AddColumn(m => m.Text).AsText().IsNullable();
             builder.AddColumn(m => m.MediaType).AsText();
             builder.AddColumn(m => m.IsRead);
             builder.AddColumn(m => m.IsDeleted); // <-- Сразу в обе базы

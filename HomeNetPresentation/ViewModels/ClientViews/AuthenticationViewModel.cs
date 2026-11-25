@@ -13,12 +13,10 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 {
     /// <summary>
     /// Стерильная форма авторизации мессенджера HomeNet.
-    /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
     /// </summary>
-    public partial class AuthenticationViewModel : FormViewModelBase
+    public sealed partial class AuthenticationViewModel : FormViewModelBase
     {
         private readonly IAuthenticateService _loginService;
-       
 
         [ObservableProperty]
         public partial UserEntity UserData { get; set; } = new();
@@ -26,30 +24,19 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         public AuthenticationViewModel(
             IAuthenticateService loginService,
             IEventBus eventBus,
-            ICastomLogger logger) : base(eventBus,logger)
+            ICastomLogger logger) : base(eventBus, logger)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            InitializeInitialHints();
-            EventBus.SubscribeAsync<UserSignedIn>(OnUserAuthenticated);
-        }
-
-        private async Task OnUserAuthenticated(UserSignedIn msg)
-        {
-            await Task.Delay(1200);
-            ResetForm();
             InitializeInitialHints();
         }
 
         private void InitializeInitialHints()
         {
-            var initialHints = new List<ValidationResult>
-            {
+            UpdateValidation(
+            [
                 new(TypeField.EmailType, "Введите email", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Текущий пароль", ValidationState.Info, true)
-            };
-            UpdateValidation(initialHints);
+            ]);
             StatusMessage = string.Empty;
         }
 
@@ -57,11 +44,9 @@ namespace HomeNetPresentation.ViewModels.ClientViews
         {
             UserData = new UserEntity();
             StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+            ClearValidation();
             SubmitButtonText = "войти";
         }
-
-        #region 🦾 КОМАНДЫ ФОРМЫ АВТОРИЗАЦИИ
 
         [RelayCommand]
         private async Task CheckEmailAsync()
@@ -69,41 +54,27 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             var email = UserData.Email;
             if (string.IsNullOrWhiteSpace(email)) return;
 
-            // 1. Сразу показываем промежуточный статус "Проверка..."
-            var checkingResult = new ValidationResult
+            SetFieldValidation(new ValidationResult
             {
                 Field = TypeField.EmailType,
                 State = ValidationState.Info,
                 Message = "Проверка..."
-            };
+            });
 
-            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults)
-            {
-                [TypeField.EmailType] = checkingResult
-            };
-            ValidationResults = checkingDict;
-
-            // 2. Проверяем наличие аккаунта через сервис (сработает кэш и переопределение)
             var result = await _loginService.CheckEmailOnBlurAsync(email);
-
-            // 3. Обновляем UI финальным вердиктом ("Пользователь найден" или ошибка)
-            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults)
-            {
-                [TypeField.EmailType] = result
-            };
-            ValidationResults = finalDict;
+            SetFieldValidation(result);
         }
 
         [RelayCommand]
         private async Task LoginAsync()
         {
             StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+            ClearValidation();
 
             try
             {
                 var verdict = await _loginService.CheckUserAsync(UserData);
-                ValidationResults = verdict.Messages.ToDictionary(r => r.Field, r => r);
+                UpdateValidation(verdict.Messages);
 
                 if (verdict.IsSuccess)
                 {
@@ -111,10 +82,12 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                     SubmitButtonText = "Входим...";
                     Logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
-                   
                     var finalUser = verdict.User ?? UserData;
-                   
                     EventBus.Publish(this, new UserSignedIn(finalUser));
+
+                    await Task.Delay(500);
+                    ResetForm();
+                    InitializeInitialHints();
                 }
                 else
                 {
@@ -142,14 +115,6 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             ResetForm();
             InitializeInitialHints();
             EventBus.Publish(this, new BackToStart());
-        }
-
-        #endregion
-
-        public override void Dispose()
-        {
-            base.Dispose();
-            EventBus.SubscribeAsync<UserSignedIn>(OnUserAuthenticated);
         }
     }
 }

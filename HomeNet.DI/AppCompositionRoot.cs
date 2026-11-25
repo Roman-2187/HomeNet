@@ -3,12 +3,11 @@ using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.SignalRListeners;
-using HomeNet.Synchronization;
 using HomeNetCore.Enums;
 using HomeNetOrm.Schemes;
-using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.ClientViews.Chat;
 using HomeNetPresentation.ViewModels.MainViews;
 
 namespace HomeNet.DI

@@ -3,9 +3,9 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 
 using HomeNetPresentation.Serviсes;
-using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.ClientViews.Chat;
 using HomeNetPresentation.ViewModels.MainViews;
 
 namespace HomeNet.DI.Modules
@@ -35,7 +35,7 @@ namespace HomeNet.DI.Modules
         // 🔥 НАША НОВАЯ ВЬЮМОДЕЛЬ НАСТРОЕК ЖЕЛЕЗА
         public DeviceSettingsViewModel DeviceSettingsVm { get; }
 
-        // ReSharper disable once ConvertToPrimaryConstructor
+       
         public PresentationUiModule(
             IEventBus eventBus,
             ICastomLogger logger,

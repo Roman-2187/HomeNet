@@ -1,7 +1,7 @@
 ﻿using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetPresentation.ViewModels.ClientViews.Chat;
 using HomeNetPresentation.ViewModels.MainViews;
 
 namespace HomeNet.DI

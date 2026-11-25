@@ -3,12 +3,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
-            xmlns:models="using:HomeNet.Models.Shared.Entity"
-            xmlns:clientViews="clr-namespace:HomeNetPresentation.ViewModels.ClientViews;assembly=HomeNetPresentation"
+             xmlns:chat="clr-namespace:HomeNetPresentation.ViewModels.ClientViews.Chat;assembly=HomeNetPresentation"
 
             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.UserControls.ChatViewControl"
-             x:DataType="clientViews:ChatViewModel" >
+             x:DataType="chat:ChatViewModel" >
 
       <UserControl.Styles>
         <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->
@@ -80,6 +79,16 @@
     <Setter Property="Foreground" Value="#FF615959"/> <!-- Серый текст -->
     <Setter Property="Background" Value="Transparent"/>
 </Style>
+        
+        
+        <Style Selector="TextBlock.msg-text">
+            <Setter Property="Foreground" Value="#00F0FF"/>
+        </Style>
+        
+        <Style Selector="TextBlock.deleted-msg">
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Setter Property="Foreground" Value="#7A8B99"/>
+        </Style>
     </UserControl.Styles>
 
 
@@ -89,14 +98,12 @@
     x:CompileBindings="False">
     
     <!-- 🔥 ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР (вместо отдельных кусков) -->
-    <Border
-        
-        Focusable="True" Background="Transparent"
-        behaviors:ClearFocusBehavior.IsEnabled="True"
-        DataContext="{Binding ChatViewModel}"
-        
-      >
-        
+    <Border Name="ChatRoot"
+            Focusable="True" 
+            Background="Transparent"
+            behaviors:ClearFocusBehavior.IsEnabled="True"
+            DataContext="{Binding ChatViewModel}">
+
         <Grid RowDefinitions="Auto, *, Auto">
             
             <!-- 🔝 ВЕРХНЯЯ ЧАСТЬ: Шапка текущего чата -->
@@ -112,7 +119,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Ellipse Width="10" Height="10" Fill="#00FF66" VerticalAlignment="Center"/>
                     <TextBlock 
-                        Text="{Binding SelectedFriendName, FallbackValue='Загрузка ...'}"
+                        Text="{Binding State.SelectedFriendName, FallbackValue='Загрузка ...'}"
                         Foreground="#00F0FF"
                         FontWeight="Bold"
                         FontSize="14"
@@ -130,8 +137,8 @@
                 
                 <ItemsControl ItemsSource="{Binding Messages}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="models:MessageEntity">
-                            
+                        <DataTemplate x:DataType="chat:MessageItemViewModel">
+            
                             <!-- Сам пузырь (без рамки, но с легкой тенью для объема) -->
                             <Border Classes="msg-cloud" 
                                     Tag="{Binding IsOutgoing}"
@@ -140,28 +147,37 @@
                                     BorderThickness="0"
                                     MinWidth="200"
                                     MaxWidth="200"
-                                    
                                     BoxShadow="0 0 10 0 #2200F0FF">
-                                <Grid RowDefinitions="Auto, Auto">
-                                    <TextBlock
-                                        Grid.Row="0" 
+                
+                                <!-- Контекстное меню для мягкого удаления своих сообщений -->
+                                <Border.ContextMenu>
+                                    <ContextMenu IsVisible="{Binding IsOutgoing}">
+                                        <MenuItem Header="Удалить сообщение"
+                                                  IsVisible="{Binding !IsDeleted}"
+                                                  Command="{Binding #ChatRoot.DataContext.DeleteMessageCommand}"
+                                                  CommandParameter="{Binding}"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
 
-                                        Text="{Binding Text}"
-                                        Foreground="#00F0FF"
-                                        FontSize="13"
-                                        TextWrapping="Wrap"/>
+                                <Grid RowDefinitions="Auto, Auto">
+                                    <TextBlock  Classes="msg-text"
+                                                Grid.Row="0" 
+                                                Text="{Binding Text}"
+                                                Classes.deleted-msg="{Binding IsDeleted}"
+                                                FontSize="13"
+                                                TextWrapping="Wrap"/>
                                     <TextBlock
                                         Grid.Row="1" 
                                         Text="{Binding FormattedTime, FallbackValue='00:00'}"
                                         Foreground="#5500F0FF" 
-                                        FontSize="10" HorizontalAlignment="Right"
-                                       />
+                                        FontSize="10" 
+                                        HorizontalAlignment="Right"/>
                                 </Grid>
                             </Border>
-                            
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
             </ScrollViewer>
 
             <!-- ⌨️ НИЖНЯЯ ЧАСТЬ: Поле ввода и кнопка (тоже без фона, но с линией сверху) -->
@@ -172,34 +188,35 @@
                
                 >
                 <Grid ColumnDefinitions="*, Auto"  Height="45">
-                    <TextBox 
-                        Grid.Column="0" 
-                       
-                        Text="{Binding InputText, Mode=TwoWay}" 
-                        PlaceholderText="Введите  сообщение..." 
-                        Foreground="#00F0FF" 
-                        Background="Transparent" 
-                        FontSize="13" 
-                      
-                        VerticalContentAlignment="Center">
+                   
+                    
+                    
+                    <TextBox Name="MessageBox"
+                             Grid.Column="0" 
+                             Text="{Binding State.InputText, Mode=TwoWay}" 
+                             PlaceholderText="Введите сообщение..." 
+                             Foreground="#00F0FF" 
+                             Background="Transparent" 
+                             FontSize="13" 
+                             VerticalContentAlignment="Center">
                         <TextBox.KeyBindings>
-                            <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                            <KeyBinding Gesture="Enter" 
+                                        Command="{Binding SendMessageCommand}" 
+                                        CommandParameter="{Binding #MessageBox.Text}"/>
                         </TextBox.KeyBindings>
                     </TextBox>
-                    
-                    <Button 
-                        Grid.Column="1" 
-                        Content="ОТПРАВИТЬ" 
-                        Command="{Binding SendMessageCommand}"
-                      
-                        Classes="action-btn" 
-                       FontSize="14"
-                        Width="120" 
-                        HorizontalContentAlignment="Center" 
-                        VerticalContentAlignment="Center"/>
+
+                    <Button Grid.Column="1"
+                            Content="ОТПРАВИТЬ"
+                            Command="{Binding SendMessageCommand}"
+                            IsEnabled="{Binding #MessageBox.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                            Classes="action-btn"
+                            FontSize="14"
+                            Width="120"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
                 </Grid>
             </Border>
-            
         </Grid>
     </Border>
 </ContentControl>

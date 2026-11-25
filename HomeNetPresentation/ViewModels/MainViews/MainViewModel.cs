@@ -7,8 +7,8 @@ namespace HomeNetPresentation.ViewModels.MainViews
     {
         public MainViewModel(ICastomLogger logger, IEventBus eventBus) : base(eventBus, logger)
         {
-             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-             EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            
+             
 
             EventBus.Subscribe<WindowOpenedEvent>(e =>
             {

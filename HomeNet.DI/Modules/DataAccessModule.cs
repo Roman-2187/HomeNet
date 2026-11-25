@@ -81,7 +81,7 @@ namespace HomeNet.DI.Modules
             var syncItems = new IEntitySyncItem[]
             {
                 new UserSyncItem(UserRepository, DeviceSettingsRepository, UserApiClient, logger),
-                new MessageSyncItem(MessageRepository, DeviceSettingsRepository, MessageApiClient, logger)
+                new MessageSyncItem(MessageRepository, DeviceSettingsRepository, MessageApiClient, logger,eventBus)
             };
             SyncFactory = new SyncBatchFactory(syncItems, eventBus, logger);
 
