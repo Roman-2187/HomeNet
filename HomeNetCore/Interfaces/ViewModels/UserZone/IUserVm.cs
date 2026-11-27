@@ -11,6 +11,8 @@ namespace HomeNetCore.Interfaces.ViewModels.UserZone
 
         public record OpenAuth;          
         public record OpenRegistration;  
+        public record OpenProfile;
+
         public record BackToStart;      
       
        

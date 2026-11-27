@@ -17,6 +17,7 @@
         <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/AuthViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/ChatViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/ContactsListViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
+        <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/ProfileViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/RegistrationViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/Controls/UserControls/UserViewControl.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />
         <entry key="HomeNetAvalonia/HomeNetAvalonia/MainViews/MainView.axaml" value="HomeNetAvalonia/HomeNetAvalonia.Desktop/HomeNetAvalonia.Desktop.csproj" />

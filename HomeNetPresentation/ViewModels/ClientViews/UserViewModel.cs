@@ -55,6 +55,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             ActiveClientTab = msg.ActiveTab;
             OnPropertyChanged(nameof(ActiveClientTab));
         }
+        
+       
 
        
 

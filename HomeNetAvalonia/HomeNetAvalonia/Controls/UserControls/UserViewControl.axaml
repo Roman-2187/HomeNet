@@ -53,7 +53,16 @@
             ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
             <userControls:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </ContentControl>
+        
+        <!-- Под-экран В: Экран профиля и настроек -->
+        <ContentControl
+            IsVisible="{Binding UserViewModel.ActiveClientTab,
+            Converter={StaticResource EqualityConverter},
+            ConverterParameter={x:Static enums:ClientSubTab.Profile}}">
+            <userControls:ProfileViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        </ContentControl>
 
+ 
                 <!-- ============================================================= -->
         <!-- 💬 ЗОНА МЕССЕНДЖЕРА И ЧАТА: Монолитное деление экрана         -->
         <!-- ============================================================= -->

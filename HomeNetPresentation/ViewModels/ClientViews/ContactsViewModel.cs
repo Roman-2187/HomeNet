@@ -98,6 +98,16 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             
             
         }
+        
+        
+        
+         
+        [RelayCommand]
+        private void OpenProfile()
+        {
+          
+            _eventBus.Publish(this, new OpenProfile());
+        }
 
         [RelayCommand]
         private void Logout()
@@ -106,6 +116,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             CurrentUserName = "Авторизация...";
             _eventBus.Publish(this, new LogoutClient());
         }
+        
+        
 
         [RelayCommand]
         private void ToggleMenu()

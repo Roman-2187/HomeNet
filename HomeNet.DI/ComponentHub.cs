@@ -32,6 +32,8 @@ namespace HomeNet.DI
         public ContactsViewModel ContactsViewModel => GetViewModelSafe<ContactsViewModel>();
 
         public ChatViewModel ChatViewModel => GetViewModelSafe<ChatViewModel>();
+        
+        public ProfileViewModel ProfileViewModel => GetViewModelSafe<ProfileViewModel>();
 
 
         public TableUsersViewModel TableUsersViewModel => GetViewModelSafe<TableUsersViewModel>();

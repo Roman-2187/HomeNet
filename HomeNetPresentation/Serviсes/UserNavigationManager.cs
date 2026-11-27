@@ -22,6 +22,7 @@ namespace HomeNetPresentation.Serviсes
             Logger = logger;
             EventBus.Subscribe<OpenAuth>(OnOpenAuthRequested);
             EventBus.Subscribe<OpenRegistration>(OnOpenRegistrationRequested);
+            EventBus.Subscribe<OpenProfile>(OnOpenProfileRequested);
             EventBus.Subscribe<BackToStart>(OnBackToStartRequested);
 
             // Подписки на успех авторизации/регистрации
@@ -52,6 +53,19 @@ namespace HomeNetPresentation.Serviсes
             PublishStateDuet();
 
             Logger.LogInfo($"Зашли в OnOpenRegistrationRequested текущий стате {CurrentClientTab}");
+        }
+        
+        
+        // Метод-обработчик:
+        private void OnOpenProfileRequested(OpenProfile msg)
+        {
+            if (CurrentUser == null) return; // На всякий случай защита, если не авторизован
+
+            CurrentMainZone = MainTab.ClientZone;
+            CurrentClientTab = ClientSubTab.Profile;
+            PublishStateDuet();
+
+            Logger.LogInfo($"[Navigator] Открыт профиль пользователя: {CurrentUser.FirstName}");
         }
 
         private void OnBackToStartRequested(BackToStart msg)

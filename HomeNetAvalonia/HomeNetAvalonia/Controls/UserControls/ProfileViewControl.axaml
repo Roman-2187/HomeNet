@@ -1,0 +1,87 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HomeNetAvalonia.Controls.UserControls.ProfileViewControl">
+    <ContentControl Classes="CyberpunkInnerContainer" Padding="0"
+                    DataContext="{DynamicResource ComponentHub}"
+                    x:CompileBindings="False">
+
+        <Border Background="Transparent"
+                DataContext="{Binding ProfileViewModel}">
+            
+            <Grid RowDefinitions="Auto, *, Auto">
+                
+                <!-- 🔝 ШАПКА ПРОФИЛЯ -->
+                <Border Grid.Row="0"
+                        Background="#1100F0FF"
+                        Height="45"
+                        Padding="15,10">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="10" Height="10" Fill="#00F0FF" VerticalAlignment="Center"/>
+                            <TextBlock Text="ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ // НАСТРОЙКИ"
+                                       Foreground="#00F0FF"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Кнопка возврата обратно в чат -->
+                        <Button Grid.Column="1"
+                                Content="← В ЧАТ"
+                                Command="{Binding BackToMessengerCommand}"
+                                Classes="cyber-send-btn"
+                                Height="30"
+                                Padding="12,0"
+                                FontSize="12"/>
+                    </Grid>
+                </Border>
+
+                <!-- ⚙️ ЦЕНТРАЛЬНАЯ ЗОНА (сюда потом добавишь регулировки и инфу о юзере) -->
+                <ScrollViewer Grid.Row="1" Padding="25">
+                    <StackPanel Spacing="20" MaxWidth="600" HorizontalAlignment="Left">
+                        <TextBlock Text="ИДЕНТИФИКАТОР УЗЛА"
+                                   Foreground="#00F0FF"
+                                   FontWeight="Bold"
+                                   FontSize="12"/>
+                        <TextBlock Text="Настройки профиля и персонализации находятся в разработке..."
+                                   Foreground="#7A8B99"
+                                   FontSize="13"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ⚠️ ОПАСНАЯ ЗОНА ВНИЗУ: Полное удаление аккаунта -->
+                <Border Grid.Row="2"
+                        Background="#15FF2A55"
+                        BorderBrush="#44FF2A55"
+                        BorderThickness="0,1,0,0"
+                        Padding="25,15">
+                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="20">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="ПОЛНОЕ УДАЛЕНИЕ ПРОФИЛЯ"
+                                       Foreground="#FFF5546F"
+                                       FontWeight="Bold"
+                                       FontSize="13"/>
+                            <TextBlock Text="Учётная запись будет безвозвратно удалена с сервера и локального узла. В систему попадёт только надгробие."
+                                       Foreground="#AAFF2A55"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Двухэтапное подтверждение или прямой вызов команды -->
+                        <Button Grid.Column="1"
+                                Content="{Binding DeleteButtonText, FallbackValue='УДАЛИТЬ ПРОФИЛЬ'}"
+                                Command="{Binding DeleteProfileCommand}"
+                                Classes="action-btn"
+                                Width="180"
+                                Height="40"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+            </Grid>
+        </Border>
+    </ContentControl>
+</UserControl>

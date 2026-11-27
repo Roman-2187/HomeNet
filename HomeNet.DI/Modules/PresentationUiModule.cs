@@ -24,6 +24,7 @@ namespace HomeNet.DI.Modules
         public InspectorViewModel InspectorVm { get; }
         public AdminViewModel AdminVm { get; }
         public DeleteUsersViewModel DeleteUsersVm { get; }
+        public ProfileViewModel ProfileVm { get; }
         public ChatViewModel ChatVm { get; }
         public TitleBarViewModel TitleBarVm { get; }
         public SeedUsersViewModel SeedUsersVm { get; }
@@ -60,6 +61,7 @@ namespace HomeNet.DI.Modules
             SeedUsersVm = new SeedUsersViewModel(eventBus,logger, services.UserRepository);
             TableUsersVm = new TableUsersViewModel(eventBus,logger, services.UserRepository);
             UserVm = new UserViewModel(logger, eventBus);
+            ProfileVm = new ProfileViewModel(eventBus, services.ProfileService); 
             DeviceSettingsVm = new DeviceSettingsViewModel(eventBus, logger,services.DeviceSettingsService, services.UserRepository);
             ContactsVm = new ContactsViewModel(eventBus);
             MainVm = new MainViewModel(logger, eventBus);

@@ -18,6 +18,8 @@ namespace HomeNet.DI.Modules
         public IDeleteService DeleteService { get; }
         public IMessageService MessageService { get; }
         public IDeviceSettingsService DeviceSettingsService { get; }
+        
+        public IProfileService ProfileService { get; }
 
         public BusinessServicesModule(
             IUserRepo userRepo,          // Нужен для чтения (кэш)
@@ -34,6 +36,7 @@ namespace HomeNet.DI.Modules
             AuthenticateService = new AuthenticateService(userApiClient);
             DeleteService = new DeleteService(userApiClient, logger);
             MessageService = new MessageService(messageApiClient, msgRepo); // Передали API и репо для чтения
+            ProfileService = new ProfileService( userApiClient, userRepo);
 
             // Настройки устройства остаются локальными
             // Настройки устройства остаются локальными + управляют заголовком сессии в ApiClient

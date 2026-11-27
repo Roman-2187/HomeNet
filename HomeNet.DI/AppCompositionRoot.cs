@@ -91,6 +91,7 @@ namespace HomeNet.DI
             if (typeof(TGet) == typeof(SeedUsersViewModel)) return (Ui.SeedUsersVm as TGet)!;
             if (typeof(TGet) == typeof(ContactsViewModel)) return (Ui.ContactsVm as TGet)!;
             if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (Ui.DeviceSettingsVm as TGet)!;
+            if (typeof(TGet) == typeof(ProfileViewModel)) return (TGet)(object)Ui.ProfileVm;
 
             throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI.");
         }

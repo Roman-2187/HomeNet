@@ -22,6 +22,14 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             IsMenuOpen = !IsMenuOpen;
         }
+        
+         
+        [RelayCommand]
+        private void OpenProfile()
+        {
+           
+            
+        }
 
 
         // 🔥 Только закрывает (для кликов мимо)
