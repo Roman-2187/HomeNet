@@ -41,12 +41,12 @@ namespace HomeNetServices.Identity
                 return new IAuthenticateService.Verdict(true, validationResults, authResult.User);
 
             var errorResult = SetResult(
-                TypeField.PasswordType,
-                ValidationState.Error,
+                PasswordType,
+                Error,
                 authResult.ErrorMessage ?? "Не удалось выполнить вход.");
 
             return new IAuthenticateService.Verdict(false, [errorResult], null);
         }
 
     }
-}
+} 

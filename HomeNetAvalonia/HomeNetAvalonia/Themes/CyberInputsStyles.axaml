@@ -1,0 +1,106 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+   
+
+     <!-- 🔥 КИБЕР-ПОЛЕ ВВОДА (без рамок и стандартной подсветки) -->
+    <Style Selector="TextBox.cyber-input">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="15,0"/>
+        <Setter Property="Foreground" Value="#00F0FF"/>
+    </Style>
+
+    <Style Selector="TextBox.cyber-input:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#1500F0FF"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style Selector="TextBox.cyber-input:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#10ADD8E6"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+     
+     <!-- 🔥 ТРЕУГОЛЬНАЯ КИБЕР-КНОПКА БЕЗ КВАДРАТНОГО ФОНА FLUENT-ТЕМЫ -->
+     <Style Selector="Button.cyber-triangle-btn">
+         <Setter Property="Background" Value="Transparent"/>
+         <Setter Property="BorderThickness" Value="0"/>
+         <Setter Property="Padding" Value="0"/>
+         <Setter Property="Template">
+             <ControlTemplate>
+                 <ContentPresenter Content="{TemplateBinding Content}"
+                                   Background="Transparent"/>
+             </ControlTemplate>
+         </Setter>
+     </Style>
+
+     <!-- При наведении подсвечивается сам треугольник неоном, а не квадрат вокруг -->
+     <Style Selector="Button.cyber-triangle-btn:pointerover Polygon">
+         <Setter Property="Fill" Value="#3300F0FF"/>
+     </Style>
+
+     <Style Selector="Button.cyber-triangle-btn:pressed Polygon">
+         <Setter Property="Fill" Value="#6600F0FF"/>
+     </Style>
+  
+
+     <!-- 🔥 КНОПКА ОТПРАВКИ В ЦИАНОВОМ СТИЛЕ (со своим шаблоном без мусора от Fluent-темы) -->
+     <Style Selector="Button.cyber-send-btn">
+         <Setter Property="Background" Value="#10ADD8E6"/>
+         <Setter Property="BorderThickness" Value="0"/>
+         <Setter Property="BorderBrush" Value="#3300F0FF"/>
+         <Setter Property="Padding" Value="5,5"/>
+         <Setter Property="Margin" Value="2,0,0,0"/>
+         <Setter Property="Height" Value="45"/>
+         <Setter Property="Foreground" Value="#00F0FF"/>
+         <Setter Property="HorizontalContentAlignment" Value="Center"/>
+         <Setter Property="VerticalContentAlignment" Value="Center"/>
+         <Setter Property="Template">
+             <ControlTemplate>
+                 <Border x:Name="border"
+                         Background="{TemplateBinding Background}"
+                         BorderBrush="{TemplateBinding BorderBrush}"
+                         BorderThickness="{TemplateBinding BorderThickness}"
+                         CornerRadius="2.5"
+                         Padding="{TemplateBinding Padding}">
+                     <ContentPresenter x:Name="contentPresenter"
+                                       Content="{TemplateBinding Content}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                 </Border>
+             </ControlTemplate>
+         </Setter>
+     </Style>
+
+     <Style Selector="Button.cyber-send-btn:pointerover /template/ Border#border">
+         <Setter Property="Background" Value="#3300F0FF"/>
+     </Style>
+
+     <Style Selector="Button.cyber-send-btn:pressed /template/ Border#border">
+         <Setter Property="Background" Value="#5500F0FF"/>
+     </Style>
+
+     <Style Selector="Button.cyber-send-btn:disabled /template/ Border#border">
+         <Setter Property="Background" Value="Transparent"/>
+     </Style>
+
+     <Style Selector="Button.cyber-send-btn:disabled /template/ ContentPresenter#contentPresenter">
+         <Setter Property="Foreground" Value="#7A8B99"/>
+     </Style>
+
+
+    <Style Selector="Button.cyber-send-btn:pointerover">
+        <Setter Property="Background" Value="#3300F0FF"/>
+    </Style>
+
+    <Style Selector="Button.cyber-send-btn:pressed">
+        <Setter Property="Background" Value="#5500F0FF"/>
+    </Style>
+
+    <Style Selector="Button.cyber-send-btn:disabled">
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#5500F0FF"/>
+    </Style>
+</Styles>

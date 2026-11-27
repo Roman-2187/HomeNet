@@ -9,6 +9,7 @@ namespace HomeNetServices.Identity
     {
         private readonly IMessageApiClient _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
         private readonly IMessageRepo _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo)); 
+        
 
         public async Task<ChatVerdict> SendPrivateMessageAsync(Guid senderId, Guid receiverId, string text)
         {

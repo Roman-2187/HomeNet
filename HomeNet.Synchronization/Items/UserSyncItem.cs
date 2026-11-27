@@ -22,7 +22,7 @@ namespace HomeNet.Synchronization.Items
             {
                 var session = await deviceSettingsRepo.GetActiveSessionAsync();
                 if (session == null || session.Id == Guid.Empty) return;
-
+  
                 var batch = await apiClient.FetchFreshUsersAsync(session.LastUserVersion);
 
                 await userRepository.ApplySyncBatchAsync(batch.UpdatedItems);

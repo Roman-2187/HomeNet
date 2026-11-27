@@ -35,8 +35,7 @@ namespace HomeNetServices.Identity
                     if (_cachedActiveSession != null && _cachedActiveSession.Id != Guid.Empty)
                     {
                         _apiClient.SetSessionHeader(_cachedActiveSession.Id);
-                    }
-
+                    } 
                     _logger.LogInfo($"[SettingsService] Железо ID: {deviceId} | Активен: {_cachedActiveSession?.Email ?? "никто"}");
                 }
             }

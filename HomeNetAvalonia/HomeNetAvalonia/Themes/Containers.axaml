@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- 🌌 ТВОЙ ОРИГИНАЛЬНЫЙ ТРЁХСЛОЙНЫЙ КИБЕРПАНК-КОНТЕЙНЕР ДЛЯ ОКНА SIBERNET -->
+  <!-- 🌌 ТВОЙ ОРИГИНАЛЬНЫЙ ТРЁХСЛОЙНЫЙ КИБЕРПАНК-КОНТЕЙНЕР ДЛЯ ОКНА HomeNet -->
     <Style Selector="ContentControl.CyberpunkContainer">     
         <Setter Property="CornerRadius" Value="3"/>
         <Setter Property="Padding" Value="5"/>   
@@ -46,7 +46,7 @@
 
 
    <Style Selector="ContentControl.CyberpunkInnerContainer">     
-     <Setter Property="Padding" Value="5"/>   
+     <Setter Property="Padding" Value="0"/>   
      <Setter Property="Template">
          <ControlTemplate>
              <Grid>

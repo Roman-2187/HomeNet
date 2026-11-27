@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:controls="using:HomeNetAvalonia.Controls"
              xmlns:clientViews="clr-namespace:HomeNetPresentation.ViewModels.ClientViews;assembly=HomeNetPresentation"
              xmlns:mainControls="clr-namespace:HomeNetAvalonia.Controls.MainControls"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="500"
@@ -10,41 +9,36 @@
              x:DataType="clientViews:ContactsViewModel">
 
     <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
-
-
-   
-  <ContentControl Classes="CyberpunkInnerContainer" Margin="-6"
     
-     >
-    
+  <ContentControl Classes="CyberpunkInnerContainer" Padding="0" >
+      
     <!-- 🦾 Автоматически проваливаемся в родную ContactsViewModel -->
     <!-- 🔥 Задаем RowDefinitions="*", чтобы этот Grid растянулся на всё пространство -->
     <Grid Background="#10ADD8E6"
        
         RowDefinitions="*">
         
-      
-        
         <!-- 🛡️ ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР ДЛЯ ПАНЕЛИ КОНТАКТОВ -->
-       
-            
+        
             <!-- 🔥 Внутренний Grid с двумя строками -->
             <Grid RowDefinitions="Auto, *">  
                 
                 
                 <!-- 🍔 ВЕРХНЯЯ ЧАСТЬ: Кнопка управления, выхода и имя текущего юзера -->
-                <Border 
+                <Border BorderThickness="0.4" Padding="1"
                     Grid.Row="0"
                     Background="#1100F0FF"
                     BorderBrush="#3300F0FF"
                     
                     CornerRadius="2"
-                    Padding="5" >
+                    >
                     <Grid ColumnDefinitions="Auto, *">
-
-                         <Button Content="☰"
-                        Height="35" Width="35"
-                       
+                        
+                         <Button Content="☰" Classes="action-btn"
+                        Height="45" Width="45"
+                       HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        
                         FontSize="16"
                         Command="{Binding  ToggleMenuCommand}" />
 
@@ -56,10 +50,10 @@
     Orientation="Horizontal"
     HorizontalAlignment="Right"
     Spacing="8" 
-    Margin="0,0,5,0">
+    Margin="0,0,0,0">
 
     <!-- Контейнер для аватарки + индикатор онлайна -->
-    <Grid Width="35" Height="35" VerticalAlignment="Center">
+    <Grid Width="45" Height="45" VerticalAlignment="Center">
         <Border
             CornerRadius="3"
             ClipToBounds="True">

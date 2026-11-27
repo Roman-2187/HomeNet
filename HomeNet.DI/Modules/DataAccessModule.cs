@@ -24,9 +24,6 @@ namespace HomeNet.DI.Modules
         public IUserRepo UserRepository { get; }
         public IMessageRepo MessageRepository { get; }
         public DeviceSettingsRepo DeviceSettingsRepository { get; }
-        public Guid CurrentDeviceId { get; private set; }
-
-        public ServerHealthMonitor HealthMonitor { get; }
 
         // 🔥 Единый клиент SignalR вместо двух отдельных слушателей
         public SignalRHubClient HubClient { get; }
@@ -68,7 +65,7 @@ namespace HomeNet.DI.Modules
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-            HealthMonitor = new ServerHealthMonitor(httpClient, logger, eventBus);
+            var serverHealthMonitor = new ServerHealthMonitor(httpClient, logger, eventBus);
 
             // 3. API-клиенты
             UserApiClient = new UserApiClient(httpClient, logger, eventBus);

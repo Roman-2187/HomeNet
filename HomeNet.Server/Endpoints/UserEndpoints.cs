@@ -128,6 +128,7 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
+            
 
             // =========================================================================
             // 🔒 ЗАЩИЩЁННЫЕ РУЧКИ (Требуют живой X-Session-Id в таблице device_sync)

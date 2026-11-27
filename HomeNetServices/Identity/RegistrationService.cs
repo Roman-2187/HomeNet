@@ -13,8 +13,8 @@ namespace HomeNetServices.Identity
     {
         protected override ValidationResult InterpretEmailExistence(bool exists) =>
             exists
-                ? SetResult(TypeField.EmailType, ValidationState.Error, "Этот Email уже занят")
-                : SetResult(TypeField.EmailType, ValidationState.Success, "Email свободен");
+                ? SetResult(EmailType, Error, "Этот Email уже занят")
+                : SetResult(EmailType, Success, "Email свободен");
 
         public async Task<Verdict> RegisterUserAsync(UserEntity user)
         {

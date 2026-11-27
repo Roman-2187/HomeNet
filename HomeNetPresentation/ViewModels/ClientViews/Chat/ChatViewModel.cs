@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.MainZone;
 using System.Collections.ObjectModel;
@@ -19,23 +20,31 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
         public partial ChatStateModel State { get; set; } = new();
 
         [ObservableProperty]
-        public partial ObservableCollection<MessageItemViewModel> Messages { get; set; } = [];
+        public partial ObservableCollection<MessageEntity> Messages { get; set; } = [];
+        [ObservableProperty]
+        public partial MessageEntity? SelectedMessage { get; set; }
+
 
         public ChatViewModel(IEventBus eventBus, IMessageService messageService)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-
-            
-
             _eventBus.Subscribe<UserSignedIn>(OnUserSignedIn);
-            _eventBus.Subscribe<UserSignedUp>(OnUserSignedUp);
+            _eventBus.Subscribe<UserSignedUp>(OnUserSignedUp); 
             _eventBus.SubscribeAsync<FriendSelected>(OnFriendSelected);
             _eventBus.Subscribe<Saved>(OnMessageSaved);
             _eventBus.Subscribe<LogoutClient>(OnLogout);
         }
 
-       
+        private MessageEntity PrepareForUi(MessageEntity entity)
+        {
+            entity.IsOutgoing = entity.SenderId == State.CurrentUserId;
+            if (entity.IsDeleted)
+            {
+                entity.Text = "Сообщение удалено";
+            }
+            return entity;
+        }
 
         private void OnLogout(LogoutClient msg)
         {
@@ -43,9 +52,9 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
             State.ResetSession();
         }
 
-        private void OnUserSignedIn(UserSignedIn msg) => ApplyUserSession(msg?.User?.Id, msg?.User?.FirstName);
+        private void OnUserSignedIn(UserSignedIn msg) => ApplyUserSession(msg.User.Id, msg.User.FirstName);
 
-        private void OnUserSignedUp(UserSignedUp msg) => ApplyUserSession(msg?.User?.Id, msg?.User?.FirstName);
+        private void OnUserSignedUp(UserSignedUp msg) => ApplyUserSession(msg.User.Id, msg.User.FirstName);
 
         private void ApplyUserSession(Guid? userId, string? firstName)
         {
@@ -61,7 +70,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
             State.CurrentUserName = firstName ?? "Вы";
         }
 
-        private async Task OnFriendSelected(FriendSelected msg)
+        private async Task OnFriendSelected(FriendSelected? msg)
         {
             if (msg?.Friend == null) return;
 
@@ -74,7 +83,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
             try
             {
                 var history = await _messageService.GetPrivateHistoryAsync(State.CurrentUserId, State.SelectedFriendId.Value);
-                Messages = [.. history.Select(m => new MessageItemViewModel(m, State.CurrentUserId))];
+                Messages = [.. history.Select(PrepareForUi)];
             }
             catch (Exception ex)
             {
@@ -82,8 +91,21 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
             }
         }
 
-       
-        
+        private void OnMessageSaved(Saved? msg)
+        {
+            if (msg?.Message == null || State.SelectedFriendId == null) return;
+
+            var isCurrentChat =
+                (msg.Message.SenderId == State.SelectedFriendId.Value && msg.Message.ReceiverId == State.CurrentUserId) ||
+                (msg.Message.SenderId == State.CurrentUserId && msg.Message.ReceiverId == State.SelectedFriendId.Value);
+
+            if (!isCurrentChat) return;
+
+            if (Messages.All(m => m.Id != msg.Message.Id))
+            {
+                Messages.Add(PrepareForUi(msg.Message));
+            }
+        }
         
         [RelayCommand]
         private async Task SendMessageAsync()
@@ -100,10 +122,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ЧАТА]: {verdict.ErrorMessage}"));
         }
 
-
-
         [RelayCommand]
-        private async Task DeleteMessageAsync(MessageItemViewModel? message)
+        private async Task DeleteMessageAsync(MessageEntity? message)
         {
             if (message == null || message.IsDeleted || !message.IsOutgoing) return;
 
@@ -111,32 +131,14 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
 
             if (verdict.IsValid)
             {
-                message.MarkAsDeleted();
+                message.IsDeleted = true;
+                message.Text = "Сообщение удалено";
             }
             else
             {
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА УДАЛЕНИЯ]: {verdict.ErrorMessage}"));
             }
         }
-
-        private void OnMessageSaved(Saved msg)
-        {
-            if (msg?.Message == null || State.SelectedFriendId == null) return;
-
-            var isCurrentChat =
-                (msg.Message.SenderId == State.SelectedFriendId.Value && msg.Message.ReceiverId == State.CurrentUserId) ||
-                (msg.Message.SenderId == State.CurrentUserId && msg.Message.ReceiverId == State.SelectedFriendId.Value);
-
-            if (!isCurrentChat) return;
-
-            if (Messages.All(m => m.Id != msg.Message.Id))
-            {
-                Messages.Add(new MessageItemViewModel(msg.Message, State.CurrentUserId));
-            }
-        }
-
-        private bool CanSendMessage() =>
-            !string.IsNullOrWhiteSpace(State.InputText) && State.SelectedFriendId != null;
 
         public void Dispose()
         {
@@ -148,3 +150,4 @@ namespace HomeNetPresentation.ViewModels.ClientViews.Chat
         }
     }
 }
+

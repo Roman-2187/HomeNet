@@ -5,10 +5,7 @@
              x:Class="HomeNetAvalonia.Controls.UserControls.UserViewControl"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
              xmlns:conv="using:HomeNetAvalonia.Converters"
-             xmlns:vm="using:HomeNetPresentation.ViewModels"
-             xmlns:di="using:HomeNet.DI" 
-             xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
-             xmlns:controls="using:HomeNetAvalonia.Controls"
+             xmlns:di="using:HomeNet.DI"
              xmlns:userControls="clr-namespace:HomeNetAvalonia.Controls.UserControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:DataType="di:ComponentHub"  x:CompileBindings="False" >
@@ -64,7 +61,7 @@
               HorizontalAlignment="Stretch" 
               VerticalAlignment="Stretch">
             
-            <!-- 🎯 Включаем сетку, если мы в Messenger ИЛИ в Chat -->
+            <!-- 🎯 Включаем сетку, если мы в Messenger ИЛИ в Chat --> 
             <Grid.IsVisible>
                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
                     <Binding Path="UserViewModel.ActiveClientTab" 
